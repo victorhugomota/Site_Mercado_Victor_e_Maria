@@ -1519,6 +1519,85 @@ async function processarEExibirRevisaoFatura(texto, cartaoNome) {
   toastMsg(`✅ ${itens.length} compras encontradas! Fatura total: ${brl(valorTotalDefinitivo)}.`);
 }
 
+window.atualizarValorTotalRevisaoFatura = function() {
+  if (!faturaEmProcessamento) return;
+  const val = parseFloat(document.getElementById('inp-revisao-fatura-val')?.value) || 0;
+  faturaEmProcessamento.valorTotal = val;
+  document.getElementById('badge-total-preview-fatura').textContent = brl(val);
+};
+
+function renderizarRevisaoFaturaUI() {
+  if (!faturaEmProcessamento) return;
+  const { valorTotal, itens } = faturaEmProcessamento;
+
+  document.getElementById('badge-total-preview-fatura').textContent = brl(valorTotal);
+  const listaEl = document.getElementById('lista-preview-fatura-itens');
+
+  if (!itens || !itens.length) {
+    listaEl.innerHTML = `<div class="empty-state">Nenhum item individual extraído. O valor total acima será considerado.</div>`;
+  } else {
+    listaEl.innerHTML = itens.map((i, index) => `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:.4rem 0; border-bottom:1px dashed var(--border-color); font-size:.82rem;">
+        <span><strong>${i.dataCompra || '—'}</strong> — ${i.descricao}</span>
+        <div style="display:flex; align-items:center; gap:.75rem;">
+          <span style="color:#fb7185; font-weight:700;">${brl(i.valor)}</span>
+          <button type="button" class="btn-danger" style="padding:.15rem .45rem; font-size:.75rem;" onclick="removerItemRevisaoFatura(${index})">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  const boxRevisao = document.getElementById('box-revisao-fatura');
+  boxRevisao.style.display = 'block';
+  boxRevisao.scrollIntoView({ behavior: 'smooth' });
+}
+
+window.removerItemRevisaoFatura = function(index) {
+  if (!faturaEmProcessamento || !faturaEmProcessamento.itens) return;
+  faturaEmProcessamento.itens.splice(index, 1);
+  const novaSoma = faturaEmProcessamento.itens.reduce((acc, i) => acc + i.valor, 0);
+  if (novaSoma > 0) {
+    faturaEmProcessamento.valorTotal = novaSoma;
+  }
+  faturaEmProcessamento.qtdItens = faturaEmProcessamento.itens.length;
+  renderizarRevisaoFaturaUI();
+  toastMsg('🗑️ Item removido da revisão da fatura.');
+};
+
+window.confirmarEGravarFaturaDocumento = async function() {
+  if (!faturaEmProcessamento) return;
+
+  const inpVenc = document.getElementById('inp-fatura-vencimento').value || new Date().toISOString().slice(0, 10);
+  const valTotal = faturaEmProcessamento.valorTotal;
+
+  if (!valTotal) {
+    toastMsg('⚠️ A fatura não possui valor total.');
+    return;
+  }
+
+  faturaEmProcessamento.dataVencimento = inpVenc;
+  faturaEmProcessamento.mesAno = inpVenc.slice(0, 7);
+
+  try {
+    await addDoc(collection(db, COLL_FATURAS), {
+      ...faturaEmProcessamento,
+      createdAt: serverTimestamp()
+    });
+
+    document.getElementById('box-revisao-fatura').style.display = 'none';
+    document.getElementById('inp-fatura-txt').value = '';
+    const fileTxtEl = document.getElementById('txt-file-fatura');
+    if (fileTxtEl) fileTxtEl.textContent = 'Clique para Selecionar o Arquivo da Fatura';
+
+    const totalFmt = brl(faturaEmProcessamento.valorTotal);
+    faturaEmProcessamento = null;
+
+    toastMsg(`🎉 Fatura de ${totalFmt} salva com sucesso!`);
+  } catch (err) {
+    alert('Erro ao salvar fatura: ' + err.message);
+  }
+};
+
 function parseLinhasFatura(texto) {
   if (!texto) return [];
   const itens = [];
