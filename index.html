@@ -201,6 +201,7 @@
 
   <nav class="desktop-nav">
     <button class="nav-item active" data-tab="dashboard">📊 Visão Geral</button>
+    <button class="nav-item" data-tab="mensal">📅 Controle Mensal</button>
     <button class="nav-item" data-tab="salarios">💵 Salários &amp; Entradas</button>
     <button class="nav-item" data-tab="cartoes">💳 Cartões de Crédito</button>
     <button class="nav-item" data-tab="boletos">📄 Boletos</button>
@@ -305,8 +306,20 @@
       </div>
     </div>
 
+    <!-- Tabela de Resumo Mensal Comparativa (Geral) -->
+    <div class="card" style="margin-top:1.5rem">
+      <div class="card-header">
+        <span class="card-title">🗓️ Resumo Financeiro Mês a Mês</span>
+        <span class="badge cyan">Visão Consolidada</span>
+      </div>
+      <p class="card-subtext" style="margin-bottom:1rem">
+        Consolidado mensal de todas as suas receitas, boletos, faturas de cartão e gastos de mercado.
+      </p>
+      <div id="tabela-resumo-mensal"></div>
+    </div>
+
     <!-- Gráficos -->
-    <div class="card">
+    <div class="card" style="margin-top:1.5rem">
       <div class="card-header">
         <span class="card-title">Evolução dos Gastos Mensais no Mercado</span>
         <span class="badge green">Histórico</span>
@@ -314,6 +327,101 @@
       <div class="chart-container">
         <canvas id="chart-barras"></canvas>
       </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <!-- 1.5 ABA CONTROLE MENSAL (VISUALIZAÇÃO & FILTRO DINÂMICO POR MÊS) -->
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-mensal" class="tab-content">
+    <!-- Seletor de Mês Dinâmico -->
+    <div class="card" style="margin-bottom:1.5rem; background:linear-gradient(135deg,rgba(30,41,59,.95),rgba(15,23,42,.98)); border-color:var(--secondary)">
+      <div class="card-header" style="flex-wrap:wrap;gap:.5rem">
+        <div>
+          <span class="card-title" style="color:#a5b4fc">📅 Seleção do Mês Financeiro</span>
+          <p style="font-size:.78rem;color:var(--text-muted);margin-top:.2rem">Os meses abaixo são atualizados automaticamente conforme novas faturas, boletos, salários ou notas são registrados.</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <label style="font-size:.78rem;color:var(--text-muted);font-weight:600">Escolher Mês:</label>
+          <input type="month" id="inp-seletor-mes-global" class="form-control" style="width:auto;padding:.35rem .65rem;font-size:.82rem" onchange="selecionarMesGlobal(this.value)">
+        </div>
+      </div>
+
+      <!-- Barra com Pílulas dos Meses Disponíveis -->
+      <div id="seletor-meses-bar" style="display:flex;gap:.5rem;overflow-x:auto;padding:.5rem 0 .2rem 0"></div>
+    </div>
+
+    <!-- Cards de Resumo do Mês Selecionado -->
+    <div class="grid-summary">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Entradas do Mês</span>
+          <div class="card-icon green">💵</div>
+        </div>
+        <div class="card-value" id="m-total-entradas" style="color:#34d399">R$ 0,00</div>
+        <div class="card-subtext" id="m-subtext-entradas">Salários + Extras no Mês</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Cartão de Crédito</span>
+          <div class="card-icon rose">💳</div>
+        </div>
+        <div class="card-value" id="m-total-cartoes" style="color:#fb7185">R$ 0,00</div>
+        <div class="card-subtext">Faturas Vencendo no Mês</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Boletos &amp; Contas</span>
+          <div class="card-icon purple">📄</div>
+        </div>
+        <div class="card-value" id="m-total-boletos" style="color:#c084fc">R$ 0,00</div>
+        <div class="card-subtext">Boletos Vencendo no Mês</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Mercado (Débito)</span>
+          <div class="card-icon amber">🛒</div>
+        </div>
+        <div class="card-value" id="m-mercado-debito" style="color:#fbbf24">R$ 0,00</div>
+        <div class="card-subtext">Débito Real no Mês</div>
+      </div>
+
+      <div class="card" style="border-color:#3b82f6; background:linear-gradient(135deg,rgba(30,41,59,.9),rgba(15,23,42,.95))">
+        <div class="card-header">
+          <span class="card-title" style="color:#60a5fa" id="m-lbl-saldo-liquido">Saldo Líquido no Mês</span>
+          <div class="card-icon cyan">💰</div>
+        </div>
+        <div class="card-value" id="m-saldo-liquido" style="color:#60a5fa">R$ 0,00</div>
+        <div class="card-subtext">Entradas - Cartões - Boletos - Mercado (Débito)</div>
+      </div>
+    </div>
+
+    <!-- Navegação de Sub-Seções do Mês -->
+    <div class="sub-nav" style="margin-bottom:1.25rem">
+      <button class="sub-item active" data-mensal-sub="sec-salarios" onclick="switchMensalSub('sec-salarios')">💵 Salários &amp; Entradas</button>
+      <button class="sub-item" data-mensal-sub="sec-cartoes" onclick="switchMensalSub('sec-cartoes')">💳 Cartões de Crédito</button>
+      <button class="sub-item" data-mensal-sub="sec-boletos" onclick="switchMensalSub('sec-boletos')">📄 Boletos &amp; Contas</button>
+      <button class="sub-item" data-mensal-sub="sec-mercado" onclick="switchMensalSub('sec-mercado')">🛒 Mercado no Mês</button>
+    </div>
+
+    <!-- Conteúdo das Sub-Seções do Mês -->
+    <div id="sec-salarios" class="mensal-sub-content">
+      <div id="content-salarios-mes"></div>
+    </div>
+
+    <div id="sec-cartoes" class="mensal-sub-content" style="display:none">
+      <div id="content-cartoes-mes"></div>
+    </div>
+
+    <div id="sec-boletos" class="mensal-sub-content" style="display:none">
+      <div id="content-boletos-mes"></div>
+    </div>
+
+    <div id="sec-mercado" class="mensal-sub-content" style="display:none">
+      <div id="content-mercado-mes"></div>
     </div>
   </section>
 
@@ -498,8 +606,19 @@
           <span class="badge green" id="badge-total-preview-fatura" style="font-size:.9rem;padding:.4rem .75rem">R$ 0,00</span>
         </div>
 
+        <div class="form-row" style="margin-bottom:1rem">
+          <div class="form-group">
+            <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.4rem;color:var(--text-muted)">Cartão / Identificação:</label>
+            <input type="text" id="inp-revisao-fatura-desc" class="form-control" placeholder="Ex: Cartão Nubank">
+          </div>
+          <div class="form-group">
+            <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.4rem;color:var(--text-muted)">Valor Total da Fatura (R$):</label>
+            <input type="number" step="0.01" id="inp-revisao-fatura-val" class="form-control" placeholder="0.00" onchange="atualizarValorTotalRevisaoFatura()">
+          </div>
+        </div>
+
         <p class="card-subtext" style="margin-bottom:1rem">
-          Confira os lançamentos contemplados na fatura antes de salvar no sistema:
+          Detalhamento de compras extraídas da fatura:
         </p>
 
         <div id="lista-preview-fatura-itens" style="max-height:220px; overflow-y:auto; background:rgba(15,23,42,.6); padding:.75rem; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-bottom:1.25rem"></div>
@@ -749,6 +868,9 @@
 <nav class="mobile-nav">
   <button class="mob-btn active" data-tab="dashboard">
     <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Geral
+  </button>
+  <button class="mob-btn" data-tab="mensal">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Mês
   </button>
   <button class="mob-btn" data-tab="salarios">
     <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Salários
@@ -1082,9 +1204,100 @@ onSnapshot(doc(db, COLL_RESERVAS, 'config'), snap => {
   renderTudo();
 }, err => console.error('Firestore Reservas:', err));
 
+// ESTADO DE NAVEGAÇÃO MENSAL
+let mesSelecionado = new Date().toISOString().slice(0, 7);
+
+function getMesesDisponiveis() {
+  const set = new Set();
+  const hoje = new Date().toISOString().slice(0, 7);
+  set.add(hoje);
+  if (mesSelecionado) set.add(mesSelecionado);
+
+  todasEntradas.forEach(e => { if (e.mesAno) set.add(e.mesAno); });
+  todasFaturas.forEach(f => { if (f.mesAno) set.add(f.mesAno); });
+  todosBoletos.forEach(b => { if (b.mesAno) set.add(b.mesAno); });
+  todasCompras.forEach(c => { if (c.mesAno) set.add(c.mesAno); });
+
+  return Array.from(set).sort().reverse();
+}
+
+window.selecionarMesGlobal = function(mesAno) {
+  if (!mesAno) return;
+  mesSelecionado = mesAno;
+
+  const inp = document.getElementById('inp-seletor-mes-global');
+  if (inp) inp.value = mesAno;
+
+  const inpEnt = document.getElementById('inp-entradas-mes-ano');
+  if (inpEnt) inpEnt.value = mesAno;
+
+  const inpFat = document.getElementById('inp-fatura-vencimento');
+  if (inpFat) {
+    inpFat.value = `${mesAno}-10`;
+    if (typeof atualizarMesRefFatura === 'function') atualizarMesRefFatura();
+  }
+
+  const inpBol = document.getElementById('inp-boleto-vencimento');
+  if (inpBol) {
+    inpBol.value = `${mesAno}-10`;
+    if (typeof atualizarMesRefBoleto === 'function') atualizarMesRefBoleto();
+  }
+
+  renderTudo();
+};
+
+window.verMesEIrParaControle = function(mesAno) {
+  selecionarMesGlobal(mesAno);
+  if (typeof goTab === 'function') goTab('mensal');
+};
+
+function renderSeletorMeses() {
+  const bar = document.getElementById('seletor-meses-bar');
+  if (!bar) return;
+
+  const meses = getMesesDisponiveis();
+  if (!meses.includes(mesSelecionado)) {
+    mesSelecionado = meses[0] || new Date().toISOString().slice(0, 7);
+  }
+
+  const inp = document.getElementById('inp-seletor-mes-global');
+  if (inp && inp.value !== mesSelecionado) {
+    inp.value = mesSelecionado;
+  }
+
+  bar.innerHTML = meses.map(m => {
+    const [ano, mes] = m.split('-');
+    const dataObj = new Date(parseInt(ano), parseInt(mes) - 1, 1);
+    const nomeMes = dataObj.toLocaleString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
+    const isSel = (m === mesSelecionado);
+    const activeStyle = isSel 
+      ? 'background:var(--secondary);color:#fff;border-color:var(--secondary);box-shadow:0 0 10px rgba(99,102,241,0.4);font-weight:700' 
+      : 'background:rgba(15,23,42,.6);color:var(--text-muted);border:1px solid var(--border-color)';
+
+    return `
+      <button class="sub-item ${isSel ? 'active' : ''}" onclick="selecionarMesGlobal('${m}')" style="${activeStyle}; display:inline-flex;align-items:center;gap:.35rem">
+        📅 ${nomeMes}/${ano}
+      </button>
+    `;
+  }).join('');
+}
+
+window.switchMensalSub = function(secId) {
+  document.querySelectorAll('[data-mensal-sub]').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.mensal-sub-content').forEach(c => c.style.display = 'none');
+
+  const btn = document.querySelector(`[data-mensal-sub="${secId}"]`);
+  if (btn) btn.classList.add('active');
+
+  const sec = document.getElementById(secId);
+  if (sec) sec.style.display = 'block';
+};
+
 // RENDERIZAÇÃO GERAL UNIFICADA
 function renderTudo() {
+  renderSeletorMeses();
   renderDashboardGeral();
+  renderMensalView();
   renderSalariosEEntradas();
   renderCartoesCredito();
   renderBoletos();
@@ -1095,61 +1308,305 @@ function renderTudo() {
   renderReservasEEconomias();
 }
 
+// RENDERIZAÇÃO DO MÊS SELECIONADO NA ABA MÊS A MÊS
+function renderMensalView() {
+  const mesAno = mesSelecionado;
+
+  const entradasMes = todasEntradas.filter(e => e.mesAno === mesAno);
+  const faturasMes  = todasFaturas.filter(f => f.mesAno === mesAno);
+  const boletosMes  = todosBoletos.filter(b => b.mesAno === mesAno);
+  const comprasMes  = todasCompras.filter(c => c.mesAno === mesAno);
+
+  const totalEntradas = entradasMes.reduce((acc, e) => acc + (e.valor || 0), 0);
+  const totalCartoes  = faturasMes.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
+  const totalBoletos  = boletosMes.reduce((acc, b) => acc + (b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0)), 0);
+
+  let mercadoDebito = 0;
+  comprasMes.forEach(c => {
+    if (c.formasPagamento) {
+      mercadoDebito += c.formasPagamento.cartaoDebito || 0;
+    }
+  });
+
+  const saldoLiquidoMes = totalEntradas - totalCartoes - totalBoletos - mercadoDebito;
+
+  const elEnt = document.getElementById('m-total-entradas');
+  if (elEnt) elEnt.textContent = brl(totalEntradas);
+
+  const elCar = document.getElementById('m-total-cartoes');
+  if (elCar) elCar.textContent = brl(totalCartoes);
+
+  const elBol = document.getElementById('m-total-boletos');
+  if (elBol) elBol.textContent = brl(totalBoletos);
+
+  const elMer = document.getElementById('m-mercado-debito');
+  if (elMer) elMer.textContent = brl(mercadoDebito);
+
+  const elSal = document.getElementById('m-saldo-liquido');
+  if (elSal) {
+    elSal.textContent = brl(saldoLiquidoMes);
+    elSal.style.color = saldoLiquidoMes >= 0 ? '#60a5fa' : '#fb7185';
+  }
+
+  const [ano, mes] = mesAno.split('-');
+  const dObj = new Date(parseInt(ano), parseInt(mes) - 1, 1);
+  const mesNome = dObj.toLocaleString('pt-BR', { month: 'long' });
+  const mesNomeFmt = mesNome.charAt(0).toUpperCase() + mesNome.slice(1);
+
+  const lblSal = document.getElementById('m-lbl-saldo-liquido');
+  if (lblSal) lblSal.textContent = `Saldo Líquido (${mesNomeFmt}/${ano})`;
+
+  // Renderizar Subconteúdo das Abas do Mês
+  renderSubConteudoMensal(entradasMes, faturasMes, boletosMes, comprasMes);
+}
+
+function renderSubConteudoMensal(entradasMes, faturasMes, boletosMes, comprasMes) {
+  // 1. Salários & Entradas do Mês
+  const secSal = document.getElementById('content-salarios-mes');
+  if (secSal) {
+    secSal.innerHTML = `
+      <div class="card" style="margin-bottom:1.5rem">
+        <div class="card-header">
+          <span class="card-title">💵 Entradas Registradas em ${mesSelecionado}</span>
+          <span class="badge green">Total: ${brl(entradasMes.reduce((a,e)=>a+(e.valor||0),0))}</span>
+        </div>
+        ${!entradasMes.length 
+          ? `<div class="empty-state">Nenhuma entrada cadastrada para ${mesSelecionado}. Use a aba "Salários & Entradas" para cadastrar.</div>`
+          : `<div class="table-responsive"><table class="custom-table">
+              <thead><tr><th>Pessoa</th><th>Descrição</th><th>Tipo</th><th class="num">Valor</th><th>Ação</th></tr></thead>
+              <tbody>${entradasMes.map(e => `<tr>
+                <td><span class="badge ${e.pessoa==='Victor'?'green':e.pessoa==='Maria'?'purple':'cyan'}">${e.pessoa}</span></td>
+                <td><strong>${e.descricao}</strong></td>
+                <td><span class="badge amber">${e.tipo==='holerite'?'Holerite':'Manual'}</span></td>
+                <td class="num" style="color:#34d399"><strong>${brl(e.valor)}</strong></td>
+                <td><button class="btn-danger" onclick="excluirEntrada('${e.id}')">🗑️</button></td>
+              </tr>`).join('')}</tbody>
+            </table></div>`}
+      </div>
+    `;
+  }
+
+  // 2. Cartões de Crédito do Mês
+  const secCar = document.getElementById('content-cartoes-mes');
+  if (secCar) {
+    const totalCar = faturasMes.reduce((a,f)=>a+(f.valorTotal||0),0);
+    secCar.innerHTML = `
+      <div class="card" style="margin-bottom:1.5rem">
+        <div class="card-header">
+          <span class="card-title">💳 Faturas de Cartão Vencendo em ${mesSelecionado}</span>
+          <span class="badge rose">Total: ${brl(totalCar)}</span>
+        </div>
+        ${!faturasMes.length
+          ? `<div class="empty-state">Nenhuma fatura cadastrada com vencimento em ${mesSelecionado}. Use a aba "Cartões de Crédito" para importar.</div>`
+          : faturasMes.map(f => `
+              <div class="purchase-card" style="margin-bottom:1rem">
+                <div class="purchase-header" onclick="toggleDetail('fat-m-${f.id}')">
+                  <div class="purchase-info">
+                    <h3>${f.cartao === 'Nubank' ? '🟣 Nubank' : f.cartao === 'Santander' ? '🔴 Santander' : '💳 ' + (f.descricao || f.cartao)}</h3>
+                    <p>Vencimento: <strong>${f.dataVencimento || '—'}</strong> • ${f.qtdItens || (f.itens ? f.itens.length : 0)} lançamentos</p>
+                  </div>
+                  <div class="purchase-values">
+                    <div class="pv-total" style="color:#fb7185">${brl(f.valorTotal)}</div>
+                    <div class="pv-sub">Clique para ver itens <span class="chevron">▼</span></div>
+                  </div>
+                </div>
+                <div id="fat-m-${f.id}" class="purchase-details">
+                  <div class="details-toolbar">
+                    <span style="font-weight:700;font-size:.9rem;color:var(--text-muted)">Lançamentos da Fatura</span>
+                    <button class="btn-danger" onclick="excluirFaturaDocumento('${f.id}')">🗑️ Excluir Fatura</button>
+                  </div>
+                  ${renderItensFatura(f)}
+                </div>
+              </div>
+            `).join('')}
+      </div>
+    `;
+  }
+
+  // 3. Boletos do Mês
+  const secBol = document.getElementById('content-boletos-mes');
+  if (secBol) {
+    const totalBol = boletosMes.reduce((a,b)=>a+(b.valorTotal||0),0);
+    secBol.innerHTML = `
+      <div class="card" style="margin-bottom:1.5rem">
+        <div class="card-header">
+          <span class="card-title">📄 Boletos Vencendo em ${mesSelecionado}</span>
+          <span class="badge purple">Total: ${brl(totalBol)}</span>
+        </div>
+        ${!boletosMes.length
+          ? `<div class="empty-state">Nenhum boleto cadastrado para ${mesSelecionado}. Use a aba "Boletos" para importar.</div>`
+          : boletosMes.map(b => `
+              <div class="purchase-card" style="margin-bottom:1rem">
+                <div class="purchase-header" onclick="toggleDetail('bol-m-${b.id}')">
+                  <div class="purchase-info">
+                    <h3>📄 ${b.descricao || 'Boleto / Conta'}</h3>
+                    <p>Vencimento: <strong>${b.dataVencimento || '—'}</strong> • ${b.qtdItens || (b.itens ? b.itens.length : 0)} encargos</p>
+                  </div>
+                  <div class="purchase-values">
+                    <div class="pv-total" style="color:#c084fc">${brl(b.valorTotal)}</div>
+                    <div class="pv-sub">Clique para ver detalhes <span class="chevron">▼</span></div>
+                  </div>
+                </div>
+                <div id="bol-m-${b.id}" class="purchase-details">
+                  <div class="details-toolbar">
+                    <span style="font-weight:700;font-size:.9rem;color:var(--text-muted)">Detalhamento do Boleto</span>
+                    <button class="btn-danger" onclick="excluirBoletoDocumento('${b.id}')">🗑️ Excluir Boleto</button>
+                  </div>
+                  ${renderItensBoleto(b)}
+                </div>
+              </div>
+            `).join('')}
+      </div>
+    `;
+  }
+
+  // 4. Mercado do Mês
+  const secMer = document.getElementById('content-mercado-mes');
+  if (secMer) {
+    secMer.innerHTML = `
+      <div class="card" style="margin-bottom:1.5rem">
+        <div class="card-header">
+          <span class="card-title">🛒 Compras de Mercado em ${mesSelecionado}</span>
+          <span class="badge amber">${comprasMes.length} notas cadastradas</span>
+        </div>
+        ${!comprasMes.length
+          ? `<div class="empty-state">Nenhuma nota de mercado cadastrada para ${mesSelecionado}.</div>`
+          : comprasMes.map(c => `
+              <div class="purchase-card" style="margin-bottom:1rem">
+                <div class="purchase-header" onclick="toggleDetail('mer-m-${c.id}')">
+                  <div class="purchase-info">
+                    <h3>🛒 ${c.nomeMercado || 'Mercado'}</h3>
+                    <p>Data: <strong>${fmtData(c.dataEmissao)}</strong> • ${c.qtdTotalItens || 0} itens</p>
+                  </div>
+                  <div class="purchase-values">
+                    <div class="pv-total" style="color:#fbbf24">${brl(c.valorAPagar)}</div>
+                    <div class="pv-sub">Clique para ver itens <span class="chevron">▼</span></div>
+                  </div>
+                </div>
+                <div id="mer-m-${c.id}" class="purchase-details">
+                  <div class="details-toolbar">
+                    <span style="font-weight:700;font-size:.9rem;color:var(--text-muted)">Itens da Nota</span>
+                    <button class="btn-danger" onclick="excluirCompraDocumento('${c.id}')">🗑️ Excluir Nota</button>
+                  </div>
+                  ${renderItensCompra(c)}
+                </div>
+              </div>
+            `).join('')}
+      </div>
+    `;
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // 1. RENDERIZAÇÃO DO DASHBOARD FINANCEIRO PRINCIPAL
 // ═══════════════════════════════════════════════════════════════════════════
 function renderDashboardGeral() {
-  // Média Mensal Combinada das Entradas (Victor + Maria + Extras)
-  let mediaMensalEntradas = calcularMediaMensalEntradas();
-  let totalEntradasBase = mediaMensalEntradas > 0 ? mediaMensalEntradas : todasEntradas.reduce((acc, e) => acc + (e.valor || 0), 0);
+  // Totais Acumulados do Sistema
+  let totalEntradasAcumulado = todasEntradas.reduce((acc, e) => acc + (e.valor || 0), 0);
+  let totalCartoesAcumulado  = todasFaturas.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
+  let totalBoletosAcumulado  = todosBoletos.reduce((acc, b) => acc + (b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0)), 0);
 
-  // Cartões de Crédito Totais
-  let totalCartoes = todasFaturas.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
-
-  // Boletos Totais
-  let totalBoletos = todosBoletos.reduce((acc, b) => acc + (b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0)), 0);
-
-  // Mercado Totais (Separado por Alimentação, Crédito e Débito)
-  let totalMercadoDebito = 0;
+  let totalMercadoDebitoAcumulado = 0;
   let totalMercadoAlimentacao = 0;
   let totalMercadoCredito = 0;
-  let totalDescontos = 0;
-  let qtdItensMercado = 0;
 
   const porMesMercado = {};
 
   todasCompras.forEach(c => {
     const p = c.valorAPagar || 0;
-    totalDescontos += c.descontoTotal || 0;
-    qtdItensMercado += c.qtdTotalItens || 0;
-
     if (c.formasPagamento) {
       totalMercadoAlimentacao += c.formasPagamento.valeAlimentacao || 0;
       totalMercadoCredito     += c.formasPagamento.cartaoCredito || 0;
-      totalMercadoDebito      += c.formasPagamento.cartaoDebito || 0;
+      totalMercadoDebitoAcumulado += c.formasPagamento.cartaoDebito || 0;
     }
     const mes = c.mesAno || 'Outros';
     porMesMercado[mes] = (porMesMercado[mes] || 0) + p;
   });
 
-  // REGRA: Saldo Líquido em Conta considera Média Entradas - Cartões - Boletos - Mercado DÉBITO
-  let saldoLiquido = totalEntradasBase - totalCartoes - totalBoletos - totalMercadoDebito;
+  let saldoLiquidoGeral = totalEntradasAcumulado - totalCartoesAcumulado - totalBoletosAcumulado - totalMercadoDebitoAcumulado;
 
-  // Atualização dos Cards da Home
-  document.getElementById('fin-total-entradas').textContent = brl(totalEntradasBase);
+  // Atualização dos Cards da Visão Geral (Acumulados)
+  document.getElementById('fin-total-entradas').textContent = brl(totalEntradasAcumulado);
   const subEnt = document.getElementById('fin-subtext-entradas');
-  if (subEnt) subEnt.textContent = 'Média Mensal Combinada (Victor + Maria)';
+  if (subEnt) subEnt.textContent = 'Total de Entradas Cadastradas';
 
-  document.getElementById('fin-total-cartoes').textContent = brl(totalCartoes);
-  document.getElementById('fin-total-boletos').textContent = brl(totalBoletos);
-  document.getElementById('fin-mercado-debito').textContent = brl(totalMercadoDebito);
-  document.getElementById('fin-saldo-liquido').textContent = brl(saldoLiquido);
+  document.getElementById('fin-total-cartoes').textContent = brl(totalCartoesAcumulado);
+  document.getElementById('fin-total-boletos').textContent = brl(totalBoletosAcumulado);
+  document.getElementById('fin-mercado-debito').textContent = brl(totalMercadoDebitoAcumulado);
+  document.getElementById('fin-saldo-liquido').textContent = brl(saldoLiquidoGeral);
 
   document.getElementById('dash-alimentacao').textContent = brl(totalMercadoAlimentacao);
   document.getElementById('dash-credito').textContent = brl(totalMercadoCredito);
-  document.getElementById('dash-debito').textContent = brl(totalMercadoDebito);
+  document.getElementById('dash-debito').textContent = brl(totalMercadoDebitoAcumulado);
 
+  renderTabelaResumoMensal();
   renderChart(porMesMercado);
+}
+
+function renderTabelaResumoMensal() {
+  const container = document.getElementById('tabela-resumo-mensal');
+  if (!container) return;
+
+  const meses = getMesesDisponiveis();
+  if (!meses.length) {
+    container.innerHTML = `<div class="empty-state">Nenhum dado cadastrado ainda.</div>`;
+    return;
+  }
+
+  const linhasHtml = meses.map(m => {
+    const entradasMes = todasEntradas.filter(e => e.mesAno === m).reduce((a,e) => a + (e.valor || 0), 0);
+    const cartoesMes  = todasFaturas.filter(f => f.mesAno === m).reduce((a,f) => a + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
+    const boletosMes  = todosBoletos.filter(b => b.mesAno === m).reduce((a,b) => a + (b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0)), 0);
+    
+    let debitoMes = 0;
+    todasCompras.filter(c => c.mesAno === m).forEach(c => {
+      if (c.formasPagamento) debitoMes += c.formasPagamento.cartaoDebito || 0;
+    });
+
+    const saldoMes = entradasMes - cartoesMes - boletosMes - debitoMes;
+
+    const [ano, mes] = m.split('-');
+    const dObj = new Date(parseInt(ano), parseInt(mes) - 1, 1);
+    const mesNome = dObj.toLocaleString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
+    const isCurrent = (m === mesSelecionado);
+
+    return `
+      <tr style="${isCurrent ? 'background:rgba(99,102,241,0.1)' : ''}">
+        <td><strong>📅 ${mesNome}/${ano}</strong></td>
+        <td style="color:#34d399"><strong>${brl(entradasMes)}</strong></td>
+        <td style="color:#fb7185">${brl(cartoesMes)}</td>
+        <td style="color:#c084fc">${brl(boletosMes)}</td>
+        <td style="color:#fbbf24">${brl(debitoMes)}</td>
+        <td style="color:${saldoMes >= 0 ? '#60a5fa' : '#fb7185'}; font-weight:800">${brl(saldoMes)}</td>
+        <td>
+          <button class="btn-secondary" style="padding:.25rem .65rem; font-size:.78rem" onclick="verMesEIrParaControle('${m}')">
+            🔍 Ver Mês
+          </button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="table-responsive">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Mês / Ano</th>
+            <th>Entradas</th>
+            <th>Cartão Crédito</th>
+            <th>Boletos</th>
+            <th>Mercado (Débito)</th>
+            <th>Saldo Líquido</th>
+            <th>Ação</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${linhasHtml}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 function renderChart(porMes) {
@@ -1495,19 +1952,17 @@ async function processarEExibirRevisaoFatura(texto, cartaoNome) {
   const totalAPagarOficial = extrairTotalAPagarDoTexto(texto);
   const itens = parseLinhasFatura(texto);
 
-  if (!itens.length && !totalAPagarOficial) {
-    toastMsg(`⚠️ Nenhuma compra individual identificada na fatura do ${cartaoNome}.`);
-    return;
-  }
-
   const inpVenc = document.getElementById('inp-fatura-vencimento').value || new Date().toISOString().slice(0, 10);
   const mesAno = inpVenc.slice(0, 7);
 
   const somaItens = itens.reduce((acc, item) => acc + item.valor, 0);
-  const valorTotalDefinitivo = totalAPagarOficial || somaItens;
+  const valorTotalDefinitivo = totalAPagarOficial || somaItens || 0;
+
+  const descDefinitiva = cartaoNome ? `Cartão ${cartaoNome}` : 'Fatura Cartão';
 
   faturaEmProcessamento = {
-    cartao: cartaoNome,
+    cartao: cartaoNome || 'Nubank',
+    descricao: descDefinitiva,
     dataVencimento: inpVenc,
     mesAno,
     valorTotal: valorTotalDefinitivo,
@@ -1515,8 +1970,18 @@ async function processarEExibirRevisaoFatura(texto, cartaoNome) {
     itens
   };
 
+  const inpDescEl = document.getElementById('inp-revisao-fatura-desc');
+  if (inpDescEl) inpDescEl.value = descDefinitiva;
+
+  const inpValEl = document.getElementById('inp-revisao-fatura-val');
+  if (inpValEl) inpValEl.value = valorTotalDefinitivo ? valorTotalDefinitivo.toFixed(2) : '';
+
   renderizarRevisaoFaturaUI();
-  toastMsg(`✅ ${itens.length} compras encontradas! Fatura total: ${brl(valorTotalDefinitivo)}.`);
+  if (itens.length > 0) {
+    toastMsg(`✅ ${itens.length} compras encontradas! Fatura total: ${brl(valorTotalDefinitivo)}.`);
+  } else {
+    toastMsg(`ℹ️ Fatura pronta para revisão. Confirme o valor total e o cartão abaixo.`);
+  }
 }
 
 window.atualizarValorTotalRevisaoFatura = function() {
@@ -1528,9 +1993,20 @@ window.atualizarValorTotalRevisaoFatura = function() {
 
 function renderizarRevisaoFaturaUI() {
   if (!faturaEmProcessamento) return;
-  const { valorTotal, itens } = faturaEmProcessamento;
+  const { valorTotal, itens, cartao, descricao } = faturaEmProcessamento;
 
   document.getElementById('badge-total-preview-fatura').textContent = brl(valorTotal);
+  
+  const inpDescEl = document.getElementById('inp-revisao-fatura-desc');
+  if (inpDescEl && (!inpDescEl.value || inpDescEl.value === 'Fatura Cartão')) {
+    inpDescEl.value = descricao || `Cartão ${cartao || 'Nubank'}`;
+  }
+
+  const inpValEl = document.getElementById('inp-revisao-fatura-val');
+  if (inpValEl && (!inpValEl.value || parseFloat(inpValEl.value) === 0)) {
+    inpValEl.value = valorTotal ? valorTotal.toFixed(2) : '';
+  }
+
   const listaEl = document.getElementById('lista-preview-fatura-itens');
 
   if (!itens || !itens.length) {
@@ -1558,6 +2034,8 @@ window.removerItemRevisaoFatura = function(index) {
   const novaSoma = faturaEmProcessamento.itens.reduce((acc, i) => acc + i.valor, 0);
   if (novaSoma > 0) {
     faturaEmProcessamento.valorTotal = novaSoma;
+    const inpValEl = document.getElementById('inp-revisao-fatura-val');
+    if (inpValEl) inpValEl.value = novaSoma.toFixed(2);
   }
   faturaEmProcessamento.qtdItens = faturaEmProcessamento.itens.length;
   renderizarRevisaoFaturaUI();
@@ -1567,14 +2045,17 @@ window.removerItemRevisaoFatura = function(index) {
 window.confirmarEGravarFaturaDocumento = async function() {
   if (!faturaEmProcessamento) return;
 
+  const descInp = document.getElementById('inp-revisao-fatura-desc')?.value.trim();
+  const valInp = parseFloat(document.getElementById('inp-revisao-fatura-val')?.value) || 0;
   const inpVenc = document.getElementById('inp-fatura-vencimento').value || new Date().toISOString().slice(0, 10);
-  const valTotal = faturaEmProcessamento.valorTotal;
 
-  if (!valTotal) {
-    toastMsg('⚠️ A fatura não possui valor total.');
+  if (!valInp) {
+    toastMsg('⚠️ Digite ou confirme o valor total da fatura.');
     return;
   }
 
+  faturaEmProcessamento.cartao = descInp || faturaEmProcessamento.cartao || 'Cartão';
+  faturaEmProcessamento.valorTotal = valInp;
   faturaEmProcessamento.dataVencimento = inpVenc;
   faturaEmProcessamento.mesAno = inpVenc.slice(0, 7);
 
