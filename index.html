@@ -353,40 +353,40 @@
 
     <!-- Cards de Resumo do Mês Selecionado -->
     <div class="grid-summary">
-      <div class="card">
+      <div class="card" style="cursor:pointer; transition:transform .15s, border-color .15s" onclick="switchMensalSub('sec-salarios')" title="Clique para ver Salários & Entradas do Mês">
         <div class="card-header">
           <span class="card-title">Entradas do Mês</span>
           <div class="card-icon green">💵</div>
         </div>
         <div class="card-value" id="m-total-entradas" style="color:#34d399">R$ 0,00</div>
-        <div class="card-subtext" id="m-subtext-entradas">Salários + Extras no Mês</div>
+        <div class="card-subtext" id="m-subtext-entradas">Clique para ver detalhes ➔</div>
       </div>
 
-      <div class="card">
+      <div class="card" style="cursor:pointer; transition:transform .15s, border-color .15s" onclick="switchMensalSub('sec-cartoes')" title="Clique para ver Cartões de Crédito e Locais Frequentes">
         <div class="card-header">
           <span class="card-title">Cartão de Crédito</span>
           <div class="card-icon rose">💳</div>
         </div>
         <div class="card-value" id="m-total-cartoes" style="color:#fb7185">R$ 0,00</div>
-        <div class="card-subtext">Faturas Vencendo no Mês</div>
+        <div class="card-subtext">Clique para ver faturas e locais ➔</div>
       </div>
 
-      <div class="card">
+      <div class="card" style="cursor:pointer; transition:transform .15s, border-color .15s" onclick="switchMensalSub('sec-boletos')" title="Clique para ver Boletos & Contas do Mês">
         <div class="card-header">
           <span class="card-title">Boletos &amp; Contas</span>
           <div class="card-icon purple">📄</div>
         </div>
         <div class="card-value" id="m-total-boletos" style="color:#c084fc">R$ 0,00</div>
-        <div class="card-subtext">Boletos Vencendo no Mês</div>
+        <div class="card-subtext">Clique para ver boletos ➔</div>
       </div>
 
-      <div class="card">
+      <div class="card" style="cursor:pointer; transition:transform .15s, border-color .15s" onclick="switchMensalSub('sec-mercado')" title="Clique para ver Mercado do Mês">
         <div class="card-header">
           <span class="card-title">Mercado (Débito)</span>
           <div class="card-icon amber">🛒</div>
         </div>
         <div class="card-value" id="m-mercado-debito" style="color:#fbbf24">R$ 0,00</div>
-        <div class="card-subtext">Débito Real no Mês</div>
+        <div class="card-subtext">Clique para ver compras no débito ➔</div>
       </div>
 
       <div class="card" style="border-color:#3b82f6; background:linear-gradient(135deg,rgba(30,41,59,.9),rgba(15,23,42,.95))">
@@ -1397,7 +1397,10 @@ function renderSubConteudoMensal(entradasMes, faturasMes, boletosMes, comprasMes
   const secCar = document.getElementById('content-cartoes-mes');
   if (secCar) {
     const totalCar = faturasMes.reduce((a,f)=>a+(f.valorTotal||0),0);
+    const analiseHtmlMensal = faturasMes.length ? renderHtmlAnaliseLocaisFrequentes(faturasMes) : '';
+
     secCar.innerHTML = `
+      ${analiseHtmlMensal}
       <div class="card" style="margin-bottom:1.5rem">
         <div class="card-header">
           <span class="card-title">💳 Faturas de Cartão Vencendo em ${mesSelecionado}</span>
@@ -2181,6 +2184,81 @@ function parseLinhasFatura(texto) {
   return itens;
 }
 
+function normalizarNomeEstabelecimento(desc) {
+  if (!desc) return 'DIVERSOS';
+  let s = desc.replace(/\(\d{1,2}\/\d{1,2}\)/gi, '')
+              .replace(/\b\d{1,2}\/\d{1,2}\b/gi, '')
+              .replace(/\b\d{1,2}x\b/gi, '')
+              .trim();
+  s = s.replace(/\s+/g, ' ');
+  return s.toUpperCase();
+}
+
+function analisarGastosPorEstabelecimento(faturas) {
+  const mapa = {};
+  const lista = Array.isArray(faturas) ? faturas : [faturas];
+  lista.forEach(f => {
+    if (!f || !f.itens || !Array.isArray(f.itens)) return;
+    f.itens.forEach(item => {
+      if (!item.descricao || !item.valor) return;
+      const nomeFmt = normalizarNomeEstabelecimento(item.descricao);
+      if (!mapa[nomeFmt]) {
+        mapa[nomeFmt] = { nome: nomeFmt, qtd: 0, valorTotal: 0 };
+      }
+      mapa[nomeFmt].qtd += 1;
+      mapa[nomeFmt].valorTotal += (item.valor || 0);
+    });
+  });
+
+  const repetidos = Object.values(mapa).filter(e => e.qtd >= 2);
+  repetidos.sort((a, b) => b.valorTotal - a.valorTotal);
+  return repetidos;
+}
+
+function renderHtmlAnaliseLocaisFrequentes(faturas) {
+  const analise = analisarGastosPorEstabelecimento(faturas);
+  if (!analise.length) {
+    return `
+      <div class="card" style="margin-bottom:1.5rem; background:linear-gradient(135deg,rgba(30,41,59,0.7),rgba(15,23,42,0.8)); border-color:rgba(251,113,133,0.3)">
+        <div class="card-header">
+          <span class="card-title" style="color:#fb7185; font-size:.95rem">📊 Análise de Locais Frequentes (2x ou mais)</span>
+          <span class="badge gray">Sem repetições</span>
+        </div>
+        <p style="font-size:.8rem; color:var(--text-muted); margin:0">Nenhum estabelecimento possui 2 ou mais compras nesta fatura/mês.</p>
+      </div>
+    `;
+  }
+
+  const totalEmRepetidos = analise.reduce((acc, x) => acc + x.valorTotal, 0);
+
+  return `
+    <div class="card" style="margin-bottom:1.5rem; background:linear-gradient(135deg,rgba(30,41,59,.95),rgba(15,23,42,.98)); border-color:#fb7185; box-shadow:0 4px 20px rgba(251,113,133,0.15)">
+      <div class="card-header" style="flex-wrap:wrap; gap:.5rem">
+        <div>
+          <span class="card-title" style="color:#fb7185; font-size:1.05rem">🏬 Locais Mais Frequentados (${analise.length} estabelecimentos com 2+ compras)</span>
+          <p style="font-size:.78rem; color:var(--text-muted); margin-top:.2rem">Locais onde você comprou 2 ou mais vezes e a soma total gasta em cada um:</p>
+        </div>
+        <span class="badge rose" style="font-size:.85rem; padding:.35rem .75rem">Soma Repetidos: ${brl(totalEmRepetidos)}</span>
+      </div>
+
+      <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:0.85rem; margin-top:.5rem">
+        ${analise.map(loc => `
+          <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(251,113,133,0.35); border-radius:10px; padding:.75rem 1rem; display:flex; justify-content:space-between; align-items:center; transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+            <div>
+              <div style="font-weight:700; font-size:.88rem; color:#f8fafc; margin-bottom:.3rem; word-break:break-word">🏪 ${loc.nome}</div>
+              <span class="badge rose" style="font-size:.72rem">🛒 ${loc.qtd} compras registradas</span>
+            </div>
+            <div style="text-align:right; min-width:90px">
+              <div style="font-weight:800; font-size:1.05rem; color:#fb7185">${brl(loc.valorTotal)}</div>
+              <div style="font-size:.7rem; color:var(--text-muted)">total gasto</div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
 function renderCartoesCredito() {
   const total = todasFaturas.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
   document.getElementById('badge-total-cartoes').textContent = `${brl(total)} total`;
@@ -2191,7 +2269,9 @@ function renderCartoesCredito() {
     return;
   }
 
-  el.innerHTML = todasFaturas.map(f => {
+  const analiseGeral = renderHtmlAnaliseLocaisFrequentes(todasFaturas);
+
+  el.innerHTML = analiseGeral + todasFaturas.map(f => {
     const valorTotalFatura = f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0);
     const cartaoNome = f.cartao || 'Cartão';
     const isNubank = cartaoNome.toLowerCase().includes('nubank');
@@ -2202,7 +2282,7 @@ function renderCartoesCredito() {
     const mesAnoStr = f.mesAno || '—';
 
     return `
-      <div class="purchase-card">
+      <div class="purchase-card" style="margin-bottom:1rem">
         <div class="purchase-header" onclick="toggleDetail('fat-${f.id}')">
           <div class="purchase-info">
             <h3><span class="badge ${badgeClass}">${badgeIcon} ${cartaoNome}</span> — Vencimento: ${dataVencStr}</h3>
@@ -2228,15 +2308,37 @@ function renderCartoesCredito() {
 
 function renderItensFatura(f) {
   if (f.itens && f.itens.length > 0) {
-    return `<div class="table-responsive"><table class="custom-table">
-      <thead><tr><th>Data Compra</th><th>Descrição do Lançamento</th><th class="num">Valor</th><th>Ação</th></tr></thead>
-      <tbody>${f.itens.map((i, idx) => `<tr>
-        <td><strong>${i.dataCompra || '—'}</strong></td>
-        <td>${i.descricao}</td>
-        <td class="num" style="color:#fb7185"><strong>${brl(i.valor)}</strong></td>
-        <td><button class="btn-danger" style="padding:.2rem .5rem; font-size:.78rem;" onclick="removerItemFaturaCadastrada('${f.id}', ${idx})">🗑️ Excluir</button></td>
-      </tr>`).join('')}</tbody>
-    </table></div>`;
+    const repetidos = analisarGastosPorEstabelecimento([f]);
+    let analiseCardHtml = '';
+    if (repetidos.length > 0) {
+      analiseCardHtml = `
+        <div style="background:rgba(251,113,133,0.08); border:1px dashed rgba(251,113,133,0.35); border-radius:8px; padding:.75rem 1rem; margin-bottom:1rem">
+          <div style="font-weight:700; font-size:.84rem; color:#fb7185; margin-bottom:.5rem">
+            🏬 Locais com 2 ou mais compras nesta fatura (${repetidos.length} estabelecimentos):
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:.5rem">
+            ${repetidos.map(loc => `
+              <span style="background:rgba(15,23,42,0.9); border:1px solid rgba(251,113,133,0.4); border-radius:6px; padding:.3rem .6rem; font-size:.78rem; color:#f1f5f9; display:inline-flex; align-items:center; gap:.35rem">
+                🏬 <strong>${loc.nome}</strong>: <span class="badge rose" style="font-size:.7rem">${loc.qtd}x compras</span> <strong style="color:#fb7185; margin-left:.25rem">${brl(loc.valorTotal)}</strong>
+              </span>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    return `
+      ${analiseCardHtml}
+      <div class="table-responsive"><table class="custom-table">
+        <thead><tr><th>Data Compra</th><th>Descrição do Lançamento</th><th class="num">Valor</th><th>Ação</th></tr></thead>
+        <tbody>${f.itens.map((i, idx) => `<tr>
+          <td><strong>${i.dataCompra || '—'}</strong></td>
+          <td>${i.descricao}</td>
+          <td class="num" style="color:#fb7185"><strong>${brl(i.valor)}</strong></td>
+          <td><button class="btn-danger" style="padding:.2rem .5rem; font-size:.78rem;" onclick="removerItemFaturaCadastrada('${f.id}', ${idx})">🗑️ Excluir</button></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    `;
   }
   return `<div class="table-responsive"><table class="custom-table">
     <thead><tr><th>Descrição</th><th class="num">Valor</th><th>Ação</th></tr></thead>

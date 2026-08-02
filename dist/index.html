@@ -186,7 +186,7 @@
     .btn-card-select.active[data-card="Nubank"]{border-color:#a855f7;background:rgba(168,85,247,.2);color:#c084fc;box-shadow:0 0 15px rgba(168,85,247,.3)}
     .btn-card-select.active[data-card="Santander"]{border-color:#f43f5e;background:rgba(244,63,94,.2);color:#fb7185;box-shadow:0 0 15px rgba(244,63,94,.3)}
   </style>
-  <script type="module" crossorigin src="./assets/index-Df7GWULH.js"></script>
+  <script type="module" crossorigin src="./assets/index-BUVXJnjK.js"></script>
 </head>
 <body>
 
@@ -354,40 +354,40 @@
 
     <!-- Cards de Resumo do Mês Selecionado -->
     <div class="grid-summary">
-      <div class="card">
+      <div class="card" style="cursor:pointer; transition:transform .15s, border-color .15s" onclick="switchMensalSub('sec-salarios')" title="Clique para ver Salários & Entradas do Mês">
         <div class="card-header">
           <span class="card-title">Entradas do Mês</span>
           <div class="card-icon green">💵</div>
         </div>
         <div class="card-value" id="m-total-entradas" style="color:#34d399">R$ 0,00</div>
-        <div class="card-subtext" id="m-subtext-entradas">Salários + Extras no Mês</div>
+        <div class="card-subtext" id="m-subtext-entradas">Clique para ver detalhes ➔</div>
       </div>
 
-      <div class="card">
+      <div class="card" style="cursor:pointer; transition:transform .15s, border-color .15s" onclick="switchMensalSub('sec-cartoes')" title="Clique para ver Cartões de Crédito e Locais Frequentes">
         <div class="card-header">
           <span class="card-title">Cartão de Crédito</span>
           <div class="card-icon rose">💳</div>
         </div>
         <div class="card-value" id="m-total-cartoes" style="color:#fb7185">R$ 0,00</div>
-        <div class="card-subtext">Faturas Vencendo no Mês</div>
+        <div class="card-subtext">Clique para ver faturas e locais ➔</div>
       </div>
 
-      <div class="card">
+      <div class="card" style="cursor:pointer; transition:transform .15s, border-color .15s" onclick="switchMensalSub('sec-boletos')" title="Clique para ver Boletos & Contas do Mês">
         <div class="card-header">
           <span class="card-title">Boletos &amp; Contas</span>
           <div class="card-icon purple">📄</div>
         </div>
         <div class="card-value" id="m-total-boletos" style="color:#c084fc">R$ 0,00</div>
-        <div class="card-subtext">Boletos Vencendo no Mês</div>
+        <div class="card-subtext">Clique para ver boletos ➔</div>
       </div>
 
-      <div class="card">
+      <div class="card" style="cursor:pointer; transition:transform .15s, border-color .15s" onclick="switchMensalSub('sec-mercado')" title="Clique para ver Mercado do Mês">
         <div class="card-header">
           <span class="card-title">Mercado (Débito)</span>
           <div class="card-icon amber">🛒</div>
         </div>
         <div class="card-value" id="m-mercado-debito" style="color:#fbbf24">R$ 0,00</div>
-        <div class="card-subtext">Débito Real no Mês</div>
+        <div class="card-subtext">Clique para ver compras no débito ➔</div>
       </div>
 
       <div class="card" style="border-color:#3b82f6; background:linear-gradient(135deg,rgba(30,41,59,.9),rgba(15,23,42,.95))">
