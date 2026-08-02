@@ -741,14 +741,17 @@ function renderListaMensal() {
 
   // Converte consumo para taxa mensal proporcional:
   // Se comprou 2 pacotes em 6 meses -> consome 2/6 = 0.33 pacotes por mês (a cada 3 meses)
-  const listaBruta = Object.values(agregadorItens).map(i => {
+  const listaPlanejada = Object.values(agregadorItens).map(i => {
     const mediaUnit = i.valoresUnitarios.length > 0
       ? i.valoresUnitarios.reduce((a, b) => a + b, 0) / i.valoresUnitarios.length
       : 0;
 
     const qtdMensalTaxa = i.qtdTotal / numMesesHistorico;
     const intervaloMeses = numMesesHistorico / Math.max(1, i.frequenciaNotas);
-    const subtotalBruto = qtdMensalTaxa * mediaUnit;
+    
+    // Total Estimado arredondado para cima (unidades inteiras exatas)
+    const totalEstimadoUnidades = Math.ceil(qtdMensalTaxa);
+    const subtotalFinal = totalEstimadoUnidades * mediaUnit;
 
     return {
       nome: i.nome,
@@ -756,31 +759,17 @@ function renderListaMensal() {
       frequenciaNotas: i.frequenciaNotas,
       intervaloMeses,
       qtdMensalTaxa,
+      totalEstimadoUnidades,
       valorUnitario: mediaUnit,
-      subtotalBruto
+      subtotalFinal
     };
   });
 
-  listaBruta.sort((a, b) => b.frequenciaNotas - a.frequenciaNotas);
+  listaPlanejada.sort((a, b) => b.frequenciaNotas - a.frequenciaNotas);
 
-  const somaSubtotaisBruta = listaBruta.reduce((acc, item) => acc + item.subtotalBruto, 0);
+  const totalGeralEstimado = listaPlanejada.reduce((acc, item) => acc + item.subtotalFinal, 0);
 
-  // 6. Balizamento com a média mensal histórica para não inflar a estimativa além do gasto médio real
-  let fatorAjuste = 1;
-  if (somaSubtotaisBruta > 0 && mediaMensalHistorica > 0 && somaSubtotaisBruta > mediaMensalHistorica) {
-    fatorAjuste = mediaMensalHistorica / somaSubtotaisBruta;
-  }
-
-  const listaPlanejada = listaBruta.map(i => ({
-    ...i,
-    subtotalFinal: i.subtotalBruto * fatorAjuste
-  }));
-
-  const totalGeralEstimado = mediaMensalHistorica > 0 
-    ? Math.min(somaSubtotaisBruta, mediaMensalHistorica)
-    : somaSubtotaisBruta;
-
-  // 7. Distribuição de Orçamento: Alimentação -> Crédito -> Débito
+  // 6. Distribuição de Orçamento: Alimentação -> Crédito -> Débito
   let restante = totalGeralEstimado;
 
   const cobertoAlim = Math.min(restante, alimDisponivel);
@@ -798,7 +787,7 @@ function renderListaMensal() {
         <div>
           <span class="card-title" style="color:#60a5fa;">📅 Previsão de Compras — ${mesAnoStr}</span>
           <p class="card-subtext" style="color:#cbd5e1; margin-top:0.25rem;">
-            Balizada na sua <strong>média histórica de ${brl(mediaMensalHistorica)}/mês</strong> (${diasUteis} dias úteis em ${mesNome}).
+            Calculado com unidades inteiras exatas (${diasUteis} dias úteis em ${mesNome}).
           </p>
         </div>
         <span class="badge green" style="font-size:0.8rem; padding:0.4rem 0.75rem;">${diasUteis} Dias Úteis</span>
@@ -821,8 +810,8 @@ function renderListaMensal() {
 
       <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
         <div>
-          <span style="font-size:0.85rem; color:var(--text-muted);">Estimativa Ajustada para o Mês:</span>
-          <p style="font-size:0.75rem; color:#60a5fa;">Média Histórica: ${brl(mediaMensalHistorica)}</p>
+          <span style="font-size:0.85rem; color:var(--text-muted);">Total Estimado da Lista de Compras:</span>
+          <p style="font-size:0.75rem; color:#60a5fa;">Média Histórica de Gastos: ${brl(mediaMensalHistorica)}</p>
         </div>
         <span style="font-size:1.6rem; font-weight:800; color:var(--primary);">${brl(totalGeralEstimado)}</span>
       </div>
@@ -830,11 +819,11 @@ function renderListaMensal() {
 
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Lista de Itens com Frequência e Consumo Mensal</span>
+        <span class="card-title">Lista de Itens com Frequência e Total Estimado</span>
         <span class="badge amber">${listaPlanejada.length} itens cadastrados</span>
       </div>
       <p class="card-subtext" style="margin-bottom:1rem;">
-        O consumo mensal considera a frequência em que o item reaparece nas compras (ex: itens comprados a cada 2 ou 3 meses são fracionados proporcionalmente).
+        O <strong>Total Estimado</strong> arredonda o consumo médio para cima (unidades inteiras exatas), pois os produtos são comprados por unidade no mercado.
       </p>
   `;
 
@@ -850,6 +839,7 @@ function renderListaMensal() {
               <th>Marca</th>
               <th>Frequência de Compra</th>
               <th class="num">Consumo Estimado/Mês</th>
+              <th class="num">Total Estimado</th>
               <th class="num">Preço Unit. Médio</th>
               <th class="num">Subtotal Mensal</th>
             </tr>
@@ -862,6 +852,7 @@ function renderListaMensal() {
               const qtdFmt = item.qtdMensalTaxa < 1
                 ? item.qtdMensalTaxa.toFixed(2)
                 : item.qtdMensalTaxa.toFixed(1);
+              const totalEstFmt = item.totalEstimadoUnidades.toFixed(1);
 
               return `
                 <tr>
@@ -869,6 +860,7 @@ function renderListaMensal() {
                   <td><span class="badge amber">${item.marca}</span></td>
                   <td><span class="badge cyan">${freqStr}</span></td>
                   <td class="num">${qtdFmt} un/mês</td>
+                  <td class="num"><span class="badge green" style="font-size:0.82rem;">${totalEstFmt}</span></td>
                   <td class="num">${brl(item.valorUnitario)}</td>
                   <td class="num"><strong>${brl(item.subtotalFinal)}</strong></td>
                 </tr>
