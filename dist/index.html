@@ -215,7 +215,7 @@
     .btn-card-select.active[data-card="Nubank"]{border-color:#a855f7;background:rgba(168,85,247,.2);color:#c084fc;box-shadow:0 0 15px rgba(168,85,247,.3)}
     .btn-card-select.active[data-card="Santander"]{border-color:#f43f5e;background:rgba(244,63,94,.2);color:#fb7185;box-shadow:0 0 15px rgba(244,63,94,.3)}
   </style>
-  <script type="module" crossorigin src="./assets/index-CK2iiyq5.js"></script>
+  <script type="module" crossorigin src="./assets/index-CR46QYF9.js"></script>
 </head>
 <body>
 
@@ -832,14 +832,14 @@
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
   <section id="tab-reservas" class="tab-content">
     <div class="grid-summary">
-      <!-- Card Meta Pessoal -->
+      <!-- Card Meta Pessoal / Necessária -->
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Sua Meta Mensal de Reserva</span>
+          <span class="card-title">Meta Mensal Necessária</span>
           <div class="card-icon amber">🎯</div>
         </div>
         <div class="card-value" id="val-meta-reserva" style="color:#fbbf24">R$ 0,00</div>
-        <div class="card-subtext">Quanto você quer guardar por mês</div>
+        <div class="card-subtext" id="subtext-meta-reserva">Meta para atingir o objetivo até o fim do ano</div>
       </div>
 
       <!-- Card Valor Real Guardado -->
@@ -859,7 +859,7 @@
           <div class="card-icon purple">💡</div>
         </div>
         <div class="card-value" id="val-recomendacao-reserva" style="color:#c084fc">R$ 0,00</div>
-        <div class="card-subtext" id="subtext-recomendacao">Sugerido com base no saldo livre real</div>
+        <div class="card-subtext" id="subtext-recomendacao">Sugerido com base na média livre mensal</div>
       </div>
     </div>
 
@@ -873,19 +873,23 @@
     </div>
 
     <!-- Form para Configurar Meta e Atualizar Saldo Guardado -->
-    <div class="card">
+    <div class="card" style="margin-bottom:1.5rem">
       <div class="card-header">
-        <span class="card-title">Atualizar Metas e Saldo Guardado</span>
+        <span class="card-title">⚙️ Atualizar Metas de Reserva e Saldo Guardado</span>
       </div>
       <form id="form-config-reservas">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-          <div class="form-group">
-            <label for="inp-meta-mensal">Definir Meta Desejada por Mês (R$)</label>
-            <input type="number" step="0.01" id="inp-meta-mensal" class="form-control" placeholder="Ex: 500,00">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1rem">
+          <div class="form-group" style="margin-bottom:0">
+            <label for="inp-meta-anual">Meta Total para Fim do Ano (R$)</label>
+            <input type="number" step="0.01" id="inp-meta-anual" class="form-control" placeholder="Ex: 10000.00">
           </div>
-          <div class="form-group">
-            <label for="inp-saldo-guardado">Atualizar Saldo Real Guardado (R$)</label>
-            <input type="number" step="0.01" id="inp-saldo-guardado" class="form-control" placeholder="Ex: 3500,00">
+          <div class="form-group" style="margin-bottom:0">
+            <label for="inp-saldo-guardado">Saldo Real Guardado Atual (R$)</label>
+            <input type="number" step="0.01" id="inp-saldo-guardado" class="form-control" placeholder="Ex: 3000.00">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label for="inp-meta-mensal">Meta Mensal Fixa / Opcional (R$)</label>
+            <input type="number" step="0.01" id="inp-meta-mensal" class="form-control" placeholder="Ex: 1000.00">
           </div>
         </div>
         <button type="submit" class="btn-primary" style="width:100%">
@@ -893,6 +897,9 @@
         </button>
       </form>
     </div>
+
+    <!-- Container da Lista de Análise Geral de Cada Mês -->
+    <div id="container-analise-mensal-lista"></div>
   </section>
 
 </main>

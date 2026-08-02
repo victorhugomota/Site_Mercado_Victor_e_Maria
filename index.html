@@ -831,14 +831,14 @@
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
   <section id="tab-reservas" class="tab-content">
     <div class="grid-summary">
-      <!-- Card Meta Pessoal -->
+      <!-- Card Meta Pessoal / Necessária -->
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Sua Meta Mensal de Reserva</span>
+          <span class="card-title">Meta Mensal Necessária</span>
           <div class="card-icon amber">🎯</div>
         </div>
         <div class="card-value" id="val-meta-reserva" style="color:#fbbf24">R$ 0,00</div>
-        <div class="card-subtext">Quanto você quer guardar por mês</div>
+        <div class="card-subtext" id="subtext-meta-reserva">Meta para atingir o objetivo até o fim do ano</div>
       </div>
 
       <!-- Card Valor Real Guardado -->
@@ -858,7 +858,7 @@
           <div class="card-icon purple">💡</div>
         </div>
         <div class="card-value" id="val-recomendacao-reserva" style="color:#c084fc">R$ 0,00</div>
-        <div class="card-subtext" id="subtext-recomendacao">Sugerido com base no saldo livre real</div>
+        <div class="card-subtext" id="subtext-recomendacao">Sugerido com base na média livre mensal</div>
       </div>
     </div>
 
@@ -872,19 +872,23 @@
     </div>
 
     <!-- Form para Configurar Meta e Atualizar Saldo Guardado -->
-    <div class="card">
+    <div class="card" style="margin-bottom:1.5rem">
       <div class="card-header">
-        <span class="card-title">Atualizar Metas e Saldo Guardado</span>
+        <span class="card-title">⚙️ Atualizar Metas de Reserva e Saldo Guardado</span>
       </div>
       <form id="form-config-reservas">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
-          <div class="form-group">
-            <label for="inp-meta-mensal">Definir Meta Desejada por Mês (R$)</label>
-            <input type="number" step="0.01" id="inp-meta-mensal" class="form-control" placeholder="Ex: 500,00">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1rem">
+          <div class="form-group" style="margin-bottom:0">
+            <label for="inp-meta-anual">Meta Total para Fim do Ano (R$)</label>
+            <input type="number" step="0.01" id="inp-meta-anual" class="form-control" placeholder="Ex: 10000.00">
           </div>
-          <div class="form-group">
-            <label for="inp-saldo-guardado">Atualizar Saldo Real Guardado (R$)</label>
-            <input type="number" step="0.01" id="inp-saldo-guardado" class="form-control" placeholder="Ex: 3500,00">
+          <div class="form-group" style="margin-bottom:0">
+            <label for="inp-saldo-guardado">Saldo Real Guardado Atual (R$)</label>
+            <input type="number" step="0.01" id="inp-saldo-guardado" class="form-control" placeholder="Ex: 3000.00">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label for="inp-meta-mensal">Meta Mensal Fixa / Opcional (R$)</label>
+            <input type="number" step="0.01" id="inp-meta-mensal" class="form-control" placeholder="Ex: 1000.00">
           </div>
         </div>
         <button type="submit" class="btn-primary" style="width:100%">
@@ -892,6 +896,9 @@
         </button>
       </form>
     </div>
+
+    <!-- Container da Lista de Análise Geral de Cada Mês -->
+    <div id="container-analise-mensal-lista"></div>
   </section>
 
 </main>
@@ -2851,29 +2858,54 @@ window.excluirBoletoDocumento = async function(id) {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-// 4. ABA RESERVAS & ECONOMIAS (ESTIMATIVA, VALOR REAL & RECOMENDAÇÃO INTELIGENTE)
+// 4. ABA RESERVAS & ECONOMIAS (ESTIMATIVA, VALOR REAL, METAS & DIAGNÓSTICO MENSAL)
 // ═══════════════════════════════════════════════════════════════════════════
 document.getElementById('form-config-reservas').addEventListener('submit', async e => {
   e.preventDefault();
-  const meta  = parseFloat(document.getElementById('inp-meta-mensal').value) || 0;
+  const metaAnual = parseFloat(document.getElementById('inp-meta-anual').value) || 0;
+  const metaMensal = parseFloat(document.getElementById('inp-meta-mensal').value) || 0;
   const guard = parseFloat(document.getElementById('inp-saldo-guardado').value) || 0;
 
   await setDoc(doc(db, COLL_RESERVAS, 'config'), {
-    metaMensal: meta,
+    metaAnual,
+    metaMensal,
     valorAtualGuardado: guard,
     dataAtualizacao: new Date().toISOString()
   });
-  toastMsg('✅ Reservas e economias atualizadas!');
+  toastMsg('✅ Reservas e configurações de economias salvas!');
 });
 
 function renderReservasEEconomias() {
-  const meta = dadosReservas.metaMensal || 0;
+  const metaAnual = dadosReservas.metaAnual || 10000;
+  const metaMensalManual = dadosReservas.metaMensal || 0;
   const real = dadosReservas.valorAtualGuardado || 0;
 
-  document.getElementById('val-meta-reserva').textContent = brl(meta);
+  // Preencher os campos do formulário com os valores salvos se vazios
+  const inpAnual = document.getElementById('inp-meta-anual');
+  if (inpAnual && !inpAnual.value && metaAnual) inpAnual.value = metaAnual;
+  const inpGuard = document.getElementById('inp-saldo-guardado');
+  if (inpGuard && !inpGuard.value && real) inpGuard.value = real;
+  const inpMensal = document.getElementById('inp-meta-mensal');
+  if (inpMensal && !inpMensal.value && metaMensalManual) inpMensal.value = metaMensalManual;
+
+  // Cálculo da quantidade de meses restantes até o fim do ano (Dezembro do ano corrente)
+  const hoje = new Date();
+  const mesAtualIdx = hoje.getMonth() + 1; // 1 a 12 (ex: Agosto = 8)
+  const mesesRestantes = Math.max(1, 12 - mesAtualIdx + 1); // ex: Agosto, Set, Out, Nov, Dez = 5 meses
+
+  const valorFaltanteMeta = Math.max(0, metaAnual - real);
+  const metaMensalCalculada = valorFaltanteMeta > 0 ? (valorFaltanteMeta / mesesRestantes) : 0;
+  const metaMensalExibida = metaMensalManual > 0 ? metaMensalManual : metaMensalCalculada;
+
+  document.getElementById('val-meta-reserva').textContent = brl(metaMensalExibida);
+  const subMeta = document.getElementById('subtext-meta-reserva');
+  if (subMeta) {
+    subMeta.textContent = `Faltam ${brl(valorFaltanteMeta)} p/ Meta Anual de ${brl(metaAnual)} (${mesesRestantes} mes(es) no ano)`;
+  }
+
   document.getElementById('val-real-guardado').textContent = brl(real);
 
-  // Cálculo da Recomendação do Sistema baseado no Saldo Líquido Real
+  // Totais Acumulados do Sistema
   const totalEntradas = todasEntradas.reduce((acc, e) => acc + (e.valor || 0), 0);
   const totalCartoes  = todasFaturas.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
   const totalBoletos  = todosBoletos.reduce((acc, b) => acc + (b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0)), 0);
@@ -2883,37 +2915,197 @@ function renderReservasEEconomias() {
   });
 
   const saldoLiquidoLivre = totalEntradas - totalCartoes - totalBoletos - totalMercadoDebito;
-  
-  // Sugestão de reserva inteligente: 50% do saldo livre real (ou 20% da renda se houver saldo positivo)
   const recomendacaoSistema = saldoLiquidoLivre > 0 ? Math.max(saldoLiquidoLivre * 0.5, totalEntradas * 0.2) : 0;
+
   document.getElementById('val-recomendacao-reserva').textContent = brl(recomendacaoSistema);
 
   const boxAnalise = document.getElementById('box-analise-reserva-detalhes');
-  if (totalEntradas === 0) {
-    boxAnalise.innerHTML = `<p class="empty-state">Cadastre seus salários e entradas na aba "Salários & Entradas" para gerar o diagnóstico inteligente de economias.</p>`;
+  if (boxAnalise) {
+    if (totalEntradas === 0) {
+      boxAnalise.innerHTML = `<p class="empty-state">Cadastre seus salários e entradas na aba "Salários & Entradas" para gerar o diagnóstico inteligente de economias.</p>`;
+    } else {
+      const pctGuardadoAnual = metaAnual > 0 ? Math.min(100, ((real / metaAnual) * 100)).toFixed(1) : 0;
+
+      boxAnalise.innerHTML = `
+        <p>Com base no acumulado do sistema (<strong>${brl(totalEntradas)}</strong> Entradas vs <strong>${brl(totalCartoes + totalBoletos + totalMercadoDebito)}</strong> Saídas):</p>
+        <div style="background:rgba(15,23,42,0.6);padding:1rem;border-radius:10px;margin:.75rem 0;border:1px solid var(--border-color)">
+          <div style="display:flex;justify-content:space-between;margin-bottom:.4rem;flex-wrap:wrap;gap:.5rem">
+            <span>💰 Saldo Livre Acumulado: <strong>${brl(saldoLiquidoLivre)}</strong></span>
+            <span>🎯 Meta Anual: <strong>${brl(metaAnual)}</strong> (Faltam ${mesesRestantes} meses no ano)</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" style="width:${pctGuardadoAnual}%"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--text-muted);margin-top:.4rem">
+            <span>Guardado: ${brl(real)}</span>
+            <span>Progresso da Meta Anual: ${pctGuardadoAnual}%</span>
+          </div>
+        </div>
+        <p style="font-size:.84rem;color:var(--text-muted)">
+          💡 <strong>Recomendação de Reserva:</strong> Guardando <strong>${brl(metaMensalExibida)}/mês</strong> nos próximos ${mesesRestantes} meses, você atingirá com sucesso a sua meta anual de <strong>${brl(metaAnual)}</strong>!
+        </p>
+      `;
+    }
+  }
+
+  // Renderizar a Lista de Análise Geral Mês a Mês (Abaixo das configurações)
+  renderAnaliseMensalEconomias();
+}
+
+function renderAnaliseMensalEconomias() {
+  const container = document.getElementById('container-analise-mensal-lista');
+  if (!container) return;
+
+  const meses = getMesesDisponiveis();
+  if (!meses.length) {
+    container.innerHTML = `<div class="empty-state">Nenhum mês registrado para gerar a análise mensal.</div>`;
     return;
   }
 
-  const pctGuardado = meta > 0 ? Math.min(100, ((real / meta) * 100)).toFixed(1) : 0;
+  const cardsHtml = meses.map(m => {
+    const entradasMes = todasEntradas.filter(e => e.mesAno === m);
+    const totEntradas = entradasMes.reduce((a, e) => a + (e.valor || 0), 0);
 
-  boxAnalise.innerHTML = `
-    <p> Com base nos seus <strong>${brl(totalEntradas)}</strong> de Entradas, <strong>${brl(totalCartoes)}</strong> de Faturas de Cartão e <strong>${brl(totalMercadoDebito)}</strong> de Mercado no Débito:</p>
-    <div style="background:rgba(15,23,42,0.6);padding:1rem;border-radius:10px;margin:.75rem 0;border:1px solid var(--border-color)">
-      <div style="display:flex;justify-content:space-between;margin-bottom:.4rem">
-        <span>💰 Saldo Livre em Conta: <strong>${brl(saldoLiquidoLivre)}</strong></span>
-        <span>💡 Recomendação de Reserva: <strong style="color:#c084fc">${brl(recomendacaoSistema)}/mês</strong></span>
+    const faturasMes = todasFaturas.filter(f => f.mesAno === m);
+    const totCartoes = faturasMes.reduce((a, f) => a + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
+
+    const boletosMes = todosBoletos.filter(b => b.mesAno === m);
+    const totBoletos = boletosMes.reduce((a, b) => a + (b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0)), 0);
+
+    const comprasMes = todasCompras.filter(c => c.mesAno === m);
+    let totMercadoDebito = 0;
+    comprasMes.forEach(c => {
+      if (c.formasPagamento) totMercadoDebito += c.formasPagamento.cartaoDebito || 0;
+    });
+
+    const totSaidas = totCartoes + totBoletos + totMercadoDebito;
+    const saldoLiquidoMes = totEntradas - totSaidas;
+    const isSuperavit = saldoLiquidoMes >= 0;
+
+    const [ano, mes] = m.split('-');
+    const dObj = new Date(parseInt(ano), parseInt(mes) - 1, 1);
+    const nomeMes = dObj.toLocaleString('pt-BR', { month: 'long' });
+    const nomeMesFmt = nomeMes.charAt(0).toUpperCase() + nomeMes.slice(1);
+
+    let causaHtml = '';
+    if (!isSuperavit) {
+      const diferenca = Math.abs(saldoLiquidoMes);
+      
+      let maiorCategoria = 'Cartão de Crédito';
+      let valorMaiorCategoria = totCartoes;
+
+      if (totBoletos > valorMaiorCategoria) {
+        maiorCategoria = 'Boletos & Contas';
+        valorMaiorCategoria = totBoletos;
+      }
+      if (totMercadoDebito > valorMaiorCategoria) {
+        maiorCategoria = 'Mercado no Débito';
+        valorMaiorCategoria = totMercadoDebito;
+      }
+
+      const pctMaior = totSaidas > 0 ? ((valorMaiorCategoria / totSaidas) * 100).toFixed(1) : 0;
+
+      let maiorItemNome = '';
+      let maiorItemVal = 0;
+
+      faturasMes.forEach(f => {
+        const v = f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0);
+        if (v > maiorItemVal) {
+          maiorItemVal = v;
+          maiorItemNome = `Fatura do ${f.cartao || 'Cartão'}`;
+        }
+      });
+      boletosMes.forEach(b => {
+        const v = b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0);
+        if (v > maiorItemVal) {
+          maiorItemVal = v;
+          maiorItemNome = `Boleto ${b.descricao || 'de Conta'}`;
+        }
+      });
+
+      causaHtml = `
+        <div style="background:rgba(244,63,94,0.1); border:1px solid rgba(244,63,94,0.3); border-radius:10px; padding:.85rem 1rem; margin-top:1rem">
+          <div style="font-weight:700; font-size:.88rem; color:#fb7185; margin-bottom:.4rem; display:flex; align-items:center; gap:.4rem">
+            ⚠️ O que causou o déficit em ${nomeMesFmt}/${ano}?
+          </div>
+          <p style="font-size:.82rem; color:var(--text-main); margin-bottom:.5rem; line-height:1.5">
+            As saídas (<strong>${brl(totSaidas)}</strong>) superaram as entradas (<strong>${brl(totEntradas)}</strong>) em <strong style="color:#fb7185">${brl(diferenca)}</strong>.
+          </p>
+          <div style="font-size:.78rem; color:var(--text-muted); line-height:1.5">
+            • <strong>Vilão Principal:</strong> A categoria <strong style="color:#f8fafc">${maiorCategoria}</strong> representou <strong>${pctMaior}%</strong> de todas as saídas do mês (${brl(valorMaiorCategoria)}).
+            ${maiorItemNome ? `<br>• <strong>Maior Despesa Registrada:</strong> ${maiorItemNome} no valor de <strong style="color:#fb7185">${brl(maiorItemVal)}</strong>.` : ''}
+          </div>
+        </div>
+      `;
+    } else {
+      const poupancaSugerida = saldoLiquidoMes * 0.5;
+      causaHtml = `
+        <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:10px; padding:.85rem 1rem; margin-top:1rem">
+          <div style="font-weight:700; font-size:.88rem; color:#34d399; margin-bottom:.2rem">
+            🎉 Mês Positivo! Capacidade de Poupança Excelente
+          </div>
+          <p style="font-size:.8rem; color:var(--text-muted); margin:0">
+            Neste mês sobraram <strong>${brl(saldoLiquidoMes)}</strong> em conta. O sistema sugere destinar pelo menos <strong style="color:#34d399">${brl(poupancaSugerida)}</strong> para sua reserva!
+          </p>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="card" style="margin-bottom:1.25rem; border-color:${isSuperavit ? 'rgba(52,211,153,0.3)' : 'rgba(251,113,133,0.4)'}">
+        <div class="card-header" style="flex-wrap:wrap; gap:.5rem">
+          <div style="display:flex; align-items:center; gap:.5rem">
+            <span class="card-title" style="font-size:1rem; color:#f8fafc">📅 ${nomeMesFmt} de ${ano}</span>
+            <span class="badge ${isSuperavit ? 'green' : 'red'}">${isSuperavit ? '🟢 Superávit' : '🔴 Déficit'}</span>
+          </div>
+          <button type="button" class="btn-secondary" style="padding:.25rem .6rem; font-size:.78rem" onclick="verMesEIrParaControle('${m}')">
+            🔍 Detalhar Mês
+          </button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:.75rem; margin-top:.5rem">
+          <div style="background:rgba(15,23,42,0.6); padding:.6rem .8rem; border-radius:8px; border:1px solid var(--border-color)">
+            <div style="font-size:.75rem; color:var(--text-muted)">Entradas do Mês</div>
+            <div style="font-weight:700; font-size:1rem; color:#34d399">${brl(totEntradas)}</div>
+          </div>
+
+          <div style="background:rgba(15,23,42,0.6); padding:.6rem .8rem; border-radius:8px; border:1px solid var(--border-color)">
+            <div style="font-size:.75rem; color:var(--text-muted)">Cartão de Crédito</div>
+            <div style="font-weight:700; font-size:1rem; color:#fb7185">${brl(totCartoes)}</div>
+          </div>
+
+          <div style="background:rgba(15,23,42,0.6); padding:.6rem .8rem; border-radius:8px; border:1px solid var(--border-color)">
+            <div style="font-size:.75rem; color:var(--text-muted)">Boletos & Contas</div>
+            <div style="font-weight:700; font-size:1rem; color:#c084fc">${brl(totBoletos)}</div>
+          </div>
+
+          <div style="background:rgba(15,23,42,0.6); padding:.6rem .8rem; border-radius:8px; border:1px solid var(--border-color)">
+            <div style="font-size:.75rem; color:var(--text-muted)">Mercado (Débito)</div>
+            <div style="font-weight:700; font-size:1rem; color:#fbbf24">${brl(totMercadoDebito)}</div>
+          </div>
+
+          <div style="background:rgba(15,23,42,0.8); padding:.6rem .8rem; border-radius:8px; border:1px solid ${isSuperavit ? '#34d399' : '#fb7185'}">
+            <div style="font-size:.75rem; color:var(--text-muted)">Saldo Líquido no Mês</div>
+            <div style="font-weight:800; font-size:1.05rem; color:${isSuperavit ? '#60a5fa' : '#fb7185'}">${brl(saldoLiquidoMes)}</div>
+          </div>
+        </div>
+
+        ${causaHtml}
       </div>
-      <div class="progress-bar-bg">
-        <div class="progress-bar-fill" style="width:${pctGuardado}%"></div>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="card" style="margin-top:1.5rem; background:linear-gradient(135deg,rgba(30,41,59,.9),rgba(15,23,42,.95)); border-color:var(--secondary)">
+      <div class="card-header">
+        <span class="card-title" style="color:#a5b4fc; font-size:1.05rem">📊 Análise Geral Mês a Mês (Capacidade de Economia & Diagnóstico)</span>
+        <span class="badge purple">${meses.length} meses analisados</span>
       </div>
-      <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--text-muted);margin-top:.4rem">
-        <span>Guardado: ${brl(real)}</span>
-        <span>Meta Pessoal: ${brl(meta)} (${pctGuardado}%)</span>
-      </div>
+      <p style="font-size:.78rem; color:var(--text-muted); margin-bottom:1rem">
+        Abaixo está o raio-x financeiro de cada mês com o diagnóstico automático do que gerou superávit ou déficit:
+      </p>
+      ${cardsHtml}
     </div>
-    <p style="font-size:.84rem;color:var(--text-muted)">
-      💡 <strong>Dica de Inteligência Financeira:</strong> Como o Vale Alimentação e o Crédito no Mercado não saem do seu salário em conta, eles protegem sua renda real! O sistema recomenda destinar pelo menos 50% do seu saldo livre líquido (<strong>${brl(recomendacaoSistema)}</strong>) para sua reserva de emergência e investimentos.
-    </p>
   `;
 }
 
