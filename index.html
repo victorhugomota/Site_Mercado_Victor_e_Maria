@@ -1217,7 +1217,18 @@ async function extrairTextoPDF(file) {
       return '';
     }
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+
+    let loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    loadingTask.onPassword = (updatePassword, reason) => {
+      let senha = prompt('🔒 Este PDF de fatura está protegido por senha.\nDigite a senha para abrir (ex: CPF ou Data de Nascimento):');
+      if (senha) {
+        updatePassword(senha);
+      } else {
+        toastMsg('⚠️ Senha não informada. Leitura do PDF cancelada.');
+      }
+    };
+
+    const pdf = await loadingTask.promise;
     let fullText = '';
 
     for (let i = 1; i <= pdf.numPages; i++) {
@@ -1242,7 +1253,11 @@ async function extrairTextoPDF(file) {
     }
     return fullText;
   } catch (err) {
-    console.error('Erro ao ler PDF:', err);
+    if (err.name === 'PasswordException') {
+      toastMsg('🔒 O PDF precisa de senha válida para ser aberto.');
+    } else {
+      console.error('Erro ao ler PDF:', err);
+    }
     return '';
   }
 }
@@ -1278,21 +1293,17 @@ window.importarFaturaManualOuArquivo = async function() {
 };
 
 async function processarEExibirRevisaoFatura(texto, cartaoNome) {
-  // 1. Tenta extrair a Data de Vencimento automaticamente do cabeçalho da fatura
   const dataVencDetectada = extrairDataVencimentoDoTexto(texto);
   if (dataVencDetectada) {
     document.getElementById('inp-fatura-vencimento').value = dataVencDetectada;
     atualizarMesRefFatura();
   }
 
-  // 2. Extrai os itens da fatura
   const itens = parseLinhasFatura(texto);
   if (!itens.length) {
     toastMsg(`⚠️ Nenhuma compra individual identificada na fatura do ${cartaoNome}.`);
     return;
   }
-
-  const valorTotalCalculado = itens.reduce((acc, item) => acc + item.valor, 0);
 
   const inpVenc = document.getElementById('inp-fatura-vencimento').value || new Date().toISOString().slice(0, 10);
   const mesAno = inpVenc.slice(0, 7);
@@ -1301,26 +1312,49 @@ async function processarEExibirRevisaoFatura(texto, cartaoNome) {
     cartao: cartaoNome,
     dataVencimento: inpVenc,
     mesAno,
-    valorTotal: valorTotalCalculado,
+    valorTotal: itens.reduce((acc, item) => acc + item.valor, 0),
     qtdItens: itens.length,
     itens
   };
 
-  document.getElementById('badge-total-preview-fatura').textContent = brl(valorTotalCalculado);
+  renderizarRevisaoFaturaUI();
+  toastMsg(`✅ ${itens.length} compras encontradas! Você pode excluir itens indesejados antes de salvar.`);
+}
+
+function renderizarRevisaoFaturaUI() {
+  if (!faturaEmProcessamento) return;
+  const { valorTotal, itens } = faturaEmProcessamento;
+
+  document.getElementById('badge-total-preview-fatura').textContent = brl(valorTotal);
   const listaEl = document.getElementById('lista-preview-fatura-itens');
-  listaEl.innerHTML = itens.map(i => `
-    <div style="display:flex; justify-content:space-between; padding:.35rem 0; border-bottom:1px dashed var(--border-color); font-size:.82rem;">
-      <span><strong>${i.dataCompra}</strong> — ${i.descricao}</span>
-      <span style="color:#fb7185; font-weight:700;">${brl(i.valor)}</span>
-    </div>
-  `).join('');
+
+  if (!itens.length) {
+    listaEl.innerHTML = `<div class="empty-state">Todos os itens foram removidos.</div>`;
+  } else {
+    listaEl.innerHTML = itens.map((i, index) => `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:.4rem 0; border-bottom:1px dashed var(--border-color); font-size:.82rem;">
+        <span><strong>${i.dataCompra}</strong> — ${i.descricao}</span>
+        <div style="display:flex; align-items:center; gap:.75rem;">
+          <span style="color:#fb7185; font-weight:700;">${brl(i.valor)}</span>
+          <button type="button" class="btn-danger" style="padding:.15rem .45rem; font-size:.75rem;" onclick="removerItemRevisaoFatura(${index})">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+  }
 
   const boxRevisao = document.getElementById('box-revisao-fatura');
   boxRevisao.style.display = 'block';
   boxRevisao.scrollIntoView({ behavior: 'smooth' });
-
-  toastMsg(`✅ ${itens.length} compras encontradas na fatura (${brl(valorTotalCalculado)})! Confira e salve.`);
 }
+
+window.removerItemRevisaoFatura = function(index) {
+  if (!faturaEmProcessamento || !faturaEmProcessamento.itens) return;
+  faturaEmProcessamento.itens.splice(index, 1);
+  faturaEmProcessamento.valorTotal = faturaEmProcessamento.itens.reduce((acc, i) => acc + i.valor, 0);
+  faturaEmProcessamento.qtdItens = faturaEmProcessamento.itens.length;
+  renderizarRevisaoFaturaUI();
+  toastMsg('🗑️ Item removido da lista de revisão.');
+};
 
 window.confirmarEGravarFaturaDocumento = async function() {
   if (!faturaEmProcessamento) return;
@@ -1454,22 +1488,48 @@ function renderCartoesCredito() {
 function renderItensFatura(f) {
   if (f.itens && f.itens.length > 0) {
     return `<div class="table-responsive"><table class="custom-table">
-      <thead><tr><th>Data Compra</th><th>Descrição do Lançamento</th><th class="num">Valor</th></tr></thead>
-      <tbody>${f.itens.map(i => `<tr>
+      <thead><tr><th>Data Compra</th><th>Descrição do Lançamento</th><th class="num">Valor</th><th>Ação</th></tr></thead>
+      <tbody>${f.itens.map((i, idx) => `<tr>
         <td><strong>${i.dataCompra || '—'}</strong></td>
         <td>${i.descricao}</td>
         <td class="num" style="color:#fb7185"><strong>${brl(i.valor)}</strong></td>
+        <td><button class="btn-danger" style="padding:.2rem .5rem; font-size:.78rem;" onclick="removerItemFaturaCadastrada('${f.id}', ${idx})">🗑️ Excluir</button></td>
       </tr>`).join('')}</tbody>
     </table></div>`;
   }
   return `<div class="table-responsive"><table class="custom-table">
-    <thead><tr><th>Descrição</th><th class="num">Valor</th></tr></thead>
+    <thead><tr><th>Descrição</th><th class="num">Valor</th><th>Ação</th></tr></thead>
     <tbody><tr>
       <td>${f.descricao || 'Fatura do Cartão'}</td>
       <td class="num" style="color:#fb7185"><strong>${brl(f.valor || f.valorTotal)}</strong></td>
+      <td><button class="btn-danger" style="padding:.2rem .5rem; font-size:.78rem;" onclick="excluirFaturaDocumento('${f.id}')">🗑️ Excluir</button></td>
     </tr></tbody>
   </table></div>`;
 }
+
+window.removerItemFaturaCadastrada = async function(faturaId, itemIndex) {
+  const fatura = todasFaturas.find(f => f.id === faturaId);
+  if (!fatura || !fatura.itens) return;
+
+  if (!confirm('Remover este item da fatura?')) return;
+
+  const novosItens = [...fatura.itens];
+  novosItens.splice(itemIndex, 1);
+  const novoTotal = novosItens.reduce((acc, i) => acc + (i.valor || 0), 0);
+
+  if (novosItens.length === 0) {
+    await deleteDoc(doc(db, COLL_FATURAS, faturaId));
+    toastMsg('🗑️ Fatura excluída pois todos os itens foram removidos.');
+  } else {
+    await setDoc(doc(db, COLL_FATURAS, faturaId), {
+      ...fatura,
+      itens: novosItens,
+      valorTotal: novoTotal,
+      qtdItens: novosItens.length
+    });
+    toastMsg('🗑️ Item removido da fatura.');
+  }
+};
 
 window.excluirFaturaDocumento = async function(id) {
   if (!confirm('Excluir esta fatura e todos os seus lançamentos?')) return;
