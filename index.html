@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controle de Gastos no Mercado</title>
+  <meta name="description" content="Sistema completo para controle de gastos no mercado, leitura de QR Code NFC-e, comparação de preços unitários mês a mês e análise de marcas.">
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body>
+
+  <!-- Header da Aplicação -->
+  <header class="app-header">
+    <div class="logo-container">
+      <div class="logo-icon">🛒</div>
+      <div class="logo-text">
+        <h1>Controle Mercado</h1>
+        <p>Victor & Maria</p>
+      </div>
+    </div>
+
+    <!-- Navegação Desktop -->
+    <nav class="desktop-nav">
+      <button class="nav-item active" data-tab-target="tab-dashboard">
+        📊 Visão Geral
+      </button>
+      <button class="nav-item" data-tab-target="tab-add">
+        📷 Adicionar Nota
+      </button>
+      <button class="nav-item" data-tab-target="tab-comparacao">
+        📈 Comparar Preços
+      </button>
+      <button class="nav-item" data-tab-target="tab-recorrencia">
+        🔄 Itens & Marcas
+      </button>
+      <button class="nav-item" data-tab-target="tab-historico">
+        📋 Histórico
+      </button>
+    </nav>
+
+    <button class="btn-header-add" onclick="document.querySelector('[data-tab-target=\'tab-add\']').click()">
+      <span>📷</span> Escanear Nota
+    </button>
+  </header>
+
+  <!-- Conteúdo Principal -->
+  <main class="main-container">
+
+    <!-- ABA 1: DASHBOARD / VISÃO GERAL -->
+    <section id="tab-dashboard" class="tab-content active">
+      <div class="grid-summary">
+        <!-- Card 1: Total Gasto -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Total Gasto no Mercado</span>
+            <div class="card-icon green">💰</div>
+          </div>
+          <div class="card-value" id="dash-total-gasto">R$ 0,00</div>
+          <div class="card-subtext">Baseado no Valor a Pagar acumulado</div>
+        </div>
+
+        <!-- Card 2: Economia & Descontos -->
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Soma dos Descontos</span>
+            <div class="card-icon amber">🏷️</div>
+          </div>
+          <div class="card-value" id="dash-soma-descontos">R$ 0,00</div>
+          <div class="card-subtext" id="dash-pct-desconto">0% economizado no geral</div>
+        </div>
+      </div>
+
+      <!-- Detalhamento de Formas de Pagamento -->
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+          <span class="card-title">Pagamentos por Categoria</span>
+          <div class="card-icon purple">💳</div>
+        </div>
+        <div class="payment-methods-grid">
+          <div class="payment-item">
+            <div class="label">🍽️ Vale Alimentação</div>
+            <div class="val" id="dash-vale-alimentacao">R$ 0,00</div>
+          </div>
+          <div class="payment-item">
+            <div class="label">💳 Cartão de Crédito</div>
+            <div class="val" id="dash-cartao-credito">R$ 0,00</div>
+          </div>
+          <div class="payment-item">
+            <div class="label">💳 Cartão de Débito</div>
+            <div class="val" id="dash-cartao-debito">R$ 0,00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gráfico de Gastos Mensais -->
+      <div class="card chart-card">
+        <div class="card-header">
+          <span class="card-title">Evolução de Gastos Mensais</span>
+          <span class="badge green">Gráfico em Tempo Real</span>
+        </div>
+        <div class="chart-container">
+          <canvas id="chart-gastos-mensais"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABA 2: ADICIONAR COMPRA / QR CODE SCANNER -->
+    <section id="tab-add" class="tab-content">
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+          <span class="card-title">Leitor de QR Code (NFC-e)</span>
+          <span class="badge amber">Câmera Traseira Padrão no Mobile</span>
+        </div>
+
+        <div class="scanner-box">
+          <div id="qr-reader"></div>
+
+          <div class="scanner-actions">
+            <button id="btn-iniciar-camera" class="btn-primary">
+              🎥 Iniciar Câmera
+            </button>
+            <!-- Botão "Trocar Câmera" para alternar entre câmeras frontal/traseira/externa -->
+            <button id="btn-trocar-camera" class="btn-secondary" style="display: none;">
+              🔄 Trocar Câmera
+            </button>
+            <button id="btn-parar-camera" class="btn-secondary" style="display: none; background: rgba(244, 63, 94, 0.2); color: #fb7185;">
+              ⏹️ Parar Câmera
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inscrição Manual ou Paste NFC-e -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Adicionar por Link ou Texto da NFC-e</span>
+        </div>
+        <form id="form-adicionar-url">
+          <div class="form-group">
+            <label for="input-url-nfce">Link do QR Code da Nota Fiscal (Ex: https://www.nfce.fazenda.sp.gov.br/...)</label>
+            <input type="url" id="input-url-nfce" class="form-control" placeholder="Cole a URL do QR Code aqui...">
+          </div>
+
+          <div class="form-group">
+            <label for="input-html-nfce">Ou cole o texto/HTML da Nota Fiscal (Fallback de Segurança)</label>
+            <textarea id="input-html-nfce" class="form-control" rows="4" placeholder="Copie todo o conteúdo da página da nota fiscal e cole aqui..."></textarea>
+          </div>
+
+          <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
+            ✨ Processar e Salvar Nota Fiscal
+          </button>
+        </form>
+        <p id="status-processamento" style="margin-top: 0.75rem; font-size: 0.85rem; color: var(--accent-amber); text-align: center;"></p>
+      </div>
+    </section>
+
+    <!-- ABA 3: COMPARAR VALORES UNITÁRIOS -->
+    <section id="tab-comparacao" class="tab-content">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Comparação de Valores Unitários Mês a Mês</span>
+          <span class="badge green">Preço Unitário (Ex: 1 un de Bolacha)</span>
+        </div>
+        <p class="card-subtext" style="margin-bottom: 1rem;">
+          Compara a variação real do valor por unidade de um mês para o outro, ignorando a quantidade total comprada.
+        </p>
+
+        <div id="lista-comparacao-produtos"></div>
+      </div>
+    </section>
+
+    <!-- ABA 4: ITENS MAIS COMPRADOS & RECORRÊNCIA E MARCAS -->
+    <section id="tab-recorrencia" class="tab-content">
+      <div class="card" style="margin-bottom: 1.5rem;">
+        <div class="card-header">
+          <span class="card-title">Itens Comprados Mais de Uma Vez</span>
+          <span class="badge amber">Recorrência & Frequência</span>
+        </div>
+        <p class="card-subtext" style="margin-bottom: 1rem;">
+          Produtos com recorrência em notas fiscais diferentes, média de compras e quantidade total.
+        </p>
+        <div id="lista-itens-recorrentes"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Distinção por Marca & Marca com Menor Valor</span>
+          <span class="badge green">Economia por Marca</span>
+        </div>
+        <p class="card-subtext" style="margin-bottom: 1rem;">
+          Ao trocar a marca de um item (ex: Arroz Tio João vs Camil), veja qual teve o menor valor unitário.
+        </p>
+        <div id="lista-comparacao-marcas"></div>
+      </div>
+    </section>
+
+    <!-- ABA 5: HISTÓRICO DE COMPRAS -->
+    <section id="tab-historico" class="tab-content">
+      <div class="card-header" style="margin-bottom: 1rem;">
+        <span class="card-title" style="font-size: 1.1rem;">Notas Fiscais Cadastradas</span>
+        <span class="badge green">Sincronizado via Firebase</span>
+      </div>
+      <div id="lista-historico-compras"></div>
+    </section>
+
+  </main>
+
+  <!-- Navegação Inferior Mobile -->
+  <nav class="mobile-nav">
+    <button class="mobile-nav-btn active" data-tab-target="tab-dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+      Início
+    </button>
+    <button class="mobile-nav-btn" data-tab-target="tab-add">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="12" cy="12" r="3"></circle></svg>
+      Add Nota
+    </button>
+    <button class="mobile-nav-btn" data-tab-target="tab-comparacao">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+      Comparar
+    </button>
+    <button class="mobile-nav-btn" data-tab-target="tab-recorrencia">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+      Marcas
+    </button>
+    <button class="mobile-nav-btn" data-tab-target="tab-historico">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+      Histórico
+    </button>
+  </nav>
+
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>
