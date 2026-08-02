@@ -186,7 +186,7 @@
     .btn-card-select.active[data-card="Nubank"]{border-color:#a855f7;background:rgba(168,85,247,.2);color:#c084fc;box-shadow:0 0 15px rgba(168,85,247,.3)}
     .btn-card-select.active[data-card="Santander"]{border-color:#f43f5e;background:rgba(244,63,94,.2);color:#fb7185;box-shadow:0 0 15px rgba(244,63,94,.3)}
   </style>
-  <script type="module" crossorigin src="./assets/index-OxIrvnTN.js"></script>
+  <script type="module" crossorigin src="./assets/index-BTiDntO5.js"></script>
 </head>
 <body>
 
@@ -204,6 +204,7 @@
     <button class="nav-item active" data-tab="dashboard">📊 Visão Geral</button>
     <button class="nav-item" data-tab="salarios">💵 Salários &amp; Entradas</button>
     <button class="nav-item" data-tab="cartoes">💳 Cartões de Crédito</button>
+    <button class="nav-item" data-tab="boletos">📄 Boletos</button>
     <button class="nav-item" data-tab="mercado">🛒 Mercado</button>
     <button class="nav-item" data-tab="reservas">🐷 Reservas &amp; Economias</button>
   </nav>
@@ -238,6 +239,15 @@
 
       <div class="card">
         <div class="card-header">
+          <span class="card-title">Boletos &amp; Contas</span>
+          <div class="card-icon purple">📄</div>
+        </div>
+        <div class="card-value" id="fin-total-boletos" style="color:#c084fc">R$ 0,00</div>
+        <div class="card-subtext" id="fin-subtext-boletos">Boletos do Mês</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
           <span class="card-title">Mercado (Débito)</span>
           <div class="card-icon amber">🛒</div>
         </div>
@@ -251,12 +261,12 @@
           <div class="card-icon cyan">💰</div>
         </div>
         <div class="card-value" id="fin-saldo-liquido" style="color:#60a5fa">R$ 0,00</div>
-        <div class="card-subtext" id="fin-subtext-saldo">Entradas - Cartões - Mercado (Débito)</div>
+        <div class="card-subtext" id="fin-subtext-saldo">Entradas - Cartões - Boletos - Mercado (Débito)</div>
       </div>
     </div>
 
     <!-- Botões de Ação Rápida -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem">
       <button class="btn-primary" id="btn-open-modal-home" style="padding:.9rem">
         🛒 Escanear Nota Mercado
       </button>
@@ -265,6 +275,9 @@
       </button>
       <button class="btn-secondary" onclick="goTab('cartoes')" style="padding:.9rem">
         💳 Importar Fatura Cartão
+      </button>
+      <button class="btn-secondary" onclick="goTab('boletos')" style="padding:.9rem">
+        📄 Importar Boleto
       </button>
       <button class="btn-secondary" onclick="goTab('reservas')" style="padding:.9rem">
         🐷 Ver Meta de Reservas
@@ -496,6 +509,94 @@
   </section>
 
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <!-- 3.5 ABA BOLETOS (IMPORTAÇÃO DE BOLETOS PDF & CONTAS) -->
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-boletos" class="tab-content">
+    <div class="card" style="margin-bottom:1.5rem">
+      <div class="card-header">
+        <span class="card-title">Importar Boleto ou Conta</span>
+        <span class="badge purple">📄 Leitor PDF / Texto</span>
+      </div>
+      <p class="card-subtext" style="margin-bottom:1.25rem">
+        Importe o PDF do boleto (ex: luz, água, internet, condomínio, aluguel) ou digite a descrição e valor.
+      </p>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.4rem;color:var(--text-muted)">Data de Vencimento do Boleto:</label>
+          <input type="date" id="inp-boleto-vencimento" class="form-control" onchange="atualizarMesRefBoleto()">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.4rem;color:var(--text-muted)">Mês de Referência:</label>
+          <div id="lbl-boleto-mes-ref" style="font-weight:700;color:var(--accent-cyan);padding:.72rem 1rem;background:var(--bg-dark);border:1px solid var(--border-color);border-radius:var(--radius-md)">
+            Mês do Boleto
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1.25rem">
+        <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.5rem;color:var(--text-muted)">Importar Arquivo do Boleto (.pdf ou .txt):</label>
+        <div id="drop-zone-boleto" style="border:2px dashed var(--border-color);border-radius:var(--radius-lg);padding:1.5rem;text-align:center;background:rgba(15,23,42,.5);cursor:pointer;transition:border-color .2s" onclick="document.getElementById('file-boleto-input').click()">
+          <input type="file" id="file-boleto-input" accept=".pdf,.txt" style="display:none" onchange="handleFileBoletoSelect(event)">
+          <div style="font-size:2.2rem;margin-bottom:.4rem">📄</div>
+          <div style="font-weight:700;font-size:1rem;color:var(--text-main)" id="txt-file-boleto">Clique para Selecionar o Arquivo do Boleto</div>
+          <div style="font-size:.8rem;color:var(--text-muted);margin-top:.2rem">Suporta boletos em PDF de luz, água, internet, taxas e convênios</div>
+        </div>
+      </div>
+
+      <details style="margin-bottom:1rem">
+        <summary style="font-size:.84rem;font-weight:600;color:var(--text-muted);cursor:pointer;padding:.4rem 0">Ou cole o texto do boleto / linha digitável (opcional)</summary>
+        <div class="form-group" style="margin-top:.5rem">
+          <textarea id="inp-boleto-txt" class="form-control" rows="4" placeholder="Cole aqui o texto do boleto..."></textarea>
+        </div>
+      </details>
+
+      <button type="button" class="btn-primary" onclick="importarBoletoManualOuArquivo()" style="width:100%">
+        🔍 Ler &amp; Processar Boleto
+      </button>
+
+      <!-- Caixa de Revisão do Boleto -->
+      <div id="box-revisao-boleto" style="display:none; margin-top:1.5rem; border-top:1px solid var(--border-color); padding-top:1.25rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+          <span class="card-title" style="color:var(--primary)">📝 Boleto Identificado</span>
+          <span class="badge purple" id="badge-total-preview-boleto" style="font-size:.9rem;padding:.4rem .75rem">R$ 0,00</span>
+        </div>
+
+        <div class="form-row" style="margin-bottom:1rem">
+          <div class="form-group">
+            <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.4rem;color:var(--text-muted)">Descrição / Beneficiário:</label>
+            <input type="text" id="inp-revisao-boleto-desc" class="form-control" placeholder="Ex: Conta de Luz CPFL">
+          </div>
+          <div class="form-group">
+            <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.4rem;color:var(--text-muted)">Valor do Boleto (R$):</label>
+            <input type="number" step="0.01" id="inp-revisao-boleto-val" class="form-control" placeholder="0.00" onchange="atualizarValorTotalRevisaoBoleto()">
+          </div>
+        </div>
+
+        <p class="card-subtext" style="margin-bottom:1rem">
+          Detalhamento de itens / encargos do boleto:
+        </p>
+
+        <div id="lista-preview-boleto-itens" style="max-height:220px; overflow-y:auto; background:rgba(15,23,42,.6); padding:.75rem; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-bottom:1.25rem"></div>
+
+        <button type="button" class="btn-primary" onclick="confirmarEGravarBoletoDocumento()" style="width:100%; padding:.85rem; font-size:1rem">
+          ✨ Salvar Boleto no Sistema
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Lista de Boletos Registrados -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Boletos &amp; Contas Cadastradas</span>
+        <span class="badge purple" id="badge-total-boletos">R$ 0,00 total</span>
+      </div>
+      <div id="lista-boletos-registrados"></div>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
   <!-- 4. ABA MERCADO (MERCADO, LEITOR, COMPARATIVO, LISTA MENSAL & HISTÓRICO) -->
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
   <section id="tab-mercado" class="tab-content">
@@ -641,6 +742,9 @@
   </button>
   <button class="mob-btn" data-tab="cartoes">
     <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Cartões
+  </button>
+  <button class="mob-btn" data-tab="boletos">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Boletos
   </button>
   <button class="mob-btn" data-tab="mercado">
     <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Mercado

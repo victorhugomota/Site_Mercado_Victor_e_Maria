@@ -203,6 +203,7 @@
     <button class="nav-item active" data-tab="dashboard">📊 Visão Geral</button>
     <button class="nav-item" data-tab="salarios">💵 Salários &amp; Entradas</button>
     <button class="nav-item" data-tab="cartoes">💳 Cartões de Crédito</button>
+    <button class="nav-item" data-tab="boletos">📄 Boletos</button>
     <button class="nav-item" data-tab="mercado">🛒 Mercado</button>
     <button class="nav-item" data-tab="reservas">🐷 Reservas &amp; Economias</button>
   </nav>
@@ -237,6 +238,15 @@
 
       <div class="card">
         <div class="card-header">
+          <span class="card-title">Boletos &amp; Contas</span>
+          <div class="card-icon purple">📄</div>
+        </div>
+        <div class="card-value" id="fin-total-boletos" style="color:#c084fc">R$ 0,00</div>
+        <div class="card-subtext" id="fin-subtext-boletos">Boletos do Mês</div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
           <span class="card-title">Mercado (Débito)</span>
           <div class="card-icon amber">🛒</div>
         </div>
@@ -250,12 +260,12 @@
           <div class="card-icon cyan">💰</div>
         </div>
         <div class="card-value" id="fin-saldo-liquido" style="color:#60a5fa">R$ 0,00</div>
-        <div class="card-subtext" id="fin-subtext-saldo">Entradas - Cartões - Mercado (Débito)</div>
+        <div class="card-subtext" id="fin-subtext-saldo">Entradas - Cartões - Boletos - Mercado (Débito)</div>
       </div>
     </div>
 
     <!-- Botões de Ação Rápida -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem;margin-bottom:1.5rem">
       <button class="btn-primary" id="btn-open-modal-home" style="padding:.9rem">
         🛒 Escanear Nota Mercado
       </button>
@@ -264,6 +274,9 @@
       </button>
       <button class="btn-secondary" onclick="goTab('cartoes')" style="padding:.9rem">
         💳 Importar Fatura Cartão
+      </button>
+      <button class="btn-secondary" onclick="goTab('boletos')" style="padding:.9rem">
+        📄 Importar Boleto
       </button>
       <button class="btn-secondary" onclick="goTab('reservas')" style="padding:.9rem">
         🐷 Ver Meta de Reservas
@@ -495,6 +508,94 @@
   </section>
 
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <!-- 3.5 ABA BOLETOS (IMPORTAÇÃO DE BOLETOS PDF & CONTAS) -->
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-boletos" class="tab-content">
+    <div class="card" style="margin-bottom:1.5rem">
+      <div class="card-header">
+        <span class="card-title">Importar Boleto ou Conta</span>
+        <span class="badge purple">📄 Leitor PDF / Texto</span>
+      </div>
+      <p class="card-subtext" style="margin-bottom:1.25rem">
+        Importe o PDF do boleto (ex: luz, água, internet, condomínio, aluguel) ou digite a descrição e valor.
+      </p>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.4rem;color:var(--text-muted)">Data de Vencimento do Boleto:</label>
+          <input type="date" id="inp-boleto-vencimento" class="form-control" onchange="atualizarMesRefBoleto()">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.4rem;color:var(--text-muted)">Mês de Referência:</label>
+          <div id="lbl-boleto-mes-ref" style="font-weight:700;color:var(--accent-cyan);padding:.72rem 1rem;background:var(--bg-dark);border:1px solid var(--border-color);border-radius:var(--radius-md)">
+            Mês do Boleto
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:1.25rem">
+        <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.5rem;color:var(--text-muted)">Importar Arquivo do Boleto (.pdf ou .txt):</label>
+        <div id="drop-zone-boleto" style="border:2px dashed var(--border-color);border-radius:var(--radius-lg);padding:1.5rem;text-align:center;background:rgba(15,23,42,.5);cursor:pointer;transition:border-color .2s" onclick="document.getElementById('file-boleto-input').click()">
+          <input type="file" id="file-boleto-input" accept=".pdf,.txt" style="display:none" onchange="handleFileBoletoSelect(event)">
+          <div style="font-size:2.2rem;margin-bottom:.4rem">📄</div>
+          <div style="font-weight:700;font-size:1rem;color:var(--text-main)" id="txt-file-boleto">Clique para Selecionar o Arquivo do Boleto</div>
+          <div style="font-size:.8rem;color:var(--text-muted);margin-top:.2rem">Suporta boletos em PDF de luz, água, internet, taxas e convênios</div>
+        </div>
+      </div>
+
+      <details style="margin-bottom:1rem">
+        <summary style="font-size:.84rem;font-weight:600;color:var(--text-muted);cursor:pointer;padding:.4rem 0">Ou cole o texto do boleto / linha digitável (opcional)</summary>
+        <div class="form-group" style="margin-top:.5rem">
+          <textarea id="inp-boleto-txt" class="form-control" rows="4" placeholder="Cole aqui o texto do boleto..."></textarea>
+        </div>
+      </details>
+
+      <button type="button" class="btn-primary" onclick="importarBoletoManualOuArquivo()" style="width:100%">
+        🔍 Ler &amp; Processar Boleto
+      </button>
+
+      <!-- Caixa de Revisão do Boleto -->
+      <div id="box-revisao-boleto" style="display:none; margin-top:1.5rem; border-top:1px solid var(--border-color); padding-top:1.25rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+          <span class="card-title" style="color:var(--primary)">📝 Boleto Identificado</span>
+          <span class="badge purple" id="badge-total-preview-boleto" style="font-size:.9rem;padding:.4rem .75rem">R$ 0,00</span>
+        </div>
+
+        <div class="form-row" style="margin-bottom:1rem">
+          <div class="form-group">
+            <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.4rem;color:var(--text-muted)">Descrição / Beneficiário:</label>
+            <input type="text" id="inp-revisao-boleto-desc" class="form-control" placeholder="Ex: Conta de Luz CPFL">
+          </div>
+          <div class="form-group">
+            <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.4rem;color:var(--text-muted)">Valor do Boleto (R$):</label>
+            <input type="number" step="0.01" id="inp-revisao-boleto-val" class="form-control" placeholder="0.00" onchange="atualizarValorTotalRevisaoBoleto()">
+          </div>
+        </div>
+
+        <p class="card-subtext" style="margin-bottom:1rem">
+          Detalhamento de itens / encargos do boleto:
+        </p>
+
+        <div id="lista-preview-boleto-itens" style="max-height:220px; overflow-y:auto; background:rgba(15,23,42,.6); padding:.75rem; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-bottom:1.25rem"></div>
+
+        <button type="button" class="btn-primary" onclick="confirmarEGravarBoletoDocumento()" style="width:100%; padding:.85rem; font-size:1rem">
+          ✨ Salvar Boleto no Sistema
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Lista de Boletos Registrados -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Boletos &amp; Contas Cadastradas</span>
+        <span class="badge purple" id="badge-total-boletos">R$ 0,00 total</span>
+      </div>
+      <div id="lista-boletos-registrados"></div>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
   <!-- 4. ABA MERCADO (MERCADO, LEITOR, COMPARATIVO, LISTA MENSAL & HISTÓRICO) -->
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
   <section id="tab-mercado" class="tab-content">
@@ -640,6 +741,9 @@
   </button>
   <button class="mob-btn" data-tab="cartoes">
     <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Cartões
+  </button>
+  <button class="mob-btn" data-tab="boletos">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Boletos
   </button>
   <button class="mob-btn" data-tab="mercado">
     <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Mercado
@@ -822,12 +926,14 @@ const db = getFirestore(app);
 const COLL_MERCADO = 'compras';
 const COLL_ENTRADAS = 'entradas';
 const COLL_FATURAS  = 'faturas';
+const COLL_BOLETOS  = 'boletos';
 const COLL_RESERVAS = 'reservas';
 
 // ESTADO GLOBAL
 let todasCompras = [];
 let todasEntradas = [];
 let todasFaturas = [];
+let todosBoletos = [];
 let dadosReservas = { metaMensal: 0, valorAtualGuardado: 0 };
 
 let chartInst = null;
@@ -948,6 +1054,12 @@ onSnapshot(collection(db, COLL_FATURAS), snap => {
   renderTudo();
 }, err => console.error('Firestore Faturas:', err));
 
+// 3.5 Escutar Boletos & Contas
+onSnapshot(collection(db, COLL_BOLETOS), snap => {
+  todosBoletos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderTudo();
+}, err => console.error('Firestore Boletos:', err));
+
 // 4. Escutar Configurações de Reservas
 onSnapshot(doc(db, COLL_RESERVAS, 'config'), snap => {
   if (snap.exists()) {
@@ -961,6 +1073,7 @@ function renderTudo() {
   renderDashboardGeral();
   renderSalariosEEntradas();
   renderCartoesCredito();
+  renderBoletos();
   renderListaMensal();
   renderHistorico();
   renderComparacao();
@@ -977,6 +1090,9 @@ function renderDashboardGeral() {
 
   // Cartões de Crédito Totais
   let totalCartoes = todasFaturas.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
+
+  // Boletos Totais
+  let totalBoletos = todosBoletos.reduce((acc, b) => acc + (b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0)), 0);
 
   // Mercado Totais (Separado por Alimentação, Crédito e Débito)
   let totalMercadoDebito = 0;
@@ -1001,12 +1117,13 @@ function renderDashboardGeral() {
     porMesMercado[mes] = (porMesMercado[mes] || 0) + p;
   });
 
-  // REGRA: Saldo Líquido em Conta considera apenas Mercado DÉBITO (pois Alimentação e Crédito não reduzem o salário disponível na conta)
-  let saldoLiquido = totalEntradas - totalCartoes - totalMercadoDebito;
+  // REGRA: Saldo Líquido em Conta considera Entradas - Cartões - Boletos - Mercado DÉBITO
+  let saldoLiquido = totalEntradas - totalCartoes - totalBoletos - totalMercadoDebito;
 
   // Atualização dos Cards da Home
   document.getElementById('fin-total-entradas').textContent = brl(totalEntradas);
   document.getElementById('fin-total-cartoes').textContent = brl(totalCartoes);
+  document.getElementById('fin-total-boletos').textContent = brl(totalBoletos);
   document.getElementById('fin-mercado-debito').textContent = brl(totalMercadoDebito);
   document.getElementById('fin-saldo-liquido').textContent = brl(saldoLiquido);
 
@@ -1501,6 +1618,336 @@ window.excluirFaturaDocumento = async function(id) {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
+// 3.5 ABA BOLETOS (IMPORTAÇÃO DE BOLETOS PDF & CONTAS)
+// ═══════════════════════════════════════════════════════════════════════════
+let boletoEmProcessamento = null;
+
+function initDataVencimentoBoleto() {
+  const inp = document.getElementById('inp-boleto-vencimento');
+  if (inp && !inp.value) {
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    inp.value = `${ano}-${mes}-10`;
+    atualizarMesRefBoleto();
+  }
+}
+setTimeout(initDataVencimentoBoleto, 300);
+
+window.atualizarMesRefBoleto = function() {
+  const inp = document.getElementById('inp-boleto-vencimento');
+  const lbl = document.getElementById('lbl-boleto-mes-ref');
+  if (!inp || !lbl) return;
+
+  if (inp.value) {
+    const [ano, mes] = inp.value.split('-');
+    const d = new Date(parseInt(ano), parseInt(mes) - 1, 1);
+    const mesNome = d.toLocaleString('pt-BR', { month: 'long' });
+    lbl.textContent = `Boleto ${mesNome.charAt(0).toUpperCase() + mesNome.slice(1)}/${ano}`;
+  } else {
+    lbl.textContent = 'Mês do Boleto';
+  }
+};
+
+window.handleFileBoletoSelect = async function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const fileTxtEl = document.getElementById('txt-file-boleto');
+  if (fileTxtEl) fileTxtEl.textContent = `📄 Arquivo: ${file.name}`;
+  toastMsg(`⏳ Lendo arquivo do boleto (${file.name})...`);
+
+  let textoExtraido = '';
+  if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
+    textoExtraido = await extrairTextoPDF(file);
+  } else {
+    try { textoExtraido = await file.text(); } catch { textoExtraido = ''; }
+  }
+
+  if (textoExtraido) {
+    document.getElementById('inp-boleto-txt').value = textoExtraido;
+    await processarEExibirRevisaoBoleto(textoExtraido, file.name);
+  } else {
+    toastMsg('❌ Não foi possível ler o texto do arquivo do boleto.');
+  }
+};
+
+window.importarBoletoManualOuArquivo = async function() {
+  const txt = document.getElementById('inp-boleto-txt').value.trim();
+  if (!txt) {
+    toastMsg('⚠️ Selecione o arquivo do boleto (.pdf, .txt) ou cole o texto do boleto.');
+    return;
+  }
+  await processarEExibirRevisaoBoleto(txt, 'Boleto');
+};
+
+async function processarEExibirRevisaoBoleto(texto, nomeOrigem) {
+  const parsed = parseLinhasBoleto(texto);
+  
+  if (parsed.vencimento) {
+    document.getElementById('inp-boleto-vencimento').value = parsed.vencimento;
+    atualizarMesRefBoleto();
+  }
+
+  const inpVenc = document.getElementById('inp-boleto-vencimento').value || new Date().toISOString().slice(0, 10);
+  const mesAno = inpVenc.slice(0, 7);
+
+  const descDefinitiva = parsed.beneficiario || nomeOrigem.replace(/\.[^/.]+$/, '') || 'Boleto / Conta';
+  const somaItens = parsed.itens.reduce((acc, i) => acc + i.valor, 0);
+  const valorTotalDefinitivo = parsed.valorTotal || somaItens || 0;
+
+  document.getElementById('inp-revisao-boleto-desc').value = descDefinitiva;
+  document.getElementById('inp-revisao-boleto-val').value = valorTotalDefinitivo ? valorTotalDefinitivo.toFixed(2) : '';
+
+  boletoEmProcessamento = {
+    descricao: descDefinitiva,
+    dataVencimento: inpVenc,
+    mesAno,
+    valorTotal: valorTotalDefinitivo,
+    qtdItens: parsed.itens.length,
+    itens: parsed.itens
+  };
+
+  renderizarRevisaoBoletoUI();
+  toastMsg(`✅ Boleto identificado! Confira a descrição, valor e itens antes de salvar.`);
+}
+
+window.atualizarValorTotalRevisaoBoleto = function() {
+  if (!boletoEmProcessamento) return;
+  const val = parseFloat(document.getElementById('inp-revisao-boleto-val').value) || 0;
+  boletoEmProcessamento.valorTotal = val;
+  document.getElementById('badge-total-preview-boleto').textContent = brl(val);
+};
+
+function renderizarRevisaoBoletoUI() {
+  if (!boletoEmProcessamento) return;
+  const { valorTotal, itens } = boletoEmProcessamento;
+
+  document.getElementById('badge-total-preview-boleto').textContent = brl(valorTotal);
+  const listaEl = document.getElementById('lista-preview-boleto-itens');
+
+  if (!itens || !itens.length) {
+    listaEl.innerHTML = `<div class="empty-state">Nenhum encargo/item individual extraído. O valor total acima será considerado.</div>`;
+  } else {
+    listaEl.innerHTML = itens.map((i, index) => `
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:.4rem 0; border-bottom:1px dashed var(--border-color); font-size:.82rem;">
+        <span><strong>${i.dataBoleto || '—'}</strong> — ${i.descricao}</span>
+        <div style="display:flex; align-items:center; gap:.75rem;">
+          <span style="color:#c084fc; font-weight:700;">${brl(i.valor)}</span>
+          <button type="button" class="btn-danger" style="padding:.15rem .45rem; font-size:.75rem;" onclick="removerItemRevisaoBoleto(${index})">🗑️</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  const boxRevisao = document.getElementById('box-revisao-boleto');
+  boxRevisao.style.display = 'block';
+  boxRevisao.scrollIntoView({ behavior: 'smooth' });
+}
+
+window.removerItemRevisaoBoleto = function(index) {
+  if (!boletoEmProcessamento || !boletoEmProcessamento.itens) return;
+  boletoEmProcessamento.itens.splice(index, 1);
+  const novaSoma = boletoEmProcessamento.itens.reduce((acc, i) => acc + i.valor, 0);
+  if (novaSoma > 0) {
+    boletoEmProcessamento.valorTotal = novaSoma;
+    document.getElementById('inp-revisao-boleto-val').value = novaSoma.toFixed(2);
+  }
+  boletoEmProcessamento.qtdItens = boletoEmProcessamento.itens.length;
+  renderizarRevisaoBoletoUI();
+  toastMsg('🗑️ Item removido da revisão do boleto.');
+};
+
+window.confirmarEGravarBoletoDocumento = async function() {
+  if (!boletoEmProcessamento) return;
+
+  const descInp = document.getElementById('inp-revisao-boleto-desc').value.trim();
+  const valInp = parseFloat(document.getElementById('inp-revisao-boleto-val').value) || 0;
+  const inpVenc = document.getElementById('inp-boleto-vencimento').value || new Date().toISOString().slice(0, 10);
+
+  if (!valInp) {
+    toastMsg('⚠️ Digite ou confirme o valor total do boleto.');
+    return;
+  }
+
+  boletoEmProcessamento.descricao = descInp || 'Boleto / Conta';
+  boletoEmProcessamento.valorTotal = valInp;
+  boletoEmProcessamento.dataVencimento = inpVenc;
+  boletoEmProcessamento.mesAno = inpVenc.slice(0, 7);
+
+  try {
+    await addDoc(collection(db, COLL_BOLETOS), {
+      ...boletoEmProcessamento,
+      createdAt: serverTimestamp()
+    });
+
+    document.getElementById('box-revisao-boleto').style.display = 'none';
+    document.getElementById('inp-boleto-txt').value = '';
+    const fileTxtEl = document.getElementById('txt-file-boleto');
+    if (fileTxtEl) fileTxtEl.textContent = 'Clique para Selecionar o Arquivo do Boleto';
+
+    const totalFmt = brl(boletoEmProcessamento.valorTotal);
+    boletoEmProcessamento = null;
+
+    toastMsg(`🎉 Boleto de ${totalFmt} salvo com sucesso!`);
+  } catch (err) {
+    alert('Erro ao salvar boleto: ' + err.message);
+  }
+};
+
+function parseLinhasBoleto(texto) {
+  if (!texto) return { beneficiario: '', valorTotal: 0, vencimento: null, itens: [] };
+
+  let beneficiario = '';
+  let valorTotal = 0;
+  let vencimento = null;
+  const itens = [];
+
+  const mVenc = texto.match(/Vencimento\s*[:\s]*(\d{2}[\/\.-]\d{2}[\/\.-]\d{4})/i)
+             || texto.match(/Vencimento\s*[:\s]*(\d{2})\s+([A-Za-z]{3})\s+(\d{4})/i)
+             || texto.match(/Data\s*de\s*Vencimento\s*[:\s]*(\d{2}[\/\.-]\d{2}[\/\.-]\d{4})/i);
+  if (mVenc) {
+    if (mVenc[2] && mVenc[3]) {
+      const dia = mVenc[1];
+      const mesStr = mVenc[2].toUpperCase();
+      const ano = mVenc[3];
+      const mesesMap = { JAN:'01', FEB:'02', MAR:'03', ABR:'04', APR:'04', MAI:'05', MAY:'05', JUN:'06', JUL:'07', AGO:'08', AUG:'08', SET:'09', SEP:'09', OUT:'10', OCT:'10', NOV:'11', DEZ:'12', DEC:'12' };
+      vencimento = `${ano}-${mesesMap[mesStr]||'07'}-${dia.padStart(2,'0')}`;
+    } else if (mVenc[1]) {
+      const [d, m, a] = mVenc[1].split(/[\/\.-]/);
+      vencimento = `${a}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+    }
+  }
+
+  const mBen = texto.match(/Benefici[áa]rio\s*[:\s]*([^\n\r]+)/i)
+            || texto.match(/Nome\s*do\s*Cedente\s*[:\s]*([^\n\r]+)/i)
+            || texto.match(/Raz[ãa]o\s*Social\s*[:\s]*([^\n\r]+)/i);
+  if (mBen) {
+    beneficiario = mBen[1].trim().replace(/\s{2,}/g, ' ');
+  }
+
+  const mVal = texto.match(/Valor\s*do\s*Documento\s*[:\s]*R?\$\s*([\d\.]+,\d{2})/i)
+            || texto.match(/\(=\)\s*Valor\s*Cobrado\s*[:\s]*R?\$\s*([\d\.]+,\d{2})/i)
+            || texto.match(/Valor\s*Cobrado\s*[:\s]*R?\$\s*([\d\.]+,\d{2})/i)
+            || texto.match(/Valor\s*R?\$\s*([\d\.]+,\d{2})/i);
+  if (mVal) {
+    valorTotal = parseBRL(mVal[1]);
+  }
+
+  const linhas = texto.split('\n');
+  linhas.forEach(linha => {
+    const l = linha.trim();
+    if (!l) return;
+    if (/vencimento|beneficiário|cedente|nosso\s*número|agência|código|autenticação|instruções/i.test(l)) return;
+
+    const mItem = l.match(/(\d{2}[\/\.-]\d{2}(?:[\/\.-]\d{2,4})?|\b[A-Za-z]{3}\b)?\s*(.+?)\s+R?\$\s*([\d\.]+,\d{2})$/i);
+    if (mItem) {
+      const dStr = mItem[1] || 'Boleto';
+      const desc = mItem[2].trim();
+      const val = parseBRL(mItem[3]);
+      if (desc && val > 0 && desc.length > 2 && !/valor|total|documento|cobrado/i.test(desc)) {
+        itens.push({ dataBoleto: dStr, descricao: desc, valor: val });
+      }
+    }
+  });
+
+  return { beneficiario, valorTotal, vencimento, itens };
+}
+
+function renderBoletos() {
+  const total = todosBoletos.reduce((acc, b) => acc + (b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0)), 0);
+  document.getElementById('badge-total-boletos').textContent = `${brl(total)} total`;
+
+  const el = document.getElementById('lista-boletos-registrados');
+  if (!todosBoletos.length) {
+    el.innerHTML = `<div class="empty-state">Nenhum boleto cadastrado ainda.</div>`;
+    return;
+  }
+
+  el.innerHTML = todosBoletos.map(b => {
+    const valorTotalBoleto = b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0);
+    const dataVencStr = b.dataVencimento ? fmtData(b.dataVencimento).split(',')[0] : '—';
+    const mesAnoStr = b.mesAno || '—';
+    const descBoleto = b.descricao || 'Boleto / Conta';
+
+    return `
+      <div class="purchase-card">
+        <div class="purchase-header" onclick="toggleDetail('bol-${b.id}')">
+          <div class="purchase-info">
+            <h3><span class="badge purple">📄 ${descBoleto}</span> — Vencimento: ${dataVencStr}</h3>
+            <p>📅 Mês Referência: <strong>${mesAnoStr}</strong> &nbsp;•&nbsp; 🛒 ${b.qtdItens || (b.itens?.length || 1)} itens / encargos</p>
+          </div>
+          <div class="purchase-values">
+            <div class="pv-total" style="color:#c084fc">${brl(valorTotalBoleto)}</div>
+            <div class="pv-sub">Boleto do Mês</div>
+          </div>
+          <svg class="chevron" id="chev-bol-${b.id}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="purchase-details" id="detail-bol-${b.id}">
+          <div class="details-toolbar">
+            <span class="card-subtext">Detalhamento dos Itens / Encargos do Boleto</span>
+            <button class="btn-danger" onclick="excluirBoletoDocumento('${b.id}')">🗑️ Excluir Boleto</button>
+          </div>
+          ${renderItensBoleto(b)}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderItensBoleto(b) {
+  if (b.itens && b.itens.length > 0) {
+    return `<div class="table-responsive"><table class="custom-table">
+      <thead><tr><th>Data</th><th>Descrição / Item</th><th class="num">Valor</th><th>Ação</th></tr></thead>
+      <tbody>${b.itens.map((i, idx) => `<tr>
+        <td><strong>${i.dataBoleto || '—'}</strong></td>
+        <td>${i.descricao}</td>
+        <td class="num" style="color:#c084fc"><strong>${brl(i.valor)}</strong></td>
+        <td><button class="btn-danger" style="padding:.2rem .5rem; font-size:.78rem;" onclick="removerItemBoletoCadastrado('${b.id}', ${idx})">🗑️ Excluir</button></td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  }
+  return `<div class="table-responsive"><table class="custom-table">
+    <thead><tr><th>Descrição</th><th class="num">Valor</th><th>Ação</th></tr></thead>
+    <tbody><tr>
+      <td>${b.descricao || 'Boleto'}</td>
+      <td class="num" style="color:#c084fc"><strong>${brl(b.valor || b.valorTotal)}</strong></td>
+      <td><button class="btn-danger" style="padding:.2rem .5rem; font-size:.78rem;" onclick="excluirBoletoDocumento('${b.id}')">🗑️ Excluir</button></td>
+    </tr></tbody>
+  </table></div>`;
+}
+
+window.removerItemBoletoCadastrado = async function(boletoId, itemIndex) {
+  const boleto = todosBoletos.find(b => b.id === boletoId);
+  if (!boleto || !boleto.itens) return;
+
+  if (!confirm('Remover este item do boleto?')) return;
+
+  const novosItens = [...boleto.itens];
+  novosItens.splice(itemIndex, 1);
+  const novoTotal = novosItens.reduce((acc, i) => acc + (i.valor || 0), 0);
+
+  if (novosItens.length === 0) {
+    await deleteDoc(doc(db, COLL_BOLETOS, boletoId));
+    toastMsg('🗑️ Boleto excluído pois todos os itens foram removidos.');
+  } else {
+    await setDoc(doc(db, COLL_BOLETOS, boletoId), {
+      ...boleto,
+      itens: novosItens,
+      valorTotal: novoTotal,
+      qtdItens: novosItens.length
+    });
+    toastMsg('🗑️ Item removido do boleto.');
+  }
+};
+
+window.excluirBoletoDocumento = async function(id) {
+  if (!confirm('Excluir este boleto e todos os seus itens?')) return;
+  await deleteDoc(doc(db, COLL_BOLETOS, id));
+  toastMsg('🗑️ Boleto removido com sucesso.');
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
 // 4. ABA RESERVAS & ECONOMIAS (ESTIMATIVA, VALOR REAL & RECOMENDAÇÃO INTELIGENTE)
 // ═══════════════════════════════════════════════════════════════════════════
 document.getElementById('form-config-reservas').addEventListener('submit', async e => {
@@ -1526,12 +1973,13 @@ function renderReservasEEconomias() {
   // Cálculo da Recomendação do Sistema baseado no Saldo Líquido Real
   const totalEntradas = todasEntradas.reduce((acc, e) => acc + (e.valor || 0), 0);
   const totalCartoes  = todasFaturas.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
+  const totalBoletos  = todosBoletos.reduce((acc, b) => acc + (b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0)), 0);
   let totalMercadoDebito = 0;
   todasCompras.forEach(c => {
     if (c.formasPagamento) totalMercadoDebito += c.formasPagamento.cartaoDebito || 0;
   });
 
-  const saldoLiquidoLivre = totalEntradas - totalCartoes - totalMercadoDebito;
+  const saldoLiquidoLivre = totalEntradas - totalCartoes - totalBoletos - totalMercadoDebito;
   
   // Sugestão de reserva inteligente: 50% do saldo livre real (ou 20% da renda se houver saldo positivo)
   const recomendacaoSistema = saldoLiquidoLivre > 0 ? Math.max(saldoLiquidoLivre * 0.5, totalEntradas * 0.2) : 0;
