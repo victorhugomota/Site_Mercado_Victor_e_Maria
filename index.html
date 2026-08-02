@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Controle de Gastos no Mercado</title>
-  <meta name="description" content="Sistema completo para controle de gastos no mercado, leitura de QR Code NFC-e, comparação de preços e análise de marcas.">
+  <meta name="description" content="Sistema completo para controle de gastos no mercado, leitura de QR Code NFC-e, comparação de preços, previsão mensal e análise de marcas.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
@@ -146,7 +146,7 @@
     /* Modal */
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:1000;align-items:center;justify-content:center;padding:1rem}
     .modal-overlay.active{display:flex}
-    .modal-box{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-card);padding:1.5rem;position:relative}
+    .modal-box{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);width:100%;max-width:650px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-card);padding:1.5rem;position:relative}
     .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:1px solid var(--border-color)}
     .modal-header h2{font-size:1.15rem;font-weight:700}
     .btn-close{background:transparent;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;line-height:1;padding:.2rem}
@@ -155,10 +155,6 @@
     /* Toast */
     #toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:#1e293b;border:1px solid var(--border-color);color:#fff;padding:.65rem 1.4rem;border-radius:30px;font-size:.875rem;font-weight:600;opacity:0;transition:all .35s;z-index:2000;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.4)}
     #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
-    /* Spinner */
-    .spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
 
     .chevron{transition:transform .25s}
     .chevron.open{transform:rotate(180deg)}
@@ -187,13 +183,13 @@
 
   <nav class="desktop-nav">
     <button class="nav-item active" data-tab="dashboard">📊 Visão Geral</button>
-    <button class="nav-item" data-tab="add">📷 Adicionar Nota</button>
+    <button class="nav-item" data-tab="listamensal">🗓️ Lista Mensal</button>
     <button class="nav-item" data-tab="comparacao">📈 Comparar Preços</button>
     <button class="nav-item" data-tab="recorrencia">🔄 Itens &amp; Marcas</button>
     <button class="nav-item" data-tab="historico">📋 Histórico</button>
   </nav>
 
-  <button class="btn-header-add" data-tab="add">📷 Escanear</button>
+  <button class="btn-header-add" id="btn-open-modal-header">➕ Adicionar Nota</button>
 </header>
 
 <!-- MAIN -->
@@ -201,6 +197,11 @@
 
   <!-- ABA DASHBOARD -->
   <section id="tab-dashboard" class="tab-content active">
+    <!-- Botão de Ação Rápida no Dashboard -->
+    <button class="btn-primary" id="btn-open-modal-home" style="width:100%; padding:1rem; margin-bottom:1.5rem; font-size:1.05rem; box-shadow: 0 4px 15px var(--primary-glow);">
+      ➕ Adicionar / Escanear Nova Nota Fiscal
+    </button>
+
     <div class="grid-summary">
       <div class="card">
         <div class="card-header">
@@ -260,9 +261,89 @@
     </div>
   </section>
 
-  <!-- ABA ADICIONAR NOTA -->
-  <section id="tab-add" class="tab-content">
+  <!-- ABA LISTA MENSAL (PLANEJAMENTO E PREVISÃO PARA O PRÓXIMO MÊS) -->
+  <section id="tab-listamensal" class="tab-content">
+    <div id="lista-mensal-container"></div>
+  </section>
+
+  <!-- ABA COMPARAR PREÇOS -->
+  <section id="tab-comparacao" class="tab-content">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Comparação de Valor Unitário — Mês a Mês</span>
+        <span class="badge green">Por unidade</span>
+      </div>
+      <p class="card-subtext" style="margin-bottom:1rem">
+        Compara o <strong>valor unitário</strong> de cada produto entre os meses, independente da quantidade comprada.
+        Exemplo: bolacha a R$ 4,35/un em maio vs R$ 4,80/un em junho.
+      </p>
+      <div id="lista-comparacao"></div>
+    </div>
+  </section>
+
+  <!-- ABA RECORRÊNCIA & MARCAS -->
+  <section id="tab-recorrencia" class="tab-content">
     <div class="card" style="margin-bottom:1.5rem">
+      <div class="card-header">
+        <span class="card-title">Itens Comprados Mais de Uma Vez</span>
+        <span class="badge amber">Recorrência</span>
+      </div>
+      <p class="card-subtext" style="margin-bottom:1rem">Produtos que aparecem em notas fiscais diferentes — soma de quantidade e frequência.</p>
+      <div id="lista-recorrencia"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Comparativo por Marca — Qual Vale Mais?</span>
+        <span class="badge green">Menor preço</span>
+      </div>
+      <p class="card-subtext" style="margin-bottom:1rem">Quando a marca de um item muda entre compras, indicamos qual teve o menor valor unitário.</p>
+      <div id="lista-marcas"></div>
+    </div>
+  </section>
+
+  <!-- ABA HISTÓRICO -->
+  <section id="tab-historico" class="tab-content">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+      <div>
+        <h2 style="font-size:1.1rem;font-weight:700">Notas Fiscais Cadastradas</h2>
+        <p class="card-subtext">Clique para expandir e ver os itens</p>
+      </div>
+      <span class="badge cyan">🔥 Firebase Realtime</span>
+    </div>
+    <div id="lista-historico"></div>
+  </section>
+
+</main>
+
+<!-- MOBILE NAV -->
+<nav class="mobile-nav">
+  <button class="mob-btn active" data-tab="dashboard">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Início
+  </button>
+  <button class="mob-btn" data-tab="listamensal">
+    <svg viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>Lista
+  </button>
+  <button class="mob-btn" data-tab="comparacao">
+    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Preços
+  </button>
+  <button class="mob-btn" data-tab="recorrencia">
+    <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Marcas
+  </button>
+  <button class="mob-btn" data-tab="historico">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Histórico
+  </button>
+</nav>
+
+<!-- MODAL: ADICIONAR NOTA (JANELA POP-UP DE ADIÇÃO) -->
+<div id="modal-add-nota" class="modal-overlay">
+  <div class="modal-box" style="max-width: 680px;">
+    <div class="modal-header">
+      <h2>📷 Adicionar Nota Fiscal</h2>
+      <button class="btn-close" id="btn-close-modal-add">&times;</button>
+    </div>
+
+    <!-- Leitor de QR Code -->
+    <div class="card" style="margin-bottom:1.25rem;">
       <div class="card-header">
         <span class="card-title">Leitor de QR Code — NFC-e</span>
         <span class="badge amber">📱 Câmera traseira padrão</span>
@@ -277,6 +358,7 @@
       </div>
     </div>
 
+    <!-- Input URL ou HTML -->
     <div class="card">
       <div class="card-header">
         <span class="card-title">Adicionar por Link ou Texto da NFC-e</span>
@@ -299,7 +381,7 @@
 
       <p class="status-msg" id="status-msg"></p>
 
-      <!-- FORMULÁRIO DE REVISÃO E SALVAMENTO (Escondido por padrão até ler a nota ou clicar em preencher) -->
+      <!-- Formulário de Revisão e Salvamento (Escondido por padrão) -->
       <form id="form-nfce" style="display:none; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
         <p class="section-title" style="border-top:none; padding-top:0; margin-top:0;">
           📝 Dados da Compra (Confira e Altere Se Necessário)
@@ -353,7 +435,7 @@
           <p class="section-title" style="border-top:none; padding-top:0; margin-top:0;">
             🛒 Itens Extraídos da Nota (<span id="count-preview-itens">0</span>)
           </p>
-          <div id="lista-preview-itens" style="max-height: 220px; overflow-y: auto; background: rgba(15,23,42,0.6); padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); font-size: 0.82rem;"></div>
+          <div id="lista-preview-itens" style="max-height: 200px; overflow-y: auto; background: rgba(15,23,42,0.6); padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); font-size: 0.82rem;"></div>
         </div>
 
         <button type="submit" class="btn-primary" style="width:100%;margin-top:1.5rem; padding: 0.85rem; font-size: 1rem;">
@@ -361,82 +443,36 @@
         </button>
       </form>
     </div>
-      <p class="status-msg" id="status-msg"></p>
+  </div>
+</div>
+
+<!-- Modal CORS fallback -->
+<div id="modal-cors" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>⚠️ Acesso Externo Necessário</h2>
+      <button class="btn-close" id="btn-modal-close">&times;</button>
     </div>
-  </section>
+    <p style="font-size:.9rem;color:var(--text-muted);margin-bottom:1rem">
+      O servidor da SEFAZ bloqueia consultas diretas por segurança. <br><br>
+      <strong>O que fazer:</strong><br>
+      1. Clique no botão abaixo para abrir a nota fiscal<br>
+      2. Copie todo o conteúdo da página (<code>Ctrl+A</code> → <code>Ctrl+C</code>)<br>
+      3. Cole no campo "Cole o conteúdo da página" no formulário
+    </p>
+    <a id="modal-link" href="#" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:inline-flex;text-decoration:none;margin-bottom:1rem">
+      🌐 Abrir Nota Fiscal no Navegador
+    </a>
+    <button class="btn-secondary" style="width:100%;justify-content:center" onclick="document.getElementById('modal-cors').classList.remove('active')">
+      Entendi, vou colar o conteúdo
+    </button>
+  </div>
+</div>
 
-  <!-- ABA COMPARAR PREÇOS -->
-  <section id="tab-comparacao" class="tab-content">
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Comparação de Valor Unitário — Mês a Mês</span>
-        <span class="badge green">Por unidade</span>
-      </div>
-      <p class="card-subtext" style="margin-bottom:1rem">
-        Compara o <strong>valor unitário</strong> de cada produto entre os meses, independente da quantidade comprada.
-        Exemplo: bolacha a R$ 4,35/un em maio vs R$ 4,80/un em junho.
-      </p>
-      <div id="lista-comparacao"></div>
-    </div>
-  </section>
-
-  <!-- ABA RECORRÊNCIA & MARCAS -->
-  <section id="tab-recorrencia" class="tab-content">
-    <div class="card" style="margin-bottom:1.5rem">
-      <div class="card-header">
-        <span class="card-title">Itens Comprados Mais de Uma Vez</span>
-        <span class="badge amber">Recorrência</span>
-      </div>
-      <p class="card-subtext" style="margin-bottom:1rem">Produtos que aparecem em notas fiscais diferentes — soma de quantidade e frequência.</p>
-      <div id="lista-recorrencia"></div>
-    </div>
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">Comparativo por Marca — Qual Vale Mais?</span>
-        <span class="badge green">Menor preço</span>
-      </div>
-      <p class="card-subtext" style="margin-bottom:1rem">Quando a marca de um item muda entre compras, indicamos qual teve o menor valor unitário.</p>
-      <div id="lista-marcas"></div>
-    </div>
-  </section>
-
-  <!-- ABA HISTÓRICO -->
-  <section id="tab-historico" class="tab-content">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
-      <div>
-        <h2 style="font-size:1.1rem;font-weight:700">Notas Fiscais</h2>
-        <p class="card-subtext">Clique para expandir e ver os itens</p>
-      </div>
-      <span class="badge cyan">🔥 Firebase Realtime</span>
-    </div>
-    <div id="lista-historico"></div>
-  </section>
-
-</main>
-
-<!-- MOBILE NAV -->
-<nav class="mobile-nav">
-  <button class="mob-btn active" data-tab="dashboard">
-    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Início
-  </button>
-  <button class="mob-btn" data-tab="add">
-    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="12" r="3"/></svg>Add Nota
-  </button>
-  <button class="mob-btn" data-tab="comparacao">
-    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Preços
-  </button>
-  <button class="mob-btn" data-tab="recorrencia">
-    <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Marcas
-  </button>
-  <button class="mob-btn" data-tab="historico">
-    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Histórico
-  </button>
-</nav>
-
-<!-- Toast -->
+<!-- Toast Notification -->
 <div id="toast"></div>
 
-<!-- Firebase App (CDN) -->
+<!-- Firebase & Libraries CDN -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
@@ -444,19 +480,17 @@ import {
   deleteDoc, doc, query, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-// ─── Chart.js via CDN ───────────────────────────────────────────────────────
+// Chart.js via CDN
 const chartScript = document.createElement('script');
 chartScript.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js';
 document.head.appendChild(chartScript);
 
-// ─── html5-qrcode via CDN ───────────────────────────────────────────────────
+// html5-qrcode via CDN
 const qrScript = document.createElement('script');
 qrScript.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
 document.head.appendChild(qrScript);
 
-// ═══════════════════════════════════════════════════════════════════════════
 // FIREBASE INIT
-// ═══════════════════════════════════════════════════════════════════════════
 const firebaseConfig = {
   apiKey: "AIzaSyANpFnEIkyN1XCT6qbtmVR9wx7sQHEsyrE",
   authDomain: "comprasmercado-23913.firebaseapp.com",
@@ -470,19 +504,16 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const COLL = 'compras';
 
-// ═══════════════════════════════════════════════════════════════════════════
 // ESTADO GLOBAL
-// ═══════════════════════════════════════════════════════════════════════════
 let todasCompras = [];
 let chartInst = null;
 let qrScanner = null;
 let cameras = [];
 let camIdx = 0;
 let escaneando = false;
+let itensNotaCarregada = [];
 
-// ═══════════════════════════════════════════════════════════════════════════
 // UTILITÁRIOS
-// ═══════════════════════════════════════════════════════════════════════════
 function brl(v) {
   return Number(v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
@@ -497,7 +528,7 @@ function fmtData(iso) {
   try { return new Date(iso).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}); }
   catch { return iso; }
 }
-function toastMsg(msg, dur=3000) {
+function toastMsg(msg, dur=3500) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
@@ -507,14 +538,32 @@ function setStatus(msg, color='var(--accent-amber)') {
   const el = document.getElementById('status-msg');
   if (el) { el.textContent = msg; el.style.color = color; }
 }
-function isoNow() {
-  const d = new Date();
-  return d.toISOString().slice(0,16);
+function toDatetimeInputString(isoOrDateStr) {
+  if (!isoOrDateStr) return new Date().toISOString().slice(0, 16);
+  try {
+    const d = new Date(isoOrDateStr);
+    if (isNaN(d.getTime())) return new Date().toISOString().slice(0, 16);
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch {
+    return new Date().toISOString().slice(0, 16);
+  }
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
+// CALCULA DIAS ÚTEIS (SEGUNDA A SEXTA) EM UM MÊS
+function getBusinessDaysInMonth(year, monthIndex0) {
+  let count = 0;
+  const daysInMonth = new Date(year, monthIndex0 + 1, 0).getDate();
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dayOfWeek = new Date(year, monthIndex0, day).getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) { // 0 = Dom, 6 = Sáb
+      count++;
+    }
+  }
+  return count;
+}
+
 // TAB SWITCHING
-// ═══════════════════════════════════════════════════════════════════════════
 function goTab(id) {
   document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('active'));
@@ -522,21 +571,31 @@ function goTab(id) {
   const sec = document.getElementById('tab-' + id);
   if (sec) sec.classList.add('active');
   document.querySelectorAll(`[data-tab="${id}"]`).forEach(b => b.classList.add('active'));
-
-  if (id !== 'add' && escaneando) stopCam();
 }
 
 document.querySelectorAll('[data-tab]').forEach(btn => {
   btn.addEventListener('click', () => goTab(btn.getAttribute('data-tab')));
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
+// MODAL ADD NOTA
+function abrirModalAddNota() {
+  document.getElementById('modal-add-nota').classList.add('active');
+}
+function fecharModalAddNota() {
+  if (escaneando) stopCam();
+  document.getElementById('modal-add-nota').classList.remove('active');
+}
+
+document.getElementById('btn-open-modal-header')?.addEventListener('click', abrirModalAddNota);
+document.getElementById('btn-open-modal-home')?.addEventListener('click', abrirModalAddNota);
+document.getElementById('btn-close-modal-add')?.addEventListener('click', fecharModalAddNota);
+
 // FIREBASE — ESCUTAR COMPRAS
-// ═══════════════════════════════════════════════════════════════════════════
 const q = query(collection(db, COLL), orderBy('dataEmissao', 'desc'));
 onSnapshot(q, snap => {
   todasCompras = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   renderDashboard();
+  renderListaMensal();
   renderHistorico();
   renderComparacao();
   renderRecorrencia();
@@ -549,9 +608,7 @@ async function excluir(id) {
   return deleteDoc(doc(db, COLL, id));
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
 // DASHBOARD
-// ═══════════════════════════════════════════════════════════════════════════
 function renderDashboard() {
   let total = 0, desc = 0, alim = 0, cred = 0, deb = 0, qtdItens = 0;
   const porMes = {};
@@ -615,8 +672,164 @@ function renderChart(porMes) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// CÂMERA / QR CODE
+// ABA: LISTA MENSAL (PLANEJAMENTO E PREVISÃO PARA O PRÓXIMO MÊS)
 // ═══════════════════════════════════════════════════════════════════════════
+function renderListaMensal() {
+  const el = document.getElementById('lista-mensal-container');
+  if (!el) return;
+
+  // 1. Determina o próximo mês relativo à data atual
+  const agora = new Date();
+  const proximoMesData = new Date(agora.getFullYear(), agora.getMonth() + 1, 1);
+  const mesNome = proximoMesData.toLocaleString('pt-BR', { month: 'long' });
+  const ano = proximoMesData.getFullYear();
+  const mesAnoStr = `${mesNome.charAt(0).toUpperCase() + mesNome.slice(1)} de ${ano}`;
+
+  // 2. Calcula dias úteis do próximo mês
+  const diasUteis = getBusinessDaysInMonth(proximoMesData.getFullYear(), proximoMesData.getMonth());
+
+  // 3. Orçamento disponível
+  const alimPorDia = 31.80;
+  const credPorDia = 20.00;
+  const alimDisponivel = diasUteis * alimPorDia;
+  const credDisponivel = diasUteis * credPorDia;
+
+  // 4. Coleta os itens mais comprados do histórico
+  const agregadorItens = {};
+  const mesesUnicos = new Set();
+
+  todasCompras.forEach(c => {
+    if (c.mesAno) mesesUnicos.add(c.mesAno);
+    (c.itens || []).forEach(item => {
+      const chave = (item.nome || '').toLowerCase().trim();
+      if (!chave) return;
+
+      if (!agregadorItens[chave]) {
+        agregadorItens[chave] = {
+          nome: item.nome,
+          marca: item.marca || 'Geral',
+          qtdTotal: 0,
+          frequencia: 0,
+          valoresUnitarios: []
+        };
+      }
+      agregadorItens[chave].qtdTotal += item.quantidade || 1;
+      agregadorItens[chave].frequencia += 1;
+      if (item.valorUnitario) agregadorItens[chave].valoresUnitarios.push(item.valorUnitario);
+    });
+  });
+
+  const numMesesHistorico = Math.max(1, mesesUnicos.size);
+
+  const listaPlanejada = Object.values(agregadorItens).map(i => {
+    const mediaUnit = i.valoresUnitarios.length > 0
+      ? i.valoresUnitarios.reduce((a, b) => a + b, 0) / i.valoresUnitarios.length
+      : 0;
+    const qtdEst = Math.max(1, Math.ceil(i.qtdTotal / numMesesHistorico));
+    return {
+      nome: i.nome,
+      marca: i.marca,
+      frequencia: i.frequencia,
+      qtdSugerida: qtdEst,
+      valorUnitario: mediaUnit,
+      subtotal: qtdEst * mediaUnit
+    };
+  });
+
+  listaPlanejada.sort((a, b) => b.frequencia - a.frequencia);
+
+  const totalGeralEstimado = listaPlanejada.reduce((acc, item) => acc + item.subtotal, 0);
+
+  // 5. Distribuição de Orçamento: Alimentação -> Crédito -> Débito
+  let restante = totalGeralEstimado;
+
+  const cobertoAlim = Math.min(restante, alimDisponivel);
+  restante -= cobertoAlim;
+
+  const cobertoCred = Math.min(restante, credDisponivel);
+  restante -= cobertoCred;
+
+  const cobertoDeb = restante > 0 ? restante : 0;
+
+  // Renderização
+  let html = `
+    <div class="card" style="margin-bottom:1.5rem; background: linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.95)); border: 1px solid #3b82f6;">
+      <div class="card-header">
+        <div>
+          <span class="card-title" style="color:#60a5fa;">📅 Previsão de Compras — ${mesAnoStr}</span>
+          <p class="card-subtext" style="color:#cbd5e1; margin-top:0.25rem;">
+            Orçamento gerado para os <strong>${diasUteis} dias úteis</strong> de ${mesNome}.
+          </p>
+        </div>
+        <span class="badge green" style="font-size:0.8rem; padding:0.4rem 0.75rem;">${diasUteis} Dias Úteis</span>
+      </div>
+
+      <div class="payment-grid" style="margin-top:1rem;">
+        <div class="payment-item" style="border-color: rgba(16,185,129,0.4);">
+          <div class="p-label">🍽️ Vale Alimentação (${diasUteis}d × R$ 31,80)</div>
+          <div class="p-val" style="color:#34d399;">${brl(cobertoAlim)} <span style="font-size:0.75rem;font-weight:normal;color:var(--text-muted)">/ ${brl(alimDisponivel)}</span></div>
+        </div>
+        <div class="payment-item" style="border-color: rgba(99,102,241,0.4);">
+          <div class="p-label">💳 Cartão Crédito (${diasUteis}d × R$ 20,00)</div>
+          <div class="p-val" style="color:#818cf8;">${brl(cobertoCred)} <span style="font-size:0.75rem;font-weight:normal;color:var(--text-muted)">/ ${brl(credDisponivel)}</span></div>
+        </div>
+        <div class="payment-item" style="border-color: ${cobertoDeb > 0 ? 'rgba(244,63,94,0.5)' : 'var(--border-color)'};">
+          <div class="p-label">💳 Débito Necessário (Excedente)</div>
+          <div class="p-val" style="color: ${cobertoDeb > 0 ? '#fb7185' : 'var(--text-muted)'};">${brl(cobertoDeb)}</div>
+        </div>
+      </div>
+
+      <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+        <span style="font-size:0.9rem; font-weight:600; color:var(--text-muted);">Total Estimado da Lista de Compras:</span>
+        <span style="font-size:1.6rem; font-weight:800; color:var(--primary);">${brl(totalGeralEstimado)}</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Lista Sugerida para ${mesNome}</span>
+        <span class="badge amber">${listaPlanejada.length} itens previstos</span>
+      </div>
+      <p class="card-subtext" style="margin-bottom:1rem;">
+        Esta aba é apenas uma estimativa para o próximo mês e <strong>não altera</strong> os gastos reais exibidos na página inicial.
+      </p>
+  `;
+
+  if (listaPlanejada.length === 0) {
+    html += `<div class="empty-state">Adicione notas fiscais para que o sistema gere automaticamente sua lista mensal de compras.</div></div>`;
+  } else {
+    html += `
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Marca</th>
+              <th class="num">Qtd. Sugerida</th>
+              <th class="num">Preço Unit. Médio</th>
+              <th class="num">Subtotal Previsto</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${listaPlanejada.map(item => `
+              <tr>
+                <td><strong>${item.nome}</strong></td>
+                <td><span class="badge amber">${item.marca}</span></td>
+                <td class="num">${item.qtdSugerida} un</td>
+                <td class="num">${brl(item.valorUnitario)}</td>
+                <td class="num"><strong>${brl(item.subtotal)}</strong></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+  }
+
+  el.innerHTML = html;
+}
+
+// CÂMERA / QR CODE
 document.getElementById('btn-start-cam').addEventListener('click', startCam);
 document.getElementById('btn-switch-cam').addEventListener('click', switchCam);
 document.getElementById('btn-stop-cam').addEventListener('click', stopCam);
@@ -632,14 +845,13 @@ async function startCam() {
 
     let camConfig;
     if (cameras && cameras.length > 0) {
-      // Prefere câmera traseira (back / environment)
       const backIdx = cameras.findIndex(c =>
         /back|traseira|rear|environment/i.test(c.label)
       );
       camIdx = backIdx >= 0 ? backIdx : 0;
       camConfig = cameras[camIdx].id;
     } else {
-      camConfig = { facingMode: 'environment' }; // fallback mobile
+      camConfig = { facingMode: 'environment' };
     }
 
     await qrScanner.start(camConfig, { fps: 10, qrbox: { width: 240, height: 240 } },
@@ -683,24 +895,7 @@ async function onQR(text) {
   await processarURL(text);
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// FORM & LEITURA DE NOTAS (PRÉ-PREENCHIMENTO E REVISÃO ANTES DE SALVAR)
-// ═══════════════════════════════════════════════════════════════════════════
-let itensNotaCarregada = [];
-
-function toDatetimeInputString(isoOrDateStr) {
-  if (!isoOrDateStr) return new Date().toISOString().slice(0, 16);
-  try {
-    const d = new Date(isoOrDateStr);
-    if (isNaN(d.getTime())) return new Date().toISOString().slice(0, 16);
-    const pad = n => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-  } catch {
-    return new Date().toISOString().slice(0, 16);
-  }
-}
-
-// Botão "Carregar e Ler Dados da Nota"
+// BOTÕES DE LER E PREENCHER MANUAL
 document.getElementById('btn-carregar-dados').addEventListener('click', async () => {
   const url  = document.getElementById('inp-url').value.trim();
   const html = document.getElementById('inp-html').value.trim();
@@ -722,7 +917,6 @@ document.getElementById('btn-carregar-dados').addEventListener('click', async ()
   }
 });
 
-// Botão "Preencher Manualmente"
 document.getElementById('btn-preencher-manual').addEventListener('click', () => {
   preencherFormularioRevisao({
     nomeMercado: '',
@@ -737,7 +931,6 @@ document.getElementById('btn-preencher-manual').addEventListener('click', () => 
   setStatus('✍️ Preencha os dados da compra abaixo e clique em Salvar Nota Fiscal.', 'var(--accent-cyan)');
 });
 
-// Exibe a seção dos campos pré-preenchidos para o usuário alterar se quiser
 function preencherFormularioRevisao(dados) {
   document.getElementById('inp-mercado').value = dados.nomeMercado || '';
   document.getElementById('inp-data').value = toDatetimeInputString(dados.dataEmissao);
@@ -752,11 +945,9 @@ function preencherFormularioRevisao(dados) {
 
   itensNotaCarregada = dados.itens || [];
 
-  // Exibe a seção de revisão/edição
   const formSection = document.getElementById('form-nfce');
   formSection.style.display = 'block';
 
-  // Preview dos Itens
   const previewBox = document.getElementById('preview-itens-box');
   const countEl = document.getElementById('count-preview-itens');
   const listaEl = document.getElementById('lista-preview-itens');
@@ -777,7 +968,7 @@ function preencherFormularioRevisao(dados) {
   formSection.scrollIntoView({ behavior: 'smooth' });
 }
 
-// SUBMIT FINAL: Só salva no banco quando o usuário clica no botão "Salvar Nota Fiscal"
+// SUBMIT FORM COM VERIFICAÇÃO DE DUPLICIDADE
 document.getElementById('form-nfce').addEventListener('submit', async e => {
   e.preventDefault();
 
@@ -785,11 +976,26 @@ document.getElementById('form-nfce').addEventListener('submit', async e => {
   const dataRaw = document.getElementById('inp-data').value || new Date().toISOString();
   const vtotal  = parseFloat(document.getElementById('inp-vtotal').value) || 0;
   const desc    = parseFloat(document.getElementById('inp-desconto').value) || 0;
-  const pagar   = parseFloat(document.getElementById('inp-pagar').value) || (vtotal - desc);
+  const pagar   = parseFloat(document.getElementById('inp-pagar').value) || 0;
   const qtd     = parseInt(document.getElementById('inp-qtd').value) || 0;
   const alim    = parseFloat(document.getElementById('inp-alim').value) || 0;
   const cred    = parseFloat(document.getElementById('inp-cred').value) || 0;
   const deb     = parseFloat(document.getElementById('inp-deb').value) || 0;
+
+  // VERIFICAÇÃO DE NOTA DUPLICADA
+  const dataEmissaoInput = new Date(dataRaw).toISOString().slice(0, 16);
+  const notaDuplicada = todasCompras.find(c => {
+    const dataExistente = new Date(c.dataEmissao).toISOString().slice(0, 16);
+    const mesmoValor = Math.abs((c.valorAPagar || 0) - pagar) < 0.05;
+    const mesmoMercado = (c.nomeMercado || '').toLowerCase().trim() === mercado.toLowerCase().trim();
+    return dataExistente === dataEmissaoInput && mesmoValor && mesmoMercado;
+  });
+
+  if (notaDuplicada) {
+    setStatus(`⚠️ Esta nota fiscal já existe no sistema (Cadastrada em ${fmtData(notaDuplicada.dataEmissao)} no valor de ${brl(notaDuplicada.valorAPagar)}). Nota não adicionada!`, '#fb7185');
+    toastMsg('⚠️ Nota fiscal já cadastrada! Operação cancelada.');
+    return;
+  }
 
   const d = new Date(dataRaw);
   const mesAno = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
@@ -810,13 +1016,13 @@ document.getElementById('form-nfce').addEventListener('submit', async e => {
 
     setStatus('✅ Nota salva com sucesso!', '#34d399');
     
-    // Oculta e reseta o formulário
     document.getElementById('form-nfce').style.display = 'none';
     document.getElementById('form-nfce').reset();
     document.getElementById('inp-url').value = '';
     document.getElementById('inp-html').value = '';
     itensNotaCarregada = [];
 
+    fecharModalAddNota();
     goTab('dashboard');
     toastMsg('🎉 Nota fiscal registrada no Firebase!');
   } catch(err) {
@@ -824,9 +1030,7 @@ document.getElementById('form-nfce').addEventListener('submit', async e => {
   }
 });
 
-// ═══════════════════════════════════════════════════════════════════════════
-// PARSER NFC-e (Preenche o formulário para o usuário revisar ao invés de salvar direto)
-// ═══════════════════════════════════════════════════════════════════════════
+// PARSER NFC-e
 async function processarURL(url) {
   const proxies = [
     u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
@@ -864,10 +1068,8 @@ function parseNFCe(html) {
   const doc = parser.parseFromString(html, 'text/html');
   const body = doc.body?.textContent || html;
 
-  // Mercado
   let nomeMercado = doc.querySelector('.txtTopo, .nomeEmit, h1')?.textContent?.trim() || 'Mercado';
 
-  // Data
   let dataEmissao = new Date().toISOString();
   const mData = body.match(/Emiss[ãa]o\s*[:\-]?\s*(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}:\d{2})?/i)
              || body.match(/(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}:\d{2})/);
@@ -896,7 +1098,6 @@ function parseNFCe(html) {
     cartaoDebito:    mDeb  ? parseBRL(mDeb[1])  : 0,
   };
 
-  // Itens
   const itens = [];
   const rows = doc.querySelectorAll('tr, .item, .itemNota');
   rows.forEach(row => {
@@ -942,9 +1143,7 @@ function extrairMarca(desc) {
   return up.split(' ')[0] || 'Genérica';
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
 // HISTÓRICO
-// ═══════════════════════════════════════════════════════════════════════════
 function renderHistorico() {
   const el = document.getElementById('lista-historico');
   if (!todasCompras.length) {
@@ -1003,9 +1202,7 @@ window.confirmarExcluir = async function(id) {
   } catch(e) { alert('Erro: ' + e.message); }
 };
 
-// ═══════════════════════════════════════════════════════════════════════════
 // COMPARAÇÃO DE VALORES UNITÁRIOS MÊS A MÊS
-// ═══════════════════════════════════════════════════════════════════════════
 function renderComparacao() {
   const el = document.getElementById('lista-comparacao');
   const mapa = {};
@@ -1043,9 +1240,7 @@ function renderComparacao() {
   </table></div>`;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
 // RECORRÊNCIA & MARCAS
-// ═══════════════════════════════════════════════════════════════════════════
 function renderRecorrencia() {
   const elRec   = document.getElementById('lista-recorrencia');
   const elMarc  = document.getElementById('lista-marcas');
@@ -1061,7 +1256,6 @@ function renderRecorrencia() {
       agr[chave].notas += 1;
       agr[chave].units.push(item.valorUnitario || 0);
 
-      // Agrupamento por categoria (primeira palavra como chave)
       const cat = (item.nome || '').split(' ')[0].toUpperCase();
       if (!byCategoria[cat]) byCategoria[cat] = {};
       const marca = item.marca || 'Genérica';
@@ -1070,7 +1264,6 @@ function renderRecorrencia() {
     });
   });
 
-  // Recorrência
   const recArr = Object.values(agr).filter(x => x.notas > 1).sort((a,b) => b.notas - a.notas);
   elRec.innerHTML = !recArr.length
     ? `<div class="empty-state">Adicione notas diferentes para calcular recorrência dos itens.</div>`
@@ -1088,7 +1281,6 @@ function renderRecorrencia() {
         }).join('')}</tbody>
       </table></div>`;
 
-  // Marcas
   const marcasHTML = Object.entries(byCategoria).filter(([,v]) => Object.keys(v).length > 1).map(([cat, marcas]) => {
     let menorVal = Infinity, menorMarca = '';
     const chips = Object.entries(marcas).map(([marca, vals]) => {
@@ -1113,36 +1305,11 @@ function renderRecorrencia() {
   elMarc.innerHTML = marcasHTML || `<div class="empty-state">Ao comprar o mesmo tipo de produto com marcas diferentes (ex: Arroz Camil vs Tio João), o sistema mostrará qual teve menor preço unitário.</div>`;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
 // MODAL CORS FALLBACK
-// ═══════════════════════════════════════════════════════════════════════════
 document.getElementById('btn-modal-close').addEventListener('click', () => {
   document.getElementById('modal-cors').classList.remove('active');
 });
 </script>
-
-<!-- Modal CORS fallback (sem dependências JS de módulo) -->
-<div id="modal-cors" class="modal-overlay">
-  <div class="modal-box">
-    <div class="modal-header">
-      <h2>⚠️ Acesso Externo Necessário</h2>
-      <button class="btn-close" id="btn-modal-close">&times;</button>
-    </div>
-    <p style="font-size:.9rem;color:var(--text-muted);margin-bottom:1rem">
-      O servidor da SEFAZ bloqueia consultas diretas por segurança. <br><br>
-      <strong>O que fazer:</strong><br>
-      1. Clique no botão abaixo para abrir a nota fiscal<br>
-      2. Copie todo o conteúdo da página (<code>Ctrl+A</code> → <code>Ctrl+C</code>)<br>
-      3. Cole no campo "Cole o conteúdo da página" no formulário
-    </p>
-    <a id="modal-link" href="#" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:inline-flex;text-decoration:none;margin-bottom:1rem">
-      🌐 Abrir Nota Fiscal no Navegador
-    </a>
-    <button class="btn-secondary" style="width:100%;justify-content:center" onclick="document.getElementById('modal-cors').classList.remove('active')">
-      Entendi, vou colar o conteúdo
-    </button>
-  </div>
-</div>
 
 </body>
 </html>

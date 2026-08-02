@@ -4,250 +4,476 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Controle de Gastos no Mercado</title>
-  <meta name="description" content="Sistema completo para controle de gastos no mercado, leitura de QR Code NFC-e, comparação de preços unitários mês a mês e análise de marcas.">
-  <script type="module" crossorigin src="./assets/index-CC-rkKRy.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-BsXfqASL.css">
+  <meta name="description" content="Sistema completo para controle de gastos no mercado, leitura de QR Code NFC-e, comparação de preços, previsão mensal e análise de marcas.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --bg-card: #1e293b;
+      --bg-card-hover: #334155;
+      --border-color: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #10b981;
+      --primary-hover: #059669;
+      --primary-glow: rgba(16,185,129,0.25);
+      --secondary: #6366f1;
+      --accent-amber: #f59e0b;
+      --accent-rose: #f43f5e;
+      --accent-cyan: #06b6d4;
+      --accent-purple: #a855f7;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --shadow-card: 0 10px 25px -5px rgba(0,0,0,.3),0 8px 10px -6px rgba(0,0,0,.3);
+    }
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:'Inter',system-ui,sans-serif;background:var(--bg-dark);color:var(--text-main);min-height:100vh;padding-bottom:80px;-webkit-font-smoothing:antialiased}
+    a{color:inherit}
+
+    /* Header */
+    .app-header{position:sticky;top:0;z-index:100;background:rgba(15,23,42,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-color);padding:1rem 1.5rem;display:flex;justify-content:space-between;align-items:center;gap:.75rem}
+    .logo-container{display:flex;align-items:center;gap:.75rem}
+    .logo-icon{width:40px;height:40px;border-radius:var(--radius-md);background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;font-size:1.25rem;box-shadow:0 0 15px var(--primary-glow)}
+    .logo-text h1{font-size:1.1rem;font-weight:700;background:linear-gradient(to right,#fff,#cbd5e1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .logo-text p{font-size:.72rem;color:var(--text-muted)}
+    .btn-header-add{background:linear-gradient(135deg,var(--primary),#059669);color:#fff;border:none;padding:.55rem 1rem;border-radius:var(--radius-md);font-weight:600;font-size:.85rem;cursor:pointer;display:flex;align-items:center;gap:.4rem;transition:all .2s;box-shadow:0 4px 12px var(--primary-glow);white-space:nowrap}
+    .btn-header-add:hover{transform:translateY(-1px)}
+
+    /* Desktop Nav */
+    .desktop-nav{display:flex;gap:.4rem;flex-wrap:wrap}
+    .nav-item{background:transparent;color:var(--text-muted);border:none;padding:.55rem .9rem;border-radius:var(--radius-sm);font-weight:500;font-size:.85rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:.35rem;font-family:inherit}
+    .nav-item:hover{color:var(--text-main);background:rgba(255,255,255,.06)}
+    .nav-item.active{color:#fff;background:var(--bg-card);border:1px solid var(--border-color);font-weight:600}
+
+    /* Mobile Nav */
+    .mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(30,41,59,.97);backdrop-filter:blur(16px);border-top:1px solid var(--border-color);padding:.4rem .2rem;justify-content:space-around}
+    .mob-btn{background:transparent;border:none;color:var(--text-muted);display:flex;flex-direction:column;align-items:center;gap:.2rem;font-size:.65rem;font-weight:500;padding:.35rem;border-radius:var(--radius-sm);cursor:pointer;flex:1;font-family:inherit}
+    .mob-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
+    .mob-btn.active{color:var(--primary)}
+
+    @media(max-width:768px){.desktop-nav{display:none}.mobile-nav{display:flex}.app-header{padding:.8rem 1rem}}
+
+    /* Layout */
+    .main-container{max-width:1200px;margin:0 auto;padding:1.5rem}
+    @media(max-width:600px){.main-container{padding:1rem}}
+    .tab-content{display:none;animation:fadeIn .3s ease}
+    .tab-content.active{display:block}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Cards */
+    .grid-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1.25rem;margin-bottom:1.5rem}
+    .card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:1.25rem;box-shadow:var(--shadow-card);transition:border-color .2s}
+    .card:hover{border-color:#475569}
+    .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem}
+    .card-title{font-size:.82rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)}
+    .card-icon{width:36px;height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+    .card-icon.green{background:rgba(16,185,129,.15);color:var(--primary)}
+    .card-icon.amber{background:rgba(245,158,11,.15);color:var(--accent-amber)}
+    .card-icon.purple{background:rgba(168,85,247,.15);color:var(--accent-purple)}
+    .card-value{font-size:1.75rem;font-weight:800;margin-bottom:.25rem}
+    .card-subtext{font-size:.78rem;color:var(--text-muted)}
+
+    /* Badges */
+    .badge{display:inline-flex;align-items:center;gap:.25rem;padding:.22rem .55rem;border-radius:20px;font-size:.72rem;font-weight:700}
+    .badge.green{background:rgba(16,185,129,.2);color:#34d399}
+    .badge.red{background:rgba(244,63,94,.2);color:#fb7185}
+    .badge.amber{background:rgba(245,158,11,.2);color:#fbbf24}
+    .badge.cyan{background:rgba(6,182,212,.2);color:#22d3ee}
+
+    /* Payment methods */
+    .payment-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.9rem;margin-top:.75rem}
+    .payment-item{background:rgba(15,23,42,.6);border:1px solid var(--border-color);padding:.8rem;border-radius:var(--radius-md)}
+    .payment-item .p-label{font-size:.78rem;color:var(--text-muted);margin-bottom:.2rem}
+    .payment-item .p-val{font-size:1.15rem;font-weight:700}
+
+    /* Chart */
+    .chart-container{position:relative;height:300px;width:100%}
+
+    /* Buttons */
+    .btn-primary{background:var(--primary);color:#fff;border:none;padding:.65rem 1.2rem;border-radius:var(--radius-md);font-weight:600;font-size:.9rem;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:.45rem;transition:background .2s;font-family:inherit}
+    .btn-primary:hover{background:var(--primary-hover)}
+    .btn-secondary{background:var(--bg-card-hover);color:var(--text-main);border:1px solid var(--border-color);padding:.65rem 1.2rem;border-radius:var(--radius-md);font-weight:600;font-size:.9rem;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:.45rem;transition:background .2s;font-family:inherit}
+    .btn-secondary:hover{background:#475569}
+    .btn-danger{background:rgba(244,63,94,.15);color:#fb7185;border:1px solid rgba(244,63,94,.3);padding:.4rem .75rem;border-radius:var(--radius-sm);font-weight:600;font-size:.8rem;cursor:pointer;font-family:inherit}
+    .btn-danger:hover{background:rgba(244,63,94,.3)}
+
+    /* Forms */
+    .form-group{margin-bottom:1rem}
+    .form-group label{display:block;font-size:.84rem;font-weight:600;margin-bottom:.4rem;color:var(--text-muted)}
+    .form-control{width:100%;background:var(--bg-dark);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:.72rem 1rem;color:var(--text-main);font-family:inherit;font-size:.92rem;transition:border-color .2s}
+    .form-control:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-glow)}
+    select.form-control{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 1rem center}
+
+    /* Scanner */
+    .scanner-box{background:var(--bg-dark);border:2px dashed var(--border-color);border-radius:var(--radius-lg);padding:1rem;text-align:center;margin-bottom:1rem;overflow:hidden}
+    #qr-reader{width:100%;max-width:480px;margin:0 auto;border-radius:var(--radius-md);overflow:hidden}
+    #qr-reader video{border-radius:var(--radius-md)}
+    .scanner-actions{display:flex;justify-content:center;gap:.75rem;margin-top:1rem;flex-wrap:wrap}
+
+    /* Table */
+    .table-responsive{width:100%;overflow-x:auto}
+    .custom-table{width:100%;border-collapse:collapse;text-align:left;font-size:.87rem}
+    .custom-table th{background:rgba(15,23,42,.6);color:var(--text-muted);font-weight:600;padding:.8rem 1rem;border-bottom:1px solid var(--border-color)}
+    .custom-table td{padding:.8rem 1rem;border-bottom:1px solid rgba(51,65,85,.5);vertical-align:middle}
+    .custom-table tr:hover td{background:rgba(255,255,255,.02)}
+    .custom-table .num{text-align:right}
+
+    /* Purchase cards (histórico) */
+    .purchase-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);margin-bottom:1rem;overflow:hidden}
+    .purchase-header{padding:1.1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;gap:.75rem}
+    .purchase-header:hover{background:var(--bg-card-hover)}
+    .purchase-info h3{font-size:1rem;font-weight:700;margin-bottom:.2rem}
+    .purchase-info p{font-size:.78rem;color:var(--text-muted)}
+    .purchase-values{text-align:right;flex-shrink:0}
+    .purchase-values .pv-total{font-size:1.2rem;font-weight:800;color:var(--primary)}
+    .purchase-values .pv-sub{font-size:.72rem;color:var(--text-muted)}
+    .purchase-details{display:none;padding:1.1rem 1.25rem;background:rgba(15,23,42,.45);border-top:1px solid var(--border-color)}
+    .purchase-details.open{display:block}
+    .details-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem}
+
+    /* Status msg */
+    .status-msg{margin-top:.75rem;font-size:.84rem;color:var(--accent-amber);text-align:center;min-height:1.4em}
+
+    /* Divider */
+    .section-title{font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:1rem;margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid var(--border-color)}
+    .section-title:first-child{border-top:none;margin-top:0;padding-top:0}
+
+    /* Empty state */
+    .empty-state{text-align:center;padding:2.5rem 1rem;color:var(--text-muted);font-size:.9rem}
+
+    /* Modal */
+    .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);z-index:1000;align-items:center;justify-content:center;padding:1rem}
+    .modal-overlay.active{display:flex}
+    .modal-box{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);width:100%;max-width:650px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-card);padding:1.5rem;position:relative}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:1px solid var(--border-color)}
+    .modal-header h2{font-size:1.15rem;font-weight:700}
+    .btn-close{background:transparent;border:none;color:var(--text-muted);font-size:1.5rem;cursor:pointer;line-height:1;padding:.2rem}
+    .btn-close:hover{color:var(--text-main)}
+
+    /* Toast */
+    #toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);background:#1e293b;border:1px solid var(--border-color);color:#fff;padding:.65rem 1.4rem;border-radius:30px;font-size:.875rem;font-weight:600;opacity:0;transition:all .35s;z-index:2000;pointer-events:none;box-shadow:0 4px 20px rgba(0,0,0,.4)}
+    #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+    .chevron{transition:transform .25s}
+    .chevron.open{transform:rotate(180deg)}
+
+    /* Brand comparison card */
+    .brand-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;margin-bottom:.9rem}
+    .brand-card-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:.9rem}
+    .brands-row{display:flex;gap:.75rem;flex-wrap:wrap}
+    .brand-chip{background:rgba(15,23,42,.7);border:1px solid var(--border-color);padding:.55rem .9rem;border-radius:10px}
+    .brand-chip.best{border-color:var(--primary)}
+    .brand-chip .bc-name{font-size:.78rem;color:var(--text-muted)}
+    .brand-chip .bc-val{font-size:1rem;font-weight:700}
+  </style>
+  <script type="module" crossorigin src="./assets/index-Io7oOovB.js"></script>
 </head>
 <body>
 
-  <!-- Header da Aplicação -->
-  <header class="app-header">
-    <div class="logo-container">
-      <div class="logo-icon">🛒</div>
-      <div class="logo-text">
-        <h1>Controle Mercado</h1>
-        <p>Victor & Maria</p>
-      </div>
-    </div>
-
-    <!-- Navegação Desktop -->
-    <nav class="desktop-nav">
-      <button class="nav-item active" data-tab-target="tab-dashboard">
-        📊 Visão Geral
-      </button>
-      <button class="nav-item" data-tab-target="tab-add">
-        📷 Adicionar Nota
-      </button>
-      <button class="nav-item" data-tab-target="tab-comparacao">
-        📈 Comparar Preços
-      </button>
-      <button class="nav-item" data-tab-target="tab-recorrencia">
-        🔄 Itens & Marcas
-      </button>
-      <button class="nav-item" data-tab-target="tab-historico">
-        📋 Histórico
-      </button>
-    </nav>
-
-    <button class="btn-header-add" onclick="window.mudarAba('tab-add')">
-      <span>📷</span> Escanear Nota
-    </button>
-  </header>
-
-  <!-- Conteúdo Principal -->
-  <main class="main-container">
-
-    <!-- ABA 1: DASHBOARD / VISÃO GERAL -->
-    <section id="tab-dashboard" class="tab-content active">
-      <div class="grid-summary">
-        <!-- Card 1: Total Gasto -->
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Total Gasto no Mercado</span>
-            <div class="card-icon green">💰</div>
-          </div>
-          <div class="card-value" id="dash-total-gasto">R$ 0,00</div>
-          <div class="card-subtext">Baseado no Valor a Pagar acumulado</div>
-        </div>
-
-        <!-- Card 2: Economia & Descontos -->
-        <div class="card">
-          <div class="card-header">
-            <span class="card-title">Soma dos Descontos</span>
-            <div class="card-icon amber">🏷️</div>
-          </div>
-          <div class="card-value" id="dash-soma-descontos">R$ 0,00</div>
-          <div class="card-subtext" id="dash-pct-desconto">0% economizado no geral</div>
-        </div>
-      </div>
-
-      <!-- Detalhamento de Formas de Pagamento -->
-      <div class="card" style="margin-bottom: 1.5rem;">
-        <div class="card-header">
-          <span class="card-title">Pagamentos por Categoria</span>
-          <div class="card-icon purple">💳</div>
-        </div>
-        <div class="payment-methods-grid">
-          <div class="payment-item">
-            <div class="label">🍽️ Vale Alimentação</div>
-            <div class="val" id="dash-vale-alimentacao">R$ 0,00</div>
-          </div>
-          <div class="payment-item">
-            <div class="label">💳 Cartão de Crédito</div>
-            <div class="val" id="dash-cartao-credito">R$ 0,00</div>
-          </div>
-          <div class="payment-item">
-            <div class="label">💳 Cartão de Débito</div>
-            <div class="val" id="dash-cartao-debito">R$ 0,00</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Gráfico de Gastos Mensais -->
-      <div class="card chart-card">
-        <div class="card-header">
-          <span class="card-title">Evolução de Gastos Mensais</span>
-          <span class="badge green">Gráfico em Tempo Real</span>
-        </div>
-        <div class="chart-container">
-          <canvas id="chart-gastos-mensais"></canvas>
-        </div>
-      </div>
-    </section>
-
-    <!-- ABA 2: ADICIONAR COMPRA / QR CODE SCANNER -->
-    <section id="tab-add" class="tab-content">
-      <div class="card" style="margin-bottom: 1.5rem;">
-        <div class="card-header">
-          <span class="card-title">Leitor de QR Code (NFC-e)</span>
-          <span class="badge amber">Câmera Traseira Padrão no Mobile</span>
-        </div>
-
-        <div class="scanner-box">
-          <div id="qr-reader"></div>
-
-          <div class="scanner-actions">
-            <button id="btn-iniciar-camera" class="btn-primary">
-              🎥 Iniciar Câmera
-            </button>
-            <!-- Botão "Trocar Câmera" para alternar entre câmeras frontal/traseira/externa -->
-            <button id="btn-trocar-camera" class="btn-secondary" style="display: none;">
-              🔄 Trocar Câmera
-            </button>
-            <button id="btn-parar-camera" class="btn-secondary" style="display: none; background: rgba(244, 63, 94, 0.2); color: #fb7185;">
-              ⏹️ Parar Câmera
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- Inscrição Manual ou Paste NFC-e -->
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Adicionar por Link ou Texto da NFC-e</span>
-        </div>
-        <form id="form-adicionar-url">
-          <div class="form-group">
-            <label for="input-url-nfce">Link do QR Code da Nota Fiscal (Ex: https://www.nfce.fazenda.sp.gov.br/...)</label>
-            <input type="url" id="input-url-nfce" class="form-control" placeholder="Cole a URL do QR Code aqui...">
-          </div>
-
-          <div class="form-group">
-            <label for="input-html-nfce">Ou cole o texto/HTML da Nota Fiscal (Fallback de Segurança)</label>
-            <textarea id="input-html-nfce" class="form-control" rows="4" placeholder="Copie todo o conteúdo da página da nota fiscal e cole aqui..."></textarea>
-          </div>
-
-          <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">
-            ✨ Processar e Salvar Nota Fiscal
-          </button>
-        </form>
-        <p id="status-processamento" style="margin-top: 0.75rem; font-size: 0.85rem; color: var(--accent-amber); text-align: center;"></p>
-      </div>
-    </section>
-
-    <!-- ABA 3: COMPARAR VALORES UNITÁRIOS -->
-    <section id="tab-comparacao" class="tab-content">
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Comparação de Valores Unitários Mês a Mês</span>
-          <span class="badge green">Preço Unitário (Ex: 1 un de Bolacha)</span>
-        </div>
-        <p class="card-subtext" style="margin-bottom: 1rem;">
-          Compara a variação real do valor por unidade de um mês para o outro, ignorando a quantidade total comprada.
-        </p>
-
-        <div id="lista-comparacao-produtos"></div>
-      </div>
-    </section>
-
-    <!-- ABA 4: ITENS MAIS COMPRADOS & RECORRÊNCIA E MARCAS -->
-    <section id="tab-recorrencia" class="tab-content">
-      <div class="card" style="margin-bottom: 1.5rem;">
-        <div class="card-header">
-          <span class="card-title">Itens Comprados Mais de Uma Vez</span>
-          <span class="badge amber">Recorrência & Frequência</span>
-        </div>
-        <p class="card-subtext" style="margin-bottom: 1rem;">
-          Produtos com recorrência em notas fiscais diferentes, média de compras e quantidade total.
-        </p>
-        <div id="lista-itens-recorrentes"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-header">
-          <span class="card-title">Distinção por Marca & Marca com Menor Valor</span>
-          <span class="badge green">Economia por Marca</span>
-        </div>
-        <p class="card-subtext" style="margin-bottom: 1rem;">
-          Ao trocar a marca de um item (ex: Arroz Tio João vs Camil), veja qual teve o menor valor unitário.
-        </p>
-        <div id="lista-comparacao-marcas"></div>
-      </div>
-    </section>
-
-    <!-- ABA 5: HISTÓRICO DE COMPRAS -->
-    <section id="tab-historico" class="tab-content">
-      <div class="card-header" style="margin-bottom: 1rem;">
-        <span class="card-title" style="font-size: 1.1rem;">Notas Fiscais Cadastradas</span>
-        <span class="badge green">Sincronizado via Firebase</span>
-      </div>
-      <div id="lista-historico-compras"></div>
-    </section>
-
-  </main>
-
-  <!-- Navegação Inferior Mobile -->
-  <nav class="mobile-nav">
-    <button class="mobile-nav-btn active" data-tab-target="tab-dashboard">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
-      Início
-    </button>
-    <button class="mobile-nav-btn" data-tab-target="tab-add">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"></rect><circle cx="12" cy="12" r="3"></circle></svg>
-      Add Nota
-    </button>
-    <button class="mobile-nav-btn" data-tab-target="tab-comparacao">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-      Comparar
-    </button>
-    <button class="mobile-nav-btn" data-tab-target="tab-recorrencia">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-      Marcas
-    </button>
-    <button class="mobile-nav-btn" data-tab-target="tab-historico">
-      <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-  </nav>
-
-  <!-- Modal Fallback NFC-e CORS -->
-  <div id="modal-paste-html" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-header">
-        <h2>Aviso: Consulta Externa NFC-e</h2>
-        <button class="btn-close" onclick="document.getElementById('modal-paste-html').classList.remove('active')">&times;</button>
-      </div>
-      <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:1rem;">
-        Devido a restrições de segurança do servidor da SEFAZ, abra o link da nota fiscal abaixo, copie todo o texto ou HTML da página e cole no campo de texto para concluir o salvamento.
-      </p>
-      <div style="display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap;">
-        <a id="btn-abrir-link-nfce" href="#" target="_blank" rel="noopener noreferrer" class="btn-primary" style="text-decoration:none;">
-          🌐 Abrir Link da SEFAZ
-        </a>
-      </div>
-      <button class="btn-secondary" style="width:100%; justify-content:center;" onclick="document.getElementById('modal-paste-html').classList.remove('active')">
-        Entendi
-      </button>
+<!-- HEADER -->
+<header class="app-header">
+  <div class="logo-container">
+    <div class="logo-icon">🛒</div>
+    <div class="logo-text">
+      <h1>Controle Mercado</h1>
+      <p>Victor &amp; Maria</p>
     </div>
   </div>
+
+  <nav class="desktop-nav">
+    <button class="nav-item active" data-tab="dashboard">📊 Visão Geral</button>
+    <button class="nav-item" data-tab="listamensal">🗓️ Lista Mensal</button>
+    <button class="nav-item" data-tab="comparacao">📈 Comparar Preços</button>
+    <button class="nav-item" data-tab="recorrencia">🔄 Itens &amp; Marcas</button>
+    <button class="nav-item" data-tab="historico">📋 Histórico</button>
+  </nav>
+
+  <button class="btn-header-add" id="btn-open-modal-header">➕ Adicionar Nota</button>
+</header>
+
+<!-- MAIN -->
+<main class="main-container">
+
+  <!-- ABA DASHBOARD -->
+  <section id="tab-dashboard" class="tab-content active">
+    <!-- Botão de Ação Rápida no Dashboard -->
+    <button class="btn-primary" id="btn-open-modal-home" style="width:100%; padding:1rem; margin-bottom:1.5rem; font-size:1.05rem; box-shadow: 0 4px 15px var(--primary-glow);">
+      ➕ Adicionar / Escanear Nova Nota Fiscal
+    </button>
+
+    <div class="grid-summary">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Total Gasto</span>
+          <div class="card-icon green">💰</div>
+        </div>
+        <div class="card-value" id="dash-total">R$ 0,00</div>
+        <div class="card-subtext">Soma dos Valores a Pagar</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Descontos Obtidos</span>
+          <div class="card-icon amber">🏷️</div>
+        </div>
+        <div class="card-value" id="dash-desconto">R$ 0,00</div>
+        <div class="card-subtext" id="dash-pct">0% economizado no geral</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Notas Cadastradas</span>
+          <div class="card-icon purple">🧾</div>
+        </div>
+        <div class="card-value" id="dash-qtd-notas">0</div>
+        <div class="card-subtext" id="dash-qtd-itens">0 itens no total</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1.5rem">
+      <div class="card-header">
+        <span class="card-title">Pagamentos por Categoria</span>
+        <div class="card-icon purple">💳</div>
+      </div>
+      <div class="payment-grid">
+        <div class="payment-item">
+          <div class="p-label">🍽️ Vale Alimentação</div>
+          <div class="p-val" id="dash-alimentacao">R$ 0,00</div>
+        </div>
+        <div class="payment-item">
+          <div class="p-label">💳 Cartão de Crédito</div>
+          <div class="p-val" id="dash-credito">R$ 0,00</div>
+        </div>
+        <div class="payment-item">
+          <div class="p-label">💳 Cartão de Débito</div>
+          <div class="p-val" id="dash-debito">R$ 0,00</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Gastos Mensais</span>
+        <span class="badge green">Tempo Real</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="chart-barras"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABA LISTA MENSAL (PLANEJAMENTO E PREVISÃO PARA O PRÓXIMO MÊS) -->
+  <section id="tab-listamensal" class="tab-content">
+    <div id="lista-mensal-container"></div>
+  </section>
+
+  <!-- ABA COMPARAR PREÇOS -->
+  <section id="tab-comparacao" class="tab-content">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Comparação de Valor Unitário — Mês a Mês</span>
+        <span class="badge green">Por unidade</span>
+      </div>
+      <p class="card-subtext" style="margin-bottom:1rem">
+        Compara o <strong>valor unitário</strong> de cada produto entre os meses, independente da quantidade comprada.
+        Exemplo: bolacha a R$ 4,35/un em maio vs R$ 4,80/un em junho.
+      </p>
+      <div id="lista-comparacao"></div>
+    </div>
+  </section>
+
+  <!-- ABA RECORRÊNCIA & MARCAS -->
+  <section id="tab-recorrencia" class="tab-content">
+    <div class="card" style="margin-bottom:1.5rem">
+      <div class="card-header">
+        <span class="card-title">Itens Comprados Mais de Uma Vez</span>
+        <span class="badge amber">Recorrência</span>
+      </div>
+      <p class="card-subtext" style="margin-bottom:1rem">Produtos que aparecem em notas fiscais diferentes — soma de quantidade e frequência.</p>
+      <div id="lista-recorrencia"></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Comparativo por Marca — Qual Vale Mais?</span>
+        <span class="badge green">Menor preço</span>
+      </div>
+      <p class="card-subtext" style="margin-bottom:1rem">Quando a marca de um item muda entre compras, indicamos qual teve o menor valor unitário.</p>
+      <div id="lista-marcas"></div>
+    </div>
+  </section>
+
+  <!-- ABA HISTÓRICO -->
+  <section id="tab-historico" class="tab-content">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+      <div>
+        <h2 style="font-size:1.1rem;font-weight:700">Notas Fiscais Cadastradas</h2>
+        <p class="card-subtext">Clique para expandir e ver os itens</p>
+      </div>
+      <span class="badge cyan">🔥 Firebase Realtime</span>
+    </div>
+    <div id="lista-historico"></div>
+  </section>
+
+</main>
+
+<!-- MOBILE NAV -->
+<nav class="mobile-nav">
+  <button class="mob-btn active" data-tab="dashboard">
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Início
+  </button>
+  <button class="mob-btn" data-tab="listamensal">
+    <svg viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>Lista
+  </button>
+  <button class="mob-btn" data-tab="comparacao">
+    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Preços
+  </button>
+  <button class="mob-btn" data-tab="recorrencia">
+    <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Marcas
+  </button>
+  <button class="mob-btn" data-tab="historico">
+    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Histórico
+  </button>
+</nav>
+
+<!-- MODAL: ADICIONAR NOTA (JANELA POP-UP DE ADIÇÃO) -->
+<div id="modal-add-nota" class="modal-overlay">
+  <div class="modal-box" style="max-width: 680px;">
+    <div class="modal-header">
+      <h2>📷 Adicionar Nota Fiscal</h2>
+      <button class="btn-close" id="btn-close-modal-add">&times;</button>
+    </div>
+
+    <!-- Leitor de QR Code -->
+    <div class="card" style="margin-bottom:1.25rem;">
+      <div class="card-header">
+        <span class="card-title">Leitor de QR Code — NFC-e</span>
+        <span class="badge amber">📱 Câmera traseira padrão</span>
+      </div>
+      <div class="scanner-box">
+        <div id="qr-reader"></div>
+        <div class="scanner-actions">
+          <button class="btn-primary" id="btn-start-cam">🎥 Iniciar Câmera</button>
+          <button class="btn-secondary" id="btn-switch-cam" style="display:none">🔄 Trocar Câmera</button>
+          <button class="btn-secondary" id="btn-stop-cam" style="display:none;background:rgba(244,63,94,.18);color:#fb7185">⏹️ Parar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Input URL ou HTML -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Adicionar por Link ou Texto da NFC-e</span>
+        <button type="button" class="btn-secondary" id="btn-preencher-manual" style="font-size:0.78rem;padding:0.35rem 0.75rem;">✍️ Preencher Manualmente</button>
+      </div>
+
+      <div id="box-entrada-nfce">
+        <div class="form-group">
+          <label for="inp-url">URL do QR Code da Nota Fiscal</label>
+          <input type="url" id="inp-url" class="form-control" placeholder="https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/...">
+        </div>
+        <div class="form-group">
+          <label for="inp-html">Ou cole o conteúdo/HTML da página da nota (fallback)</label>
+          <textarea id="inp-html" class="form-control" rows="3" placeholder="Copie o conteúdo da página da SEFAZ e cole aqui..."></textarea>
+        </div>
+        <button type="button" id="btn-carregar-dados" class="btn-primary" style="width:100%;">
+          🔍 Carregar e Ler Dados da Nota
+        </button>
+      </div>
+
+      <p class="status-msg" id="status-msg"></p>
+
+      <!-- Formulário de Revisão e Salvamento (Escondido por padrão) -->
+      <form id="form-nfce" style="display:none; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
+        <p class="section-title" style="border-top:none; padding-top:0; margin-top:0;">
+          📝 Dados da Compra (Confira e Altere Se Necessário)
+        </p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="form-group">
+            <label for="inp-mercado">Nome do Mercado</label>
+            <input type="text" id="inp-mercado" class="form-control" placeholder="Ex: Carrefour, Extra...">
+          </div>
+          <div class="form-group">
+            <label for="inp-data">Data da Compra</label>
+            <input type="datetime-local" id="inp-data" class="form-control">
+          </div>
+          <div class="form-group">
+            <label for="inp-vtotal">Valor Total (R$)</label>
+            <input type="number" step="0.01" id="inp-vtotal" class="form-control" placeholder="0,00">
+          </div>
+          <div class="form-group">
+            <label for="inp-desconto">Desconto (R$)</label>
+            <input type="number" step="0.01" id="inp-desconto" class="form-control" placeholder="0,00">
+          </div>
+          <div class="form-group">
+            <label for="inp-pagar">Valor a Pagar (R$)</label>
+            <input type="number" step="0.01" id="inp-pagar" class="form-control" placeholder="0,00">
+          </div>
+          <div class="form-group">
+            <label for="inp-qtd">Qtd. Total de Itens</label>
+            <input type="number" id="inp-qtd" class="form-control" placeholder="0">
+          </div>
+        </div>
+
+        <p class="section-title">Formas de Pagamento</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem">
+          <div class="form-group">
+            <label for="inp-alim">Vale Alimentação (R$)</label>
+            <input type="number" step="0.01" id="inp-alim" class="form-control" placeholder="0,00">
+          </div>
+          <div class="form-group">
+            <label for="inp-cred">Cartão Crédito (R$)</label>
+            <input type="number" step="0.01" id="inp-cred" class="form-control" placeholder="0,00">
+          </div>
+          <div class="form-group">
+            <label for="inp-deb">Cartão Débito (R$)</label>
+            <input type="number" step="0.01" id="inp-deb" class="form-control" placeholder="0,00">
+          </div>
+        </div>
+
+        <!-- Preview dos Itens extraídos -->
+        <div id="preview-itens-box" style="display:none; margin-top:1.25rem;">
+          <p class="section-title" style="border-top:none; padding-top:0; margin-top:0;">
+            🛒 Itens Extraídos da Nota (<span id="count-preview-itens">0</span>)
+          </p>
+          <div id="lista-preview-itens" style="max-height: 200px; overflow-y: auto; background: rgba(15,23,42,0.6); padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); font-size: 0.82rem;"></div>
+        </div>
+
+        <button type="submit" class="btn-primary" style="width:100%;margin-top:1.5rem; padding: 0.85rem; font-size: 1rem;">
+          ✨ Salvar Nota Fiscal
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal CORS fallback -->
+<div id="modal-cors" class="modal-overlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>⚠️ Acesso Externo Necessário</h2>
+      <button class="btn-close" id="btn-modal-close">&times;</button>
+    </div>
+    <p style="font-size:.9rem;color:var(--text-muted);margin-bottom:1rem">
+      O servidor da SEFAZ bloqueia consultas diretas por segurança. <br><br>
+      <strong>O que fazer:</strong><br>
+      1. Clique no botão abaixo para abrir a nota fiscal<br>
+      2. Copie todo o conteúdo da página (<code>Ctrl+A</code> → <code>Ctrl+C</code>)<br>
+      3. Cole no campo "Cole o conteúdo da página" no formulário
+    </p>
+    <a id="modal-link" href="#" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:inline-flex;text-decoration:none;margin-bottom:1rem">
+      🌐 Abrir Nota Fiscal no Navegador
+    </a>
+    <button class="btn-secondary" style="width:100%;justify-content:center" onclick="document.getElementById('modal-cors').classList.remove('active')">
+      Entendi, vou colar o conteúdo
+    </button>
+  </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toast"></div>
+
+<!-- Firebase & Libraries CDN -->
 
 </body>
 </html>
