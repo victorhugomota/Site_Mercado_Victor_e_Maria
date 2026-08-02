@@ -215,7 +215,7 @@
     .btn-card-select.active[data-card="Nubank"]{border-color:#a855f7;background:rgba(168,85,247,.2);color:#c084fc;box-shadow:0 0 15px rgba(168,85,247,.3)}
     .btn-card-select.active[data-card="Santander"]{border-color:#f43f5e;background:rgba(244,63,94,.2);color:#fb7185;box-shadow:0 0 15px rgba(244,63,94,.3)}
   </style>
-  <script type="module" crossorigin src="./assets/index-CR46QYF9.js"></script>
+  <script type="module" crossorigin src="./assets/index-SrkrdFv8.js"></script>
 </head>
 <body>
 
@@ -852,14 +852,14 @@
         <div class="card-subtext">Poupança e Investimentos acumulados</div>
       </div>
 
-      <!-- Card Recomendação do Sistema -->
+      <!-- Card Recomendação Anual do Sistema -->
       <div class="card" style="border-color:#a855f7; background:linear-gradient(135deg,rgba(30,41,59,.9),rgba(15,23,42,.95))">
         <div class="card-header">
-          <span class="card-title" style="color:#c084fc">Recomendação do Sistema</span>
+          <span class="card-title" style="color:#c084fc">Recomendação Anual do Sistema</span>
           <div class="card-icon purple">💡</div>
         </div>
         <div class="card-value" id="val-recomendacao-reserva" style="color:#c084fc">R$ 0,00</div>
-        <div class="card-subtext" id="subtext-recomendacao">Sugerido com base na média livre mensal</div>
+        <div class="card-subtext" id="subtext-recomendacao">Sugerido para poupar anualmente com base no saldo livre</div>
       </div>
     </div>
 
@@ -878,18 +878,14 @@
         <span class="card-title">⚙️ Atualizar Metas de Reserva e Saldo Guardado</span>
       </div>
       <form id="form-config-reservas">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1rem">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1rem">
           <div class="form-group" style="margin-bottom:0">
             <label for="inp-meta-anual">Meta Total para Fim do Ano (R$)</label>
-            <input type="number" step="0.01" id="inp-meta-anual" class="form-control" placeholder="Ex: 10000.00">
+            <input type="number" step="0.01" id="inp-meta-anual" class="form-control" placeholder="Ex: 15000.00">
           </div>
           <div class="form-group" style="margin-bottom:0">
             <label for="inp-saldo-guardado">Saldo Real Guardado Atual (R$)</label>
             <input type="number" step="0.01" id="inp-saldo-guardado" class="form-control" placeholder="Ex: 3000.00">
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label for="inp-meta-mensal">Meta Mensal Fixa / Opcional (R$)</label>
-            <input type="number" step="0.01" id="inp-meta-mensal" class="form-control" placeholder="Ex: 1000.00">
           </div>
         </div>
         <button type="submit" class="btn-primary" style="width:100%">

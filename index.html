@@ -851,14 +851,14 @@
         <div class="card-subtext">Poupança e Investimentos acumulados</div>
       </div>
 
-      <!-- Card Recomendação do Sistema -->
+      <!-- Card Recomendação Anual do Sistema -->
       <div class="card" style="border-color:#a855f7; background:linear-gradient(135deg,rgba(30,41,59,.9),rgba(15,23,42,.95))">
         <div class="card-header">
-          <span class="card-title" style="color:#c084fc">Recomendação do Sistema</span>
+          <span class="card-title" style="color:#c084fc">Recomendação Anual do Sistema</span>
           <div class="card-icon purple">💡</div>
         </div>
         <div class="card-value" id="val-recomendacao-reserva" style="color:#c084fc">R$ 0,00</div>
-        <div class="card-subtext" id="subtext-recomendacao">Sugerido com base na média livre mensal</div>
+        <div class="card-subtext" id="subtext-recomendacao">Sugerido para poupar anualmente com base no saldo livre</div>
       </div>
     </div>
 
@@ -877,18 +877,14 @@
         <span class="card-title">⚙️ Atualizar Metas de Reserva e Saldo Guardado</span>
       </div>
       <form id="form-config-reservas">
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1rem">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1rem">
           <div class="form-group" style="margin-bottom:0">
             <label for="inp-meta-anual">Meta Total para Fim do Ano (R$)</label>
-            <input type="number" step="0.01" id="inp-meta-anual" class="form-control" placeholder="Ex: 10000.00">
+            <input type="number" step="0.01" id="inp-meta-anual" class="form-control" placeholder="Ex: 15000.00">
           </div>
           <div class="form-group" style="margin-bottom:0">
             <label for="inp-saldo-guardado">Saldo Real Guardado Atual (R$)</label>
             <input type="number" step="0.01" id="inp-saldo-guardado" class="form-control" placeholder="Ex: 3000.00">
-          </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label for="inp-meta-mensal">Meta Mensal Fixa / Opcional (R$)</label>
-            <input type="number" step="0.01" id="inp-meta-mensal" class="form-control" placeholder="Ex: 1000.00">
           </div>
         </div>
         <button type="submit" class="btn-primary" style="width:100%">
@@ -2863,12 +2859,10 @@ window.excluirBoletoDocumento = async function(id) {
 document.getElementById('form-config-reservas').addEventListener('submit', async e => {
   e.preventDefault();
   const metaAnual = parseFloat(document.getElementById('inp-meta-anual').value) || 0;
-  const metaMensal = parseFloat(document.getElementById('inp-meta-mensal').value) || 0;
   const guard = parseFloat(document.getElementById('inp-saldo-guardado').value) || 0;
 
   await setDoc(doc(db, COLL_RESERVAS, 'config'), {
     metaAnual,
-    metaMensal,
     valorAtualGuardado: guard,
     dataAtualizacao: new Date().toISOString()
   });
@@ -2876,49 +2870,64 @@ document.getElementById('form-config-reservas').addEventListener('submit', async
 });
 
 function renderReservasEEconomias() {
-  const metaAnual = dadosReservas.metaAnual || 10000;
-  const metaMensalManual = dadosReservas.metaMensal || 0;
-  const real = dadosReservas.valorAtualGuardado || 0;
+  const metaAnual = dadosReservas.metaAnual || 15000;
+  const real = dadosReservas.valorAtualGuardado || 3000;
 
-  // Preencher os campos do formulário com os valores salvos se vazios
+  // Preencher os campos do formulário com os valores salvos
   const inpAnual = document.getElementById('inp-meta-anual');
   if (inpAnual && !inpAnual.value && metaAnual) inpAnual.value = metaAnual;
   const inpGuard = document.getElementById('inp-saldo-guardado');
   if (inpGuard && !inpGuard.value && real) inpGuard.value = real;
-  const inpMensal = document.getElementById('inp-meta-mensal');
-  if (inpMensal && !inpMensal.value && metaMensalManual) inpMensal.value = metaMensalManual;
 
-  // Cálculo da quantidade de meses restantes até o fim do ano (Dezembro do ano corrente)
+  // 1. Cálculo da quantidade de meses restantes no ano corrente (Agosto a Dezembro = 5 meses)
   const hoje = new Date();
   const mesAtualIdx = hoje.getMonth() + 1; // 1 a 12 (ex: Agosto = 8)
-  const mesesRestantes = Math.max(1, 12 - mesAtualIdx + 1); // ex: Agosto, Set, Out, Nov, Dez = 5 meses
+  const mesesRestantes = Math.max(1, 12 - mesAtualIdx + 1); // ex: 12 - 8 + 1 = 5 meses
 
+  // 2. Cálculo da Meta Mensal Necessária para Atingir a Meta Anual (Sempre calculada pelo sistema!)
   const valorFaltanteMeta = Math.max(0, metaAnual - real);
   const metaMensalCalculada = valorFaltanteMeta > 0 ? (valorFaltanteMeta / mesesRestantes) : 0;
-  const metaMensalExibida = metaMensalManual > 0 ? metaMensalManual : metaMensalCalculada;
 
-  document.getElementById('val-meta-reserva').textContent = brl(metaMensalExibida);
+  // Exibir no Card 1: Meta Mensal Necessária
+  document.getElementById('val-meta-reserva').textContent = brl(metaMensalCalculada);
   const subMeta = document.getElementById('subtext-meta-reserva');
   if (subMeta) {
-    subMeta.textContent = `Faltam ${brl(valorFaltanteMeta)} p/ Meta Anual de ${brl(metaAnual)} (${mesesRestantes} mes(es) no ano)`;
+    subMeta.textContent = `Faltam ${brl(valorFaltanteMeta)} p/ Meta Anual de ${brl(metaAnual)} (${mesesRestantes} mês(es) até o fim do ano)`;
   }
 
+  // Card 2: Valor Real Guardado
   document.getElementById('val-real-guardado').textContent = brl(real);
 
-  // Totais Acumulados do Sistema
+  // 3. Totais Acumulados de TODOS os Meses no Sistema (Soma completa das saídas)
   const totalEntradas = todasEntradas.reduce((acc, e) => acc + (e.valor || 0), 0);
   const totalCartoes  = todasFaturas.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
   const totalBoletos  = todosBoletos.reduce((acc, b) => acc + (b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0)), 0);
-  let totalMercadoDebito = 0;
+  
+  let totalMercadoOut = 0;
   todasCompras.forEach(c => {
-    if (c.formasPagamento) totalMercadoDebito += c.formasPagamento.cartaoDebito || 0;
+    if (c.formasPagamento) {
+      totalMercadoOut += (c.formasPagamento.cartaoDebito || 0) + (c.formasPagamento.dinheiro || 0) + (c.formasPagamento.pix || 0);
+    } else {
+      totalMercadoOut += (c.valorAPagar || 0);
+    }
   });
 
-  const saldoLiquidoLivre = totalEntradas - totalCartoes - totalBoletos - totalMercadoDebito;
-  const recomendacaoSistema = saldoLiquidoLivre > 0 ? Math.max(saldoLiquidoLivre * 0.5, totalEntradas * 0.2) : 0;
+  const totalSaidasAcumuladas = totalCartoes + totalBoletos + totalMercadoOut;
+  const saldoLiquidoAcumulado = totalEntradas - totalSaidasAcumuladas;
 
-  document.getElementById('val-recomendacao-reserva').textContent = brl(recomendacaoSistema);
+  // 4. Recomendação ANUAL do Sistema (Projeção / Sugestão Anual para Guardar)
+  const numMesesCadastrados = Math.max(1, getMesesDisponiveis().length);
+  const mediaMensalLivre = saldoLiquidoAcumulado / numMesesCadastrados;
+  const recomendacaoMensal = mediaMensalLivre > 0 ? (mediaMensalLivre * 0.5) : 0;
+  const recomendacaoAnual = recomendacaoMensal * 12;
 
+  document.getElementById('val-recomendacao-reserva').textContent = brl(recomendacaoAnual);
+  const subRec = document.getElementById('subtext-recomendacao');
+  if (subRec) {
+    subRec.textContent = `Sugerido poupar ${brl(recomendacaoMensal)}/mês (${brl(recomendacaoAnual)} no ano)`;
+  }
+
+  // Card de Análise Inteligente de Economias
   const boxAnalise = document.getElementById('box-analise-reserva-detalhes');
   if (boxAnalise) {
     if (totalEntradas === 0) {
@@ -2927,28 +2936,28 @@ function renderReservasEEconomias() {
       const pctGuardadoAnual = metaAnual > 0 ? Math.min(100, ((real / metaAnual) * 100)).toFixed(1) : 0;
 
       boxAnalise.innerHTML = `
-        <p>Com base no acumulado do sistema (<strong>${brl(totalEntradas)}</strong> Entradas vs <strong>${brl(totalCartoes + totalBoletos + totalMercadoDebito)}</strong> Saídas):</p>
+        <p>Com base na soma acumulada de todos os meses (<strong>${brl(totalEntradas)}</strong> Entradas vs <strong>${brl(totalSaidasAcumuladas)}</strong> Saídas Totais):</p>
         <div style="background:rgba(15,23,42,0.6);padding:1rem;border-radius:10px;margin:.75rem 0;border:1px solid var(--border-color)">
           <div style="display:flex;justify-content:space-between;margin-bottom:.4rem;flex-wrap:wrap;gap:.5rem">
-            <span>💰 Saldo Livre Acumulado: <strong>${brl(saldoLiquidoLivre)}</strong></span>
-            <span>🎯 Meta Anual: <strong>${brl(metaAnual)}</strong> (Faltam ${mesesRestantes} meses no ano)</span>
+            <span>💰 Saldo Livre Acumulado no Sistema: <strong>${brl(saldoLiquidoAcumulado)}</strong></span>
+            <span>🎯 Meta Anual Desejada: <strong>${brl(metaAnual)}</strong></span>
           </div>
           <div class="progress-bar-bg">
             <div class="progress-bar-fill" style="width:${pctGuardadoAnual}%"></div>
           </div>
           <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--text-muted);margin-top:.4rem">
-            <span>Guardado: ${brl(real)}</span>
-            <span>Progresso da Meta Anual: ${pctGuardadoAnual}%</span>
+            <span>Guardado: ${brl(real)} (${pctGuardadoAnual}%)</span>
+            <span>Faltam guardar: ${brl(valorFaltanteMeta)} nos próximos ${mesesRestantes} meses</span>
           </div>
         </div>
         <p style="font-size:.84rem;color:var(--text-muted)">
-          💡 <strong>Recomendação de Reserva:</strong> Guardando <strong>${brl(metaMensalExibida)}/mês</strong> nos próximos ${mesesRestantes} meses, você atingirá com sucesso a sua meta anual de <strong>${brl(metaAnual)}</strong>!
+          💡 <strong>Planejamento do Sistema:</strong> Guardando <strong>${brl(metaMensalCalculada)}/mês</strong> durante os próximos <strong>${mesesRestantes} meses</strong>, você atingirá com 100% de precisão sua Meta Anual de <strong>${brl(metaAnual)}</strong>!
         </p>
       `;
     }
   }
 
-  // Renderizar a Lista de Análise Geral Mês a Mês (Abaixo das configurações)
+  // Renderizar a Lista de Análise Geral Mês a Mês
   renderAnaliseMensalEconomias();
 }
 
