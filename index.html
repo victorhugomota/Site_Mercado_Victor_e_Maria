@@ -412,10 +412,10 @@
     <div class="card" style="margin-bottom:1.5rem">
       <div class="card-header">
         <span class="card-title">Importar Fatura de Cartão de Crédito</span>
-        <span class="badge rose">💳 Leitor PDF / CSV</span>
+        <span class="badge rose">💳 Leitor PDF / Texto</span>
       </div>
       <p class="card-subtext" style="margin-bottom:1.25rem">
-        Escolha o cartão e importe o arquivo (.pdf, .csv ou .txt) da sua fatura para cadastrar todas as compras automaticamente.
+        Selecione o cartão, informe a data de vencimento da fatura e importe o arquivo (.pdf, .csv, .txt) ou cole o texto das compras.
       </p>
 
       <div style="margin-bottom:1.25rem">
@@ -430,32 +430,64 @@
         </div>
       </div>
 
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem">
+        <div class="form-group" style="margin-bottom:0">
+          <label for="inp-fatura-vencimento">2. Data de Vencimento da Fatura:</label>
+          <input type="date" id="inp-fatura-vencimento" class="form-control" onchange="atualizarMesRefFatura()">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.4rem;color:var(--text-muted)">Mês de Referência:</label>
+          <div id="lbl-fatura-mes-ref" style="font-weight:700;color:var(--accent-cyan);padding:.72rem 1rem;background:var(--bg-dark);border:1px solid var(--border-color);border-radius:var(--radius-md)">
+            Mês da Fatura
+          </div>
+        </div>
+      </div>
+
       <div style="margin-bottom:1.25rem">
-        <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.5rem;color:var(--text-muted)">2. Importar Arquivo da Fatura (.pdf, .csv ou .txt):</label>
+        <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.5rem;color:var(--text-muted)">3. Importar Arquivo da Fatura (.pdf, .csv ou .txt):</label>
         <div id="drop-zone-fatura" style="border:2px dashed var(--border-color);border-radius:var(--radius-lg);padding:1.5rem;text-align:center;background:rgba(15,23,42,.5);cursor:pointer;transition:border-color .2s" onclick="document.getElementById('file-fatura-input').click()">
           <input type="file" id="file-fatura-input" accept=".pdf,.csv,.txt" style="display:none" onchange="handleFileFaturaSelect(event)">
           <div style="font-size:2.2rem;margin-bottom:.4rem">📁</div>
           <div style="font-weight:700;font-size:1rem;color:var(--text-main)" id="txt-file-fatura">Clique para Selecionar o Arquivo da Fatura</div>
-          <div style="font-size:.8rem;color:var(--text-muted);margin-top:.2rem">Suporta arquivos de fatura do Nubank e Santander</div>
+          <div style="font-size:.8rem;color:var(--text-muted);margin-top:.2rem">Suporta PDF, CSV e TXT do Nubank e Santander</div>
         </div>
       </div>
 
       <details style="margin-bottom:1rem">
         <summary style="font-size:.84rem;font-weight:600;color:var(--text-muted);cursor:pointer;padding:.4rem 0">Ou cole o texto da fatura (opcional)</summary>
         <div class="form-group" style="margin-top:.5rem">
-          <textarea id="inp-fatura-txt" class="form-control" rows="4" placeholder="Cole aqui o texto da fatura se preferir (ex: 05/08 Uber R$ 24,90)..."></textarea>
+          <textarea id="inp-fatura-txt" class="form-control" rows="4" placeholder="Cole aqui o texto da fatura (ex: 3 25/06 SAVEGNAGO LOJA 20 RIBE 57,73)..."></textarea>
         </div>
       </details>
 
       <button type="button" class="btn-primary" onclick="importarFaturaManualOuArquivo()" style="width:100%">
-        🔍 Ler &amp; Importar Fatura do Cartão
+        🔍 Ler &amp; Processar Itens da Fatura
       </button>
+
+      <!-- Formulário de Confirmação da Fatura Processada -->
+      <div id="box-revisao-fatura" style="display:none; margin-top:1.5rem; border-top:1px solid var(--border-color); padding-top:1.25rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+          <span class="card-title" style="color:var(--primary)">📝 Fatura Identificada</span>
+          <span class="badge green" id="badge-total-preview-fatura" style="font-size:.9rem;padding:.4rem .75rem">R$ 0,00</span>
+        </div>
+
+        <p class="card-subtext" style="margin-bottom:1rem">
+          Confira os lançamentos contemplados na fatura antes de salvar no sistema:
+        </p>
+
+        <div id="lista-preview-fatura-itens" style="max-height:220px; overflow-y:auto; background:rgba(15,23,42,.6); padding:.75rem; border-radius:var(--radius-md); border:1px solid var(--border-color); margin-bottom:1.25rem"></div>
+
+        <button type="button" class="btn-primary" onclick="confirmarEGravarFaturaDocumento()" style="width:100%; padding:.85rem; font-size:1rem">
+          ✨ Salvar Fatura de Cartão
+        </button>
+      </div>
+
     </div>
 
-    <!-- Lista de Gastos em Cartão de Crédito -->
+    <!-- Lista de Faturas Registradas -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Lançamentos em Cartão de Crédito</span>
+        <span class="card-title">Faturas de Cartão Cadastradas</span>
         <span class="badge rose" id="badge-total-cartoes">R$ 0,00 total</span>
       </div>
       <div id="lista-faturas-registradas"></div>
@@ -1116,6 +1148,35 @@ window.excluirEntrada = async function(id) {
 // 3. ABA CARTÕES DE CRÉDITO (IMPORTAÇÃO DE FATURAS & TRANSAÇÕES NUBANK / SANTANDER)
 // ═══════════════════════════════════════════════════════════════════════════
 let cartaoFaturaSelecionado = 'Nubank';
+let faturaEmProcessamento = null;
+
+// Inicializa a data de vencimento padrão (vencimento no mês atual, ex: dia 10)
+function initDataVencimentoFatura() {
+  const inp = document.getElementById('inp-fatura-vencimento');
+  if (inp && !inp.value) {
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    inp.value = `${ano}-${mes}-10`;
+    atualizarMesRefFatura();
+  }
+}
+setTimeout(initDataVencimentoFatura, 300);
+
+window.atualizarMesRefFatura = function() {
+  const inp = document.getElementById('inp-fatura-vencimento');
+  const lbl = document.getElementById('lbl-fatura-mes-ref');
+  if (!inp || !lbl) return;
+
+  if (inp.value) {
+    const [ano, mes] = inp.value.split('-');
+    const d = new Date(parseInt(ano), parseInt(mes) - 1, 1);
+    const mesNome = d.toLocaleString('pt-BR', { month: 'long' });
+    lbl.textContent = `Fatura ${mesNome.charAt(0).toUpperCase() + mesNome.slice(1)}/${ano}`;
+  } else {
+    lbl.textContent = 'Mês da Fatura';
+  }
+};
 
 window.selecionarCartaoFatura = function(cartao) {
   cartaoFaturaSelecionado = cartao;
@@ -1142,7 +1203,7 @@ window.handleFileFaturaSelect = async function(event) {
 
   if (textoExtraido) {
     document.getElementById('inp-fatura-txt').value = textoExtraido;
-    await processarEGravarFatura(textoExtraido, cartaoFaturaSelecionado);
+    await processarEExibirRevisaoFatura(textoExtraido, cartaoFaturaSelecionado);
   } else {
     toastMsg('❌ Não foi possível ler o texto do arquivo da fatura.');
   }
@@ -1177,78 +1238,179 @@ window.importarFaturaManualOuArquivo = async function() {
     toastMsg('⚠️ Selecione o arquivo da fatura (.pdf, .csv) ou cole o texto da fatura.');
     return;
   }
-  await processarEGravarFatura(txt, cartaoFaturaSelecionado);
+  await processarEExibirRevisaoFatura(txt, cartaoFaturaSelecionado);
 };
 
-async function processarEGravarFatura(texto, cartaoNome) {
-  const parsed = parseFaturaCartaoTexto(texto, cartaoNome);
-  if (!parsed.length) {
-    toastMsg(`⚠️ Nenhuma compra identificada no arquivo/texto da fatura do ${cartaoNome}.`);
+async function processarEExibirRevisaoFatura(texto, cartaoNome) {
+  const itens = parseLinhasFatura(texto);
+  if (!itens.length) {
+    toastMsg(`⚠️ Nenhuma compra identificada no texto da fatura do ${cartaoNome}. Cole linhas como "3 25/06 SAVEGNAGO 57,73".`);
     return;
   }
 
-  for (const item of parsed) {
-    await addDoc(collection(db, COLL_FATURAS), item);
-  }
-  document.getElementById('inp-fatura-txt').value = '';
-  const fileTxtEl = document.getElementById('txt-file-fatura');
-  if (fileTxtEl) fileTxtEl.textContent = 'Clique para Selecionar o Arquivo da Fatura';
+  const valorTotalCalculado = itens.reduce((acc, item) => acc + item.valor, 0);
 
-  toastMsg(`🎉 ${parsed.length} lançamentos do ${cartaoNome} importados com sucesso!`);
+  const inpVenc = document.getElementById('inp-fatura-vencimento').value || new Date().toISOString().slice(0, 10);
+  const mesAno = inpVenc.slice(0, 7);
+
+  faturaEmProcessamento = {
+    cartao: cartaoNome,
+    dataVencimento: inpVenc,
+    mesAno,
+    valorTotal: valorTotalCalculado,
+    qtdItens: itens.length,
+    itens
+  };
+
+  document.getElementById('badge-total-preview-fatura').textContent = brl(valorTotalCalculado);
+  const listaEl = document.getElementById('lista-preview-fatura-itens');
+  listaEl.innerHTML = itens.map(i => `
+    <div style="display:flex; justify-content:space-between; padding:.35rem 0; border-bottom:1px dashed var(--border-color); font-size:.82rem;">
+      <span><strong>${i.dataCompra}</strong> — ${i.descricao}</span>
+      <span style="color:#fb7185; font-weight:700;">${brl(i.valor)}</span>
+    </div>
+  `).join('');
+
+  const boxRevisao = document.getElementById('box-revisao-fatura');
+  boxRevisao.style.display = 'block';
+  boxRevisao.scrollIntoView({ behavior: 'smooth' });
+
+  toastMsg(`✅ ${itens.length} compras encontradas na fatura! Confira abaixo e clique em Salvar.`);
 }
 
-function parseFaturaCartaoTexto(texto, cartaoNome) {
-  const transacoes = [];
+window.confirmarEGravarFaturaDocumento = async function() {
+  if (!faturaEmProcessamento) return;
+
+  const inpVenc = document.getElementById('inp-fatura-vencimento').value || new Date().toISOString().slice(0, 10);
+  faturaEmProcessamento.dataVencimento = inpVenc;
+  faturaEmProcessamento.mesAno = inpVenc.slice(0, 7);
+
+  try {
+    await addDoc(collection(db, COLL_FATURAS), {
+      ...faturaEmProcessamento,
+      createdAt: serverTimestamp()
+    });
+
+    document.getElementById('box-revisao-fatura').style.display = 'none';
+    document.getElementById('inp-fatura-txt').value = '';
+    const fileTxtEl = document.getElementById('txt-file-fatura');
+    if (fileTxtEl) fileTxtEl.textContent = 'Clique para Selecionar o Arquivo da Fatura';
+
+    const totalFmt = brl(faturaEmProcessamento.valorTotal);
+    faturaEmProcessamento = null;
+
+    toastMsg(`🎉 Fatura de ${totalFmt} salva com sucesso!`);
+  } catch (err) {
+    alert('Erro ao salvar fatura: ' + err.message);
+  }
+};
+
+function parseLinhasFatura(texto) {
+  const itens = [];
   const linhas = texto.split('\n');
 
-  // Matcher de faturas Nubank / Santander:
-  // Ex Nubank: 05 AGO  Supermercado Extra  R$ 150,00
-  // Ex Santander: 05/08/2026  COMPRA CARTAO MERCADO  150,00
-  // Ex Geral: 05/08  Uber  R$ 24,90
-  const regex = /(\d{2}[\/\.-]\d{2}(?:[\/\.-]\d{2,4})?|\d{2}\s+[A-Za-z]{3})\s+(.+?)\s+R?\$\s*([\d\.,]+)/i;
+  // Suporta formatos Nubank / Santander:
+  // Ex: 3 25/06 AUTOPOSTOQUINHONE 22,99
+  // Ex: 3 25/06 SAVEGNAGO LOJA 20 RIBE 57,73
+  // Ex: 25/06 UBER *TRIP 24,90
+  const regex = /(?:\d+\s+)?(\d{2}[\/\.-]\d{2}(?:[\/\.-]\d{2,4})?|\d{2}\s+[A-Za-z]{3})\s+(.+?)\s+R?\$\s*([\d\.,]+)$/i;
 
   linhas.forEach(linha => {
     const lTrim = linha.trim();
     if (!lTrim) return;
 
+    if (/EMISS[ÃA]O|TRANSA[ÇC][ÕO]ES|RESUMO|PAGAMENTO DE FATURA|TOTAL DA FATURA|FATURA ANTERIOR|SALDO ANTERIOR|LIMITE DISPON[ÍI]VEL/i.test(lTrim)) {
+      return;
+    }
+
     const match = lTrim.match(regex);
     if (match) {
+      const dataStr = match[1];
       const desc = match[2].trim();
       const val = parseBRL(match[3]);
-      if (desc && val > 0 && !/pagamento|total\s*fatura|fatura\s*anterior|saldo/i.test(desc)) {
-        transacoes.push({ cartao: cartaoNome || 'Nubank', descricao: desc, valor: val, data: new Date().toISOString() });
+
+      if (desc && val > 0 && desc.length > 2) {
+        itens.push({
+          dataCompra: dataStr,
+          descricao: desc,
+          valor: val
+        });
       }
     }
   });
-  return transacoes;
+
+  return itens;
 }
 
 function renderCartoesCredito() {
-  const total = todasFaturas.reduce((acc, f) => acc + (f.valor || 0), 0);
+  const total = todasFaturas.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
   document.getElementById('badge-total-cartoes').textContent = `${brl(total)} total`;
 
   const el = document.getElementById('lista-faturas-registradas');
   if (!todasFaturas.length) {
-    el.innerHTML = `<div class="empty-state">Nenhuma fatura ou compra em cartão importada ainda.</div>`;
+    el.innerHTML = `<div class="empty-state">Nenhuma fatura cadastrada ainda.</div>`;
     return;
   }
 
-  el.innerHTML = `<div class="table-responsive"><table class="custom-table">
-    <thead><tr><th>Cartão</th><th>Descrição</th><th>Data</th><th class="num">Valor</th><th>Ação</th></tr></thead>
-    <tbody>${todasFaturas.map(f => `<tr>
-      <td><span class="badge rose">${f.cartao||'Cartão'}</span></td>
-      <td><strong>${f.descricao}</strong></td>
-      <td>${fmtData(f.data)}</td>
-      <td class="num" style="color:#fb7185"><strong>${brl(f.valor)}</strong></td>
-      <td><button class="btn-danger" onclick="excluirFatura('${f.id}')">🗑️</button></td>
-    </tr>`).join('')}</tbody>
+  el.innerHTML = todasFaturas.map(f => {
+    const valorTotalFatura = f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0);
+    const cartaoNome = f.cartao || 'Cartão';
+    const isNubank = cartaoNome.toLowerCase().includes('nubank');
+    const badgeClass = isNubank ? 'purple' : 'red';
+    const badgeIcon = isNubank ? '🟣' : '🔴';
+
+    const dataVencStr = f.dataVencimento ? fmtData(f.dataVencimento).split(',')[0] : '—';
+    const mesAnoStr = f.mesAno || '—';
+
+    return `
+      <div class="purchase-card">
+        <div class="purchase-header" onclick="toggleDetail('fat-${f.id}')">
+          <div class="purchase-info">
+            <h3><span class="badge ${badgeClass}">${badgeIcon} ${cartaoNome}</span> — Vencimento: ${dataVencStr}</h3>
+            <p>📅 Mês Referência: <strong>${mesAnoStr}</strong> &nbsp;•&nbsp; 🛒 ${f.qtdItens || (f.itens?.length || 1)} itens contemplados</p>
+          </div>
+          <div class="purchase-values">
+            <div class="pv-total" style="color:#fb7185">${brl(valorTotalFatura)}</div>
+            <div class="pv-sub">Fatura do Mês</div>
+          </div>
+          <svg class="chevron" id="chev-fat-${f.id}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="purchase-details" id="detail-fat-${f.id}">
+          <div class="details-toolbar">
+            <span class="card-subtext">Detalhamento dos Lançamentos da Fatura</span>
+            <button class="btn-danger" onclick="excluirFaturaDocumento('${f.id}')">🗑️ Excluir Fatura</button>
+          </div>
+          ${renderItensFatura(f)}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderItensFatura(f) {
+  if (f.itens && f.itens.length > 0) {
+    return `<div class="table-responsive"><table class="custom-table">
+      <thead><tr><th>Data Compra</th><th>Descrição do Lançamento</th><th class="num">Valor</th></tr></thead>
+      <tbody>${f.itens.map(i => `<tr>
+        <td><strong>${i.dataCompra || '—'}</strong></td>
+        <td>${i.descricao}</td>
+        <td class="num" style="color:#fb7185"><strong>${brl(i.valor)}</strong></td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+  }
+  return `<div class="table-responsive"><table class="custom-table">
+    <thead><tr><th>Descrição</th><th class="num">Valor</th></tr></thead>
+    <tbody><tr>
+      <td>${f.descricao || 'Fatura do Cartão'}</td>
+      <td class="num" style="color:#fb7185"><strong>${brl(f.valor || f.valorTotal)}</strong></td>
+    </tr></tbody>
   </table></div>`;
 }
 
-window.excluirFatura = async function(id) {
-  if (!confirm('Excluir este lançamento de cartão?')) return;
+window.excluirFaturaDocumento = async function(id) {
+  if (!confirm('Excluir esta fatura e todos os seus lançamentos?')) return;
   await deleteDoc(doc(db, COLL_FATURAS, id));
-  toastMsg('🗑️ Lançamento de cartão removido.');
+  toastMsg('🗑️ Fatura removida com sucesso.');
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
