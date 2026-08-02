@@ -1547,9 +1547,14 @@ function renderSubConteudoMensal(entradasMes, faturasMes, boletosMes, comprasMes
                     <h3>${f.cartao === 'Nubank' ? '🟣 Nubank' : f.cartao === 'Santander' ? '🔴 Santander' : '💳 ' + (f.descricao || f.cartao)}</h3>
                     <p>Vencimento: <strong>${f.dataVencimento || '—'}</strong> • ${f.qtdItens || (f.itens ? f.itens.length : 0)} lançamentos</p>
                   </div>
-                  <div class="purchase-values">
-                    <div class="pv-total" style="color:#fb7185">${brl(f.valorTotal)}</div>
-                    <div class="pv-sub">Clique para ver itens <span class="chevron">▼</span></div>
+                  <div class="purchase-values" style="display:flex;align-items:center;gap:.75rem">
+                    <div style="text-align:right">
+                      <div class="pv-total" style="color:#fb7185">${brl(f.valorTotal)}</div>
+                      <div class="pv-sub">Clique para ver itens <span class="chevron">▼</span></div>
+                    </div>
+                    <button type="button" class="btn-danger" style="padding:.35rem .65rem;font-size:.78rem;margin-left:.25rem" onclick="event.stopPropagation(); excluirFaturaDocumento('${f.id}')" title="Excluir esta fatura de todos os lugares do sistema">
+                      🗑️ Excluir
+                    </button>
                   </div>
                 </div>
                 <div id="fat-m-${f.id}" class="purchase-details">
@@ -1584,9 +1589,14 @@ function renderSubConteudoMensal(entradasMes, faturasMes, boletosMes, comprasMes
                     <h3>📄 ${b.descricao || 'Boleto / Conta'}</h3>
                     <p>Vencimento: <strong>${b.dataVencimento || '—'}</strong> • ${b.qtdItens || (b.itens ? b.itens.length : 0)} encargos</p>
                   </div>
-                  <div class="purchase-values">
-                    <div class="pv-total" style="color:#c084fc">${brl(b.valorTotal)}</div>
-                    <div class="pv-sub">Clique para ver detalhes <span class="chevron">▼</span></div>
+                  <div class="purchase-values" style="display:flex;align-items:center;gap:.75rem">
+                    <div style="text-align:right">
+                      <div class="pv-total" style="color:#c084fc">${brl(b.valorTotal)}</div>
+                      <div class="pv-sub">Clique para ver detalhes <span class="chevron">▼</span></div>
+                    </div>
+                    <button type="button" class="btn-danger" style="padding:.35rem .65rem;font-size:.78rem;margin-left:.25rem" onclick="event.stopPropagation(); excluirBoletoDocumento('${b.id}')" title="Excluir este boleto de todos os lugares do sistema">
+                      🗑️ Excluir
+                    </button>
                   </div>
                 </div>
                 <div id="bol-m-${b.id}" class="purchase-details">
@@ -2571,9 +2581,14 @@ function renderCartoesCredito() {
             <h3><span class="badge ${badgeClass}">${badgeIcon} ${cartaoNome}</span> — Vencimento: ${dataVencStr}</h3>
             <p>📅 Mês Referência: <strong>${mesAnoStr}</strong> &nbsp;•&nbsp; 🛒 ${f.qtdItens || (f.itens?.length || 1)} itens contemplados</p>
           </div>
-          <div class="purchase-values">
-            <div class="pv-total" style="color:#fb7185">${brl(valorTotalFatura)}</div>
-            <div class="pv-sub">Fatura do Mês</div>
+          <div class="purchase-values" style="display:flex;align-items:center;gap:.75rem">
+            <div style="text-align:right">
+              <div class="pv-total" style="color:#fb7185">${brl(valorTotalFatura)}</div>
+              <div class="pv-sub">Fatura do Mês</div>
+            </div>
+            <button type="button" class="btn-danger" style="padding:.35rem .65rem;font-size:.78rem;margin-left:.25rem" onclick="event.stopPropagation(); excluirFaturaDocumento('${f.id}')" title="Excluir esta fatura de todos os lugares do sistema">
+              🗑️ Excluir
+            </button>
           </div>
           <svg class="chevron" id="chev-fat-${f.id}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
@@ -2920,7 +2935,14 @@ function renderBoletos() {
     return;
   }
 
-  el.innerHTML = todosBoletos.map(b => {
+  // Ordenar por data de vencimento: da mais distante da data de hoje para a mais perto (ficando no topo da lista)
+  const boletosOrdenados = [...todosBoletos].sort((a, b) => {
+    const dA = a.dataVencimento ? new Date(a.dataVencimento).getTime() : (a.mesAno ? new Date(a.mesAno + '-01').getTime() : 0);
+    const dB = b.dataVencimento ? new Date(b.dataVencimento).getTime() : (b.mesAno ? new Date(b.mesAno + '-01').getTime() : 0);
+    return dB - dA; // Mais distante no futuro -> topo da lista
+  });
+
+  el.innerHTML = boletosOrdenados.map(b => {
     const valorTotalBoleto = b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0);
     const dataVencStr = b.dataVencimento ? fmtData(b.dataVencimento).split(',')[0] : '—';
     const mesAnoStr = b.mesAno || '—';
@@ -2933,9 +2955,14 @@ function renderBoletos() {
             <h3><span class="badge purple">📄 ${descBoleto}</span> — Vencimento: ${dataVencStr}</h3>
             <p>📅 Mês Referência: <strong>${mesAnoStr}</strong> &nbsp;•&nbsp; 🛒 ${b.qtdItens || (b.itens?.length || 1)} itens / encargos</p>
           </div>
-          <div class="purchase-values">
-            <div class="pv-total" style="color:#c084fc">${brl(valorTotalBoleto)}</div>
-            <div class="pv-sub">Boleto do Mês</div>
+          <div class="purchase-values" style="display:flex;align-items:center;gap:.75rem">
+            <div style="text-align:right">
+              <div class="pv-total" style="color:#c084fc">${brl(valorTotalBoleto)}</div>
+              <div class="pv-sub">Boleto do Mês</div>
+            </div>
+            <button type="button" class="btn-danger" style="padding:.35rem .65rem;font-size:.78rem;margin-left:.25rem" onclick="event.stopPropagation(); excluirBoletoDocumento('${b.id}')" title="Excluir este boleto de todos os lugares do sistema">
+              🗑️ Excluir
+            </button>
           </div>
           <svg class="chevron" id="chev-bol-${b.id}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
@@ -2998,9 +3025,14 @@ window.removerItemBoletoCadastrado = async function(boletoId, itemIndex) {
 };
 
 window.excluirBoletoDocumento = async function(id) {
-  if (!confirm('Excluir este boleto e todos os seus itens?')) return;
+  const boleto = todosBoletos.find(b => b.id === id);
+  const desc = boleto ? (boleto.descricao || 'Boleto / Conta') : 'este boleto';
+  const val = boleto ? brl(boleto.valorTotal !== undefined ? boleto.valorTotal : (boleto.valor || 0)) : '';
+
+  if (!confirm(`⚠️ Deseja realmente excluir ${desc} ${val ? '(' + val + ')' : ''}?\n\nEste boleto será removido permanentemente de todos os meses, resumos e relatórios do sistema.`)) return;
+
   await deleteDoc(doc(db, COLL_BOLETOS, id));
-  toastMsg('🗑️ Boleto removido com sucesso.');
+  toastMsg('🗑️ Boleto removido de todo o sistema com sucesso.');
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
