@@ -1262,10 +1262,23 @@ async function extrairTextoPDF(file) {
   }
 }
 
+function extrairTotalAPagarDoTexto(texto) {
+  if (!texto) return null;
+  const match = texto.match(/Total\s*a\s*Pagar\s*[:\s]*R?\$\s*([\d\.,]+)/i)
+             || texto.match(/no\s*valor\s*de\s*R?\$\s*([\d\.,]+)/i)
+             || texto.match(/Valor\s*total\s*da\s*fatura\s*[:\s]*R?\$\s*([\d\.,]+)/i)
+             || texto.match(/Total\s*da\s*fatura\s*[:\s]*R?\$\s*([\d\.,]+)/i);
+  if (match) {
+    const val = parseBRL(match[1]);
+    if (val > 0) return val;
+  }
+  return null;
+}
+
 function extrairDataVencimentoDoTexto(texto) {
   if (!texto) return null;
-  const match = texto.match(/Data\s*de\s*vencimento\s*[:\s]*(\d{2})\s+([A-Za-z]{3})\s+(\d{4})/i)
-             || texto.match(/Vencimento\s*[:\s]*(\d{2}[\/\.-]\d{2}[\/\.-]\d{4})/i)
+  const match = texto.match(/Vencimento\s*[:\s]*(\d{2}[\/\.-]\d{2}[\/\.-]\d{4})/i)
+             || texto.match(/Data\s*de\s*vencimento\s*[:\s]*(\d{2})\s+([A-Za-z]{3})\s+(\d{4})/i)
              || texto.match(/FATURA\s+(\d{2})\s+([A-Za-z]{3})\s+(\d{4})/i);
   if (match) {
     if (match[2] && match[3]) {
@@ -1299,8 +1312,10 @@ async function processarEExibirRevisaoFatura(texto, cartaoNome) {
     atualizarMesRefFatura();
   }
 
+  const totalAPagarOficial = extrairTotalAPagarDoTexto(texto);
   const itens = parseLinhasFatura(texto);
-  if (!itens.length) {
+
+  if (!itens.length && !totalAPagarOficial) {
     toastMsg(`⚠️ Nenhuma compra individual identificada na fatura do ${cartaoNome}.`);
     return;
   }
@@ -1308,131 +1323,79 @@ async function processarEExibirRevisaoFatura(texto, cartaoNome) {
   const inpVenc = document.getElementById('inp-fatura-vencimento').value || new Date().toISOString().slice(0, 10);
   const mesAno = inpVenc.slice(0, 7);
 
+  const somaItens = itens.reduce((acc, item) => acc + item.valor, 0);
+  const valorTotalDefinitivo = totalAPagarOficial || somaItens;
+
   faturaEmProcessamento = {
     cartao: cartaoNome,
     dataVencimento: inpVenc,
     mesAno,
-    valorTotal: itens.reduce((acc, item) => acc + item.valor, 0),
+    valorTotal: valorTotalDefinitivo,
     qtdItens: itens.length,
     itens
   };
 
   renderizarRevisaoFaturaUI();
-  toastMsg(`✅ ${itens.length} compras encontradas! Você pode excluir itens indesejados antes de salvar.`);
+  toastMsg(`✅ ${itens.length} compras encontradas! Fatura total: ${brl(valorTotalDefinitivo)}.`);
 }
-
-function renderizarRevisaoFaturaUI() {
-  if (!faturaEmProcessamento) return;
-  const { valorTotal, itens } = faturaEmProcessamento;
-
-  document.getElementById('badge-total-preview-fatura').textContent = brl(valorTotal);
-  const listaEl = document.getElementById('lista-preview-fatura-itens');
-
-  if (!itens.length) {
-    listaEl.innerHTML = `<div class="empty-state">Todos os itens foram removidos.</div>`;
-  } else {
-    listaEl.innerHTML = itens.map((i, index) => `
-      <div style="display:flex; justify-content:space-between; align-items:center; padding:.4rem 0; border-bottom:1px dashed var(--border-color); font-size:.82rem;">
-        <span><strong>${i.dataCompra}</strong> — ${i.descricao}</span>
-        <div style="display:flex; align-items:center; gap:.75rem;">
-          <span style="color:#fb7185; font-weight:700;">${brl(i.valor)}</span>
-          <button type="button" class="btn-danger" style="padding:.15rem .45rem; font-size:.75rem;" onclick="removerItemRevisaoFatura(${index})">🗑️</button>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  const boxRevisao = document.getElementById('box-revisao-fatura');
-  boxRevisao.style.display = 'block';
-  boxRevisao.scrollIntoView({ behavior: 'smooth' });
-}
-
-window.removerItemRevisaoFatura = function(index) {
-  if (!faturaEmProcessamento || !faturaEmProcessamento.itens) return;
-  faturaEmProcessamento.itens.splice(index, 1);
-  faturaEmProcessamento.valorTotal = faturaEmProcessamento.itens.reduce((acc, i) => acc + i.valor, 0);
-  faturaEmProcessamento.qtdItens = faturaEmProcessamento.itens.length;
-  renderizarRevisaoFaturaUI();
-  toastMsg('🗑️ Item removido da lista de revisão.');
-};
-
-window.confirmarEGravarFaturaDocumento = async function() {
-  if (!faturaEmProcessamento) return;
-
-  const inpVenc = document.getElementById('inp-fatura-vencimento').value || new Date().toISOString().slice(0, 10);
-  faturaEmProcessamento.dataVencimento = inpVenc;
-  faturaEmProcessamento.mesAno = inpVenc.slice(0, 7);
-
-  try {
-    await addDoc(collection(db, COLL_FATURAS), {
-      ...faturaEmProcessamento,
-      createdAt: serverTimestamp()
-    });
-
-    document.getElementById('box-revisao-fatura').style.display = 'none';
-    document.getElementById('inp-fatura-txt').value = '';
-    const fileTxtEl = document.getElementById('txt-file-fatura');
-    if (fileTxtEl) fileTxtEl.textContent = 'Clique para Selecionar o Arquivo da Fatura';
-
-    const totalFmt = brl(faturaEmProcessamento.valorTotal);
-    faturaEmProcessamento = null;
-
-    toastMsg(`🎉 Fatura de ${totalFmt} salva com sucesso!`);
-  } catch (err) {
-    alert('Erro ao salvar fatura: ' + err.message);
-  }
-};
 
 function parseLinhasFatura(texto) {
   if (!texto) return [];
   const itens = [];
 
-  // Regex 1: Leitura por linhas (Nubank e Santander)
+  const regexItem = /(?:[@\)\(\*•\s]+)?(\d{2}[\/\.-]\d{2}(?:[\/\.-]\d{2,4})?|\d{2}\s+[A-Za-z]{3})\s+(.+?)\s+(?:(\d{2}\/\d{2})\s+)?(-?R?\$\s*[\d\.]+,\d{2}|-?[\d\.]+,\d{2})/gi;
+
   const linhas = texto.split('\n');
+
   linhas.forEach(linha => {
     const l = linha.trim();
     if (!l) return;
 
-    if (/EMISS[ÃA]O|TRANSA[ÇC][ÕO]ES|RESUMO|PAGAMENTO DE FATURA|TOTAL DA FATURA|FATURA ANTERIOR|SALDO ANTERIOR|LIMITE DISPON[ÍI]VEL|OPÇÕES DE PAGAMENTO|ALTERNATIVAS DE PAGAMENTO/i.test(l)) {
+    if (/EMISS[ÃA]O|TRANSA[ÇC][ÕO]ES|RESUMO|PAGAMENTO DE FATURA|TOTAL DA FATURA|FATURA ANTERIOR|SALDO ANTERIOR|LIMITE DISPON[ÍI]VEL|OPÇÕES DE PAGAMENTO|ALTERNATIVAS DE PAGAMENTO|PAGAMENTO E DEMAIS|PARCELAMENTOS|DESPESAS|HISTÓRICO DE FATURAS|SUPERCRÉDITO|SAQUE À CRÉDITO|COMPRA DATA DESCRIÇÃO/i.test(l)) {
       return;
     }
 
-    const m = l.match(/^(?:\d+\s+)?(\d{2}[\/\.-]\d{2}(?:[\/\.-]\d{2,4})?|\d{2}\s+[A-Za-z]{3})\s+(.+?)\s+R?\$\s*([\d\.,]+)$/i)
-           || l.match(/(\d{2}[\/\.-]\d{2}(?:[\/\.-]\d{2,4})?|\d{2}\s+[A-Za-z]{3})\s+(.+?)\s+R?\$\s*([\d\.,]+)/i);
+    const lineRegex = /(?:[@\)\(\*•\s]+)?(\d{2}[\/\.-]\d{2}(?:[\/\.-]\d{2,4})?|\d{2}\s+[A-Za-z]{3})\s+(.+?)\s+(?:(\d{2}\/\d{2})\s+)?(-?R?\$\s*[\d\.]+,\d{2}|-?[\d\.]+,\d{2})$/i;
+    const m = l.match(lineRegex) || l.match(/(?:[@\)\(\*•\s]+)?(\d{2}[\/\.-]\d{2}(?:[\/\.-]\d{2,4})?|\d{2}\s+[A-Za-z]{3})\s+(.+?)\s+(?:(\d{2}\/\d{2})\s+)?(-?R?\$\s*[\d\.]+,\d{2}|-?[\d\.]+,\d{2})/i);
+
     if (m) {
       const dataStr = m[1];
-      const desc = m[2].trim();
-      const val = parseBRL(m[3]);
-      if (desc && val > 0 && desc.length > 2 && !/fatura|limite|pagamento|saldo|alternativas|opções/i.test(desc)) {
+      let desc = m[2].trim();
+      const parcStr = m[3];
+      const valRaw = m[4];
+
+      if (valRaw.includes('-') || /DEB AUTOM|PAGAMENTO|PAGTO|CR[ÉE]DITO FATURA/i.test(desc)) {
+        return;
+      }
+
+      const val = parseBRL(valRaw);
+      if (parcStr) {
+        desc += ` (${parcStr})`;
+      }
+
+      if (desc && val > 0 && desc.length > 2 && !/fatura|limite|pagamento|saldo|alternativas|opções|período|emissão|vencimento/i.test(desc)) {
         itens.push({ dataCompra: dataStr, descricao: desc, valor: val });
       }
     }
   });
 
-  if (itens.length > 0) return itens;
-
-  // Regex 2: Leitura global em texto contínuo
-  const regexGlobal = /(\b\d{2}[\/\.-]\d{2}(?:[\/\.-]\d{2,4})?|\b\d{2}\s+[A-Za-z]{3})\s+(.+?)\s+R?\$\s*([\d\.,]+)/gi;
-  let match;
-  while ((match = regexGlobal.exec(texto)) !== null) {
-    const dataStr = match[1];
-    const desc = match[2].trim();
-    const val = parseBRL(match[3]);
-
-    if (desc && val > 0 && desc.length > 2 && !/fatura|limite|pagamento|saldo|alternativas|opções|período|emissão/i.test(desc)) {
-      itens.push({ dataCompra: dataStr, descricao: desc, valor: val });
-    }
-  }
-
-  // Fallback: Se não encontrou itens individuais mas encontrou o valor total da fatura (ex: no valor de R$ 391,10)
   if (itens.length === 0) {
-    const mTotal = texto.match(/no\s*valor\s*de\s*R?\$\s*([\d\.,]+)/i)
-                || texto.match(/Valor\s*total\s*da\s*fatura\s*[:\s]*R?\$\s*([\d\.,]+)/i)
-                || texto.match(/Total\s*da\s*fatura\s*[:\s]*R?\$\s*([\d\.,]+)/i);
-    if (mTotal) {
-      const valTotal = parseBRL(mTotal[1]);
-      if (valTotal > 0) {
-        itens.push({ dataCompra: 'Fatura Mês', descricao: 'Fatura do Cartão (Total Consolidado)', valor: valTotal });
+    let match;
+    while ((match = regexItem.exec(texto)) !== null) {
+      const dataStr = match[1];
+      let desc = match[2].trim();
+      const parcStr = match[3];
+      const valRaw = match[4];
+
+      if (valRaw.includes('-') || /DEB AUTOM|PAGAMENTO|PAGTO|CR[ÉE]DITO FATURA/i.test(desc)) {
+        continue;
+      }
+
+      const val = parseBRL(valRaw);
+      if (parcStr) desc += ` (${parcStr})`;
+
+      if (desc && val > 0 && desc.length > 2 && !/fatura|limite|pagamento|saldo|alternativas|opções|período|emissão|vencimento/i.test(desc)) {
+        itens.push({ dataCompra: dataStr, descricao: desc, valor: val });
       }
     }
   }
