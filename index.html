@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Controle de Gastos no Mercado</title>
-  <meta name="description" content="Sistema completo para controle de gastos no mercado, leitura de QR Code NFC-e, comparação de preços, previsão mensal e análise de marcas.">
+  <title>Controle Financeiro Completo — Victor &amp; Maria</title>
+  <meta name="description" content="Sistema completo de gestão financeira pessoal: Salários/Holerites, Cartões de Crédito, Mercado, Reservas e Orçamento Familiar.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
@@ -33,17 +33,15 @@
     a{color:inherit}
 
     /* Header */
-    .app-header{position:sticky;top:0;z-index:100;background:rgba(15,23,42,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-color);padding:1rem 1.5rem;display:flex;justify-content:space-between;align-items:center;gap:.75rem}
+    .app-header{position:sticky;top:0;z-index:100;background:rgba(15,23,42,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--border-color);padding:.9rem 1.5rem;display:flex;justify-content:space-between;align-items:center;gap:.75rem}
     .logo-container{display:flex;align-items:center;gap:.75rem}
-    .logo-icon{width:40px;height:40px;border-radius:var(--radius-md);background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;font-size:1.25rem;box-shadow:0 0 15px var(--primary-glow)}
-    .logo-text h1{font-size:1.1rem;font-weight:700;background:linear-gradient(to right,#fff,#cbd5e1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .logo-icon{width:42px;height:42px;border-radius:var(--radius-md);background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;font-size:1.3rem;box-shadow:0 0 15px var(--primary-glow)}
+    .logo-text h1{font-size:1.15rem;font-weight:800;background:linear-gradient(to right,#fff,#cbd5e1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     .logo-text p{font-size:.72rem;color:var(--text-muted)}
-    .btn-header-add{background:linear-gradient(135deg,var(--primary),#059669);color:#fff;border:none;padding:.55rem 1rem;border-radius:var(--radius-md);font-weight:600;font-size:.85rem;cursor:pointer;display:flex;align-items:center;gap:.4rem;transition:all .2s;box-shadow:0 4px 12px var(--primary-glow);white-space:nowrap}
-    .btn-header-add:hover{transform:translateY(-1px)}
 
     /* Desktop Nav */
-    .desktop-nav{display:flex;gap:.4rem;flex-wrap:wrap}
-    .nav-item{background:transparent;color:var(--text-muted);border:none;padding:.55rem .9rem;border-radius:var(--radius-sm);font-weight:500;font-size:.85rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:.35rem;font-family:inherit}
+    .desktop-nav{display:flex;gap:.35rem;flex-wrap:wrap}
+    .nav-item{background:transparent;color:var(--text-muted);border:none;padding:.55rem .85rem;border-radius:var(--radius-sm);font-weight:500;font-size:.85rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:.35rem;font-family:inherit}
     .nav-item:hover{color:var(--text-main);background:rgba(255,255,255,.06)}
     .nav-item.active{color:#fff;background:var(--bg-card);border:1px solid var(--border-color);font-weight:600}
 
@@ -53,14 +51,20 @@
     .mob-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
     .mob-btn.active{color:var(--primary)}
 
-    @media(max-width:768px){.desktop-nav{display:none}.mobile-nav{display:flex}.app-header{padding:.8rem 1rem}}
+    @media(max-width:850px){.desktop-nav{display:none}.mobile-nav{display:flex}.app-header{padding:.8rem 1rem}}
 
     /* Layout */
-    .main-container{max-width:1200px;margin:0 auto;padding:1.5rem}
+    .main-container{max-width:1240px;margin:0 auto;padding:1.5rem}
     @media(max-width:600px){.main-container{padding:1rem}}
     .tab-content{display:none;animation:fadeIn .3s ease}
     .tab-content.active{display:block}
     @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Sub-tabs */
+    .sub-nav{display:flex;gap:.5rem;margin-bottom:1.25rem;overflow-x:auto;padding-bottom:.25rem}
+    .sub-item{background:rgba(15,23,42,.6);color:var(--text-muted);border:1px solid var(--border-color);padding:.45rem .85rem;border-radius:20px;font-size:.8rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .2s}
+    .sub-item:hover{color:var(--text-main);background:var(--bg-card-hover)}
+    .sub-item.active{background:var(--secondary);color:#fff;border-color:var(--secondary)}
 
     /* Cards */
     .grid-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1.25rem;margin-bottom:1.5rem}
@@ -68,10 +72,12 @@
     .card:hover{border-color:#475569}
     .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem}
     .card-title{font-size:.82rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)}
-    .card-icon{width:36px;height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+    .card-icon{width:38px;height:38px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:1.15rem}
     .card-icon.green{background:rgba(16,185,129,.15);color:var(--primary)}
     .card-icon.amber{background:rgba(245,158,11,.15);color:var(--accent-amber)}
     .card-icon.purple{background:rgba(168,85,247,.15);color:var(--accent-purple)}
+    .card-icon.cyan{background:rgba(6,182,212,.15);color:var(--accent-cyan)}
+    .card-icon.rose{background:rgba(244,63,94,.15);color:var(--accent-rose)}
     .card-value{font-size:1.75rem;font-weight:800;margin-bottom:.25rem}
     .card-subtext{font-size:.78rem;color:var(--text-muted)}
 
@@ -81,6 +87,7 @@
     .badge.red{background:rgba(244,63,94,.2);color:#fb7185}
     .badge.amber{background:rgba(245,158,11,.2);color:#fbbf24}
     .badge.cyan{background:rgba(6,182,212,.2);color:#22d3ee}
+    .badge.purple{background:rgba(168,85,247,.2);color:#c084fc}
 
     /* Payment methods */
     .payment-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.9rem;margin-top:.75rem}
@@ -120,7 +127,7 @@
     .custom-table tr:hover td{background:rgba(255,255,255,.02)}
     .custom-table .num{text-align:right}
 
-    /* Purchase cards (histórico) */
+    /* Purchase cards */
     .purchase-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);margin-bottom:1rem;overflow:hidden}
     .purchase-header{padding:1.1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;gap:.75rem}
     .purchase-header:hover{background:var(--bg-card-hover)}
@@ -136,7 +143,7 @@
     /* Status msg */
     .status-msg{margin-top:.75rem;font-size:.84rem;color:var(--accent-amber);text-align:center;min-height:1.4em}
 
-    /* Divider */
+    /* Section Divider */
     .section-title{font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:1rem;margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid var(--border-color)}
     .section-title:first-child{border-top:none;margin-top:0;padding-top:0}
 
@@ -167,6 +174,10 @@
     .brand-chip.best{border-color:var(--primary)}
     .brand-chip .bc-name{font-size:.78rem;color:var(--text-muted)}
     .brand-chip .bc-val{font-size:1rem;font-weight:700}
+
+    /* Progress bar */
+    .progress-bar-bg{width:100%;height:10px;background:rgba(15,23,42,.7);border-radius:5px;overflow:hidden;margin-top:.4rem}
+    .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent-cyan));border-radius:5px;transition:width .4s ease}
   </style>
 </head>
 <body>
@@ -174,92 +185,111 @@
 <!-- HEADER -->
 <header class="app-header">
   <div class="logo-container">
-    <div class="logo-icon">🛒</div>
+    <div class="logo-icon">💼</div>
     <div class="logo-text">
-      <h1>Controle Mercado</h1>
+      <h1>Controle Financeiro</h1>
       <p>Victor &amp; Maria</p>
     </div>
   </div>
 
   <nav class="desktop-nav">
     <button class="nav-item active" data-tab="dashboard">📊 Visão Geral</button>
-    <button class="nav-item" data-tab="listamensal">🗓️ Lista Mensal</button>
-    <button class="nav-item" data-tab="comparacao">📈 Comparar Preços</button>
-    <button class="nav-item" data-tab="recorrencia">🔄 Itens &amp; Marcas</button>
-    <button class="nav-item" data-tab="historico">📋 Histórico</button>
+    <button class="nav-item" data-tab="salarios">💵 Salários &amp; Entradas</button>
+    <button class="nav-item" data-tab="cartoes">💳 Cartões de Crédito</button>
+    <button class="nav-item" data-tab="mercado">🛒 Mercado</button>
+    <button class="nav-item" data-tab="reservas">🐷 Reservas &amp; Economias</button>
   </nav>
 </header>
 
 <!-- MAIN -->
 <main class="main-container">
 
-  <!-- ABA DASHBOARD -->
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <!-- 1. ABA DASHBOARD (VISÃO GERAL DO CONTROLE FINANCEIRO COMPLETO) -->
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
   <section id="tab-dashboard" class="tab-content active">
-    <!-- Botão de Ação Rápida no Dashboard -->
-    <button class="btn-primary" id="btn-open-modal-home" style="width:100%; padding:1rem; margin-bottom:1.5rem; font-size:1.05rem; box-shadow: 0 4px 15px var(--primary-glow);">
-      ➕ Adicionar / Escanear Nova Nota Fiscal
-    </button>
-
+    <!-- Grade de Resumo Geral -->
     <div class="grid-summary">
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Total Gasto</span>
-          <div class="card-icon green">💰</div>
+          <span class="card-title">Entradas / Salários</span>
+          <div class="card-icon green">💵</div>
         </div>
-        <div class="card-value" id="dash-total">R$ 0,00</div>
-        <div class="card-subtext">Soma dos Valores a Pagar</div>
+        <div class="card-value" id="fin-total-entradas" style="color:#34d399">R$ 0,00</div>
+        <div class="card-subtext" id="fin-subtext-entradas">Victor + Maria + Entradas Manuais</div>
       </div>
+
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Média Mensal</span>
-          <div class="card-icon cyan">📊</div>
+          <span class="card-title">Cartão de Crédito</span>
+          <div class="card-icon rose">💳</div>
         </div>
-        <div class="card-value" id="dash-media-mensal">R$ 0,00</div>
-        <div class="card-subtext" id="dash-media-subtext">Média de gasto por mês</div>
+        <div class="card-value" id="fin-total-cartoes" style="color:#fb7185">R$ 0,00</div>
+        <div class="card-subtext" id="fin-subtext-cartoes">Faturas do Mês</div>
       </div>
+
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Descontos Obtidos</span>
-          <div class="card-icon amber">🏷️</div>
+          <span class="card-title">Mercado (Débito)</span>
+          <div class="card-icon amber">🛒</div>
         </div>
-        <div class="card-value" id="dash-desconto">R$ 0,00</div>
-        <div class="card-subtext" id="dash-pct">0% economizado no geral</div>
+        <div class="card-value" id="fin-mercado-debito" style="color:#fbbf24">R$ 0,00</div>
+        <div class="card-subtext">Saída real da conta (Sem Alimentação)</div>
       </div>
-      <div class="card">
+
+      <div class="card" style="border-color:#3b82f6; background:linear-gradient(135deg,rgba(30,41,59,.9),rgba(15,23,42,.95))">
         <div class="card-header">
-          <span class="card-title">Notas Cadastradas</span>
-          <div class="card-icon purple">🧾</div>
+          <span class="card-title" style="color:#60a5fa">Saldo Líquido em Conta</span>
+          <div class="card-icon cyan">💰</div>
         </div>
-        <div class="card-value" id="dash-qtd-notas">0</div>
-        <div class="card-subtext" id="dash-qtd-itens">0 itens no total</div>
+        <div class="card-value" id="fin-saldo-liquido" style="color:#60a5fa">R$ 0,00</div>
+        <div class="card-subtext" id="fin-subtext-saldo">Entradas - Cartões - Mercado (Débito)</div>
       </div>
     </div>
 
+    <!-- Botões de Ação Rápida -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem">
+      <button class="btn-primary" id="btn-open-modal-home" style="padding:.9rem">
+        🛒 Escanear Nota Mercado
+      </button>
+      <button class="btn-secondary" onclick="goTab('salarios')" style="padding:.9rem">
+        💵 Cadastrar Holerite / Entrada
+      </button>
+      <button class="btn-secondary" onclick="goTab('cartoes')" style="padding:.9rem">
+        💳 Importar Fatura Cartão
+      </button>
+      <button class="btn-secondary" onclick="goTab('reservas')" style="padding:.9rem">
+        🐷 Ver Meta de Reservas
+      </button>
+    </div>
+
+    <!-- Card Detalhamento do Orçamento do Mercado (Alimentação, Crédito e Débito) -->
     <div class="card" style="margin-bottom:1.5rem">
       <div class="card-header">
-        <span class="card-title">Pagamentos por Categoria</span>
-        <div class="card-icon purple">💳</div>
+        <span class="card-title">Detalhamento dos Gastos de Mercado</span>
+        <span class="badge amber">💡 Apenas Débito reduz o salário</span>
       </div>
       <div class="payment-grid">
         <div class="payment-item">
-          <div class="p-label">🍽️ Vale Alimentação</div>
+          <div class="p-label">🍽️ Vale Alimentação (Benefício)</div>
           <div class="p-val" id="dash-alimentacao">R$ 0,00</div>
         </div>
         <div class="payment-item">
-          <div class="p-label">💳 Cartão de Crédito</div>
+          <div class="p-label">💳 Cartão Crédito no Mercado</div>
           <div class="p-val" id="dash-credito">R$ 0,00</div>
         </div>
-        <div class="payment-item">
-          <div class="p-label">💳 Cartão de Débito</div>
-          <div class="p-val" id="dash-debito">R$ 0,00</div>
+        <div class="payment-item" style="border-color:rgba(245,158,11,.4)">
+          <div class="p-label">💳 Débito no Mercado (Sai da Conta)</div>
+          <div class="p-val" id="dash-debito" style="color:#fbbf24">R$ 0,00</div>
         </div>
       </div>
     </div>
 
+    <!-- Gráficos -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Gastos Mensais</span>
-        <span class="badge green">Tempo Real</span>
+        <span class="card-title">Evolução dos Gastos Mensais no Mercado</span>
+        <span class="badge green">Histórico</span>
       </div>
       <div class="chart-container">
         <canvas id="chart-barras"></canvas>
@@ -267,56 +297,284 @@
     </div>
   </section>
 
-  <!-- ABA LISTA MENSAL (PLANEJAMENTO E PREVISÃO PARA O PRÓXIMO MÊS) -->
-  <section id="tab-listamensal" class="tab-content">
-    <div id="lista-mensal-container"></div>
-  </section>
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <!-- 2. ABA SALÁRIOS & ENTRADAS (HOLERITES VICTOR + MARIA & ENTRADAS MANUAIS) -->
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-salarios" class="tab-content">
+    <!-- Grid Salário Victor e Salário Maria -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.5rem">
+      
+      <!-- Div Victor -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Salário / Holerite — Victor</span>
+          <div class="card-icon green">👨‍💼</div>
+        </div>
+        <div class="card-value" id="val-salario-victor" style="color:#34d399">R$ 0,00</div>
+        <p class="card-subtext" style="margin-bottom:1rem">Cole o texto do holerite para calcular automaticamente ou digite o valor líquido.</p>
 
-  <!-- ABA COMPARAR PREÇOS -->
-  <section id="tab-comparacao" class="tab-content">
+        <form id="form-holerite-victor">
+          <div class="form-group">
+            <label for="inp-holerite-txt-victor">Cole o Texto do Holerite do Victor</label>
+            <textarea id="inp-holerite-txt-victor" class="form-control" rows="3" placeholder="Cole aqui o texto copiado do PDF do holerite..."></textarea>
+          </div>
+          <div class="form-group">
+            <label for="inp-salario-val-victor">Ou Valor Líquido (R$)</label>
+            <input type="number" step="0.01" id="inp-salario-val-victor" class="form-control" placeholder="0,00">
+          </div>
+          <button type="submit" class="btn-primary" style="width:100%">
+            💾 Salvar Salário Victor
+          </button>
+        </form>
+      </div>
+
+      <!-- Div Maria -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Salário / Holerite — Maria</span>
+          <div class="card-icon purple">👩‍💼</div>
+        </div>
+        <div class="card-value" id="val-salario-maria" style="color:#c084fc">R$ 0,00</div>
+        <p class="card-subtext" style="margin-bottom:1rem">Cole o texto do holerite para calcular automaticamente ou digite o valor líquido.</p>
+
+        <form id="form-holerite-maria">
+          <div class="form-group">
+            <label for="inp-holerite-txt-maria">Cole o Texto do Holerite da Maria</label>
+            <textarea id="inp-holerite-txt-maria" class="form-control" rows="3" placeholder="Cole aqui o texto copiado do PDF do holerite..."></textarea>
+          </div>
+          <div class="form-group">
+            <label for="inp-salario-val-maria">Ou Valor Líquido (R$)</label>
+            <input type="number" step="0.01" id="inp-salario-val-maria" class="form-control" placeholder="0,00">
+          </div>
+          <button type="submit" class="btn-primary" style="width:100%">
+            💾 Salvar Salário Maria
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- Div Somatória Geral dos Salários + Entradas Extra -->
+    <div class="card" style="margin-bottom:1.5rem; background:linear-gradient(135deg,rgba(30,41,59,.9),rgba(15,23,42,.95)); border:1px solid #10b981">
+      <div class="card-header">
+        <span class="card-title" style="color:#34d399">💰 Total Combinado de Entradas (Victor + Maria + Extras)</span>
+        <span class="badge green">Renda Familiar</span>
+      </div>
+      <div class="card-value" id="val-entradas-combinado" style="color:#34d399; font-size:2.2rem">R$ 0,00</div>
+      <p class="card-subtext">Soma dos Salários Líquidos e Entradas Manuais cadastradas.</p>
+    </div>
+
+    <!-- Formulário para Entradas Manuais Adicionais -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Comparação de Valor Unitário — Mês a Mês</span>
-        <span class="badge green">Por unidade</span>
+        <span class="card-title">Adicionar Outras Entradas (Freelance, Rendimentos, Extra)</span>
       </div>
-      <p class="card-subtext" style="margin-bottom:1rem">
-        Compara o <strong>valor unitário</strong> de cada produto entre os meses, independente da quantidade comprada.
-        Exemplo: bolacha a R$ 4,35/un em maio vs R$ 4,80/un em junho.
-      </p>
-      <div id="lista-comparacao"></div>
+      <form id="form-entrada-manual">
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:1rem">
+          <div class="form-group">
+            <label for="inp-ent-desc">Descrição</label>
+            <input type="text" id="inp-ent-desc" class="form-control" placeholder="Ex: Freelance, Rendimentos, Cashback..." required>
+          </div>
+          <div class="form-group">
+            <label for="inp-ent-val">Valor (R$)</label>
+            <input type="number" step="0.01" id="inp-ent-val" class="form-control" placeholder="0,00" required>
+          </div>
+          <div class="form-group">
+            <label for="inp-ent-pessoa">Pessoa / Origem</label>
+            <select id="inp-ent-pessoa" class="form-control">
+              <option value="Victor">Victor</option>
+              <option value="Maria">Maria</option>
+              <option value="Geral" selected>Geral / Ambos</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn-secondary" style="width:100%;margin-top:.5rem">
+          ➕ Adicionar Entrada Manual
+        </button>
+      </form>
+
+      <p class="section-title">Lista de Entradas Registradas</p>
+      <div id="lista-entradas-registradas"></div>
     </div>
   </section>
 
-  <!-- ABA RECORRÊNCIA & MARCAS -->
-  <section id="tab-recorrencia" class="tab-content">
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <!-- 3. ABA CARTÕES DE CRÉDITO (IMPORTAÇÃO DE FATURAS & TRANSAÇÕES) -->
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-cartoes" class="tab-content">
     <div class="card" style="margin-bottom:1.5rem">
       <div class="card-header">
-        <span class="card-title">Itens Comprados Mais de Uma Vez</span>
-        <span class="badge amber">Recorrência</span>
+        <span class="card-title">Importar Fatura de Cartão de Crédito</span>
+        <span class="badge rose">💳 Leitura de Fatura</span>
       </div>
-      <p class="card-subtext" style="margin-bottom:1rem">Produtos que aparecem em notas fiscais diferentes — soma de quantidade e frequência.</p>
-      <div id="lista-recorrencia"></div>
+      <p class="card-subtext" style="margin-bottom:1rem">Cole o texto da fatura do seu cartão (PDF ou app) para ler e salvar todas as compras automaticamente.</p>
+
+      <form id="form-fatura-cartao">
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:1rem">
+          <div class="form-group">
+            <label for="inp-cartao-nome">Selecione o Cartão</label>
+            <select id="inp-cartao-nome" class="form-control">
+              <option value="Nubank">Nubank</option>
+              <option value="XP">XP Investimentos</option>
+              <option value="Itaú">Itaú</option>
+              <option value="Inter">Banco Inter</option>
+              <option value="Bradesco">Bradesco</option>
+              <option value="Outro">Outro Cartão</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="inp-fatura-txt">Texto da Fatura / Compras</label>
+            <textarea id="inp-fatura-txt" class="form-control" rows="4" placeholder="Cole aqui o texto copiado da fatura do cartão (ex: 05/08  Uber  R$ 24,90)..."></textarea>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%">
+          🔍 Ler &amp; Importar Fatura do Cartão
+        </button>
+      </form>
     </div>
+
+    <!-- Lista de Gastos em Cartão de Crédito -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Comparativo por Marca — Qual Vale Mais?</span>
-        <span class="badge green">Menor preço</span>
+        <span class="card-title">Lançamentos em Cartão de Crédito</span>
+        <span class="badge rose" id="badge-total-cartoes">R$ 0,00 total</span>
       </div>
-      <p class="card-subtext" style="margin-bottom:1rem">Quando a marca de um item muda entre compras, indicamos qual teve o menor valor unitário.</p>
-      <div id="lista-marcas"></div>
+      <div id="lista-faturas-registradas"></div>
     </div>
   </section>
 
-  <!-- ABA HISTÓRICO -->
-  <section id="tab-historico" class="tab-content">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
-      <div>
-        <h2 style="font-size:1.1rem;font-weight:700">Notas Fiscais Cadastradas</h2>
-        <p class="card-subtext">Clique para expandir e ver os itens</p>
-      </div>
-      <span class="badge cyan">🔥 Firebase Realtime</span>
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <!-- 4. ABA MERCADO (MERCADO, LEITOR, COMPARATIVO, LISTA MENSAL & HISTÓRICO) -->
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-mercado" class="tab-content">
+    <!-- Sub-navegação do Mercado -->
+    <div class="sub-nav">
+      <button class="sub-item active" data-sub="m-listamensal">🗓️ Lista Mensal (Previsão &amp; PDF)</button>
+      <button class="sub-item" data-sub="m-comparacao">📈 Comparar Preços</button>
+      <button class="sub-item" data-sub="m-recorrencia">🔄 Itens &amp; Marcas</button>
+      <button class="sub-item" data-sub="m-historico">📋 Histórico de Compras</button>
     </div>
-    <div id="lista-historico"></div>
+
+    <!-- Botão de escanear nota -->
+    <button class="btn-primary" id="btn-mercado-add-nota" style="width:100%; padding:.9rem; margin-bottom:1.25rem; font-size:1rem; box-shadow: 0 4px 15px var(--primary-glow);">
+      ➕ Escanear / Adicionar Nova Nota Fiscal de Mercado
+    </button>
+
+    <!-- SUB-ABA 1: LISTA MENSAL -->
+    <div id="sub-m-listamensal" class="sub-tab-content">
+      <div id="lista-mensal-container"></div>
+    </div>
+
+    <!-- SUB-ABA 2: COMPARAR PREÇOS -->
+    <div id="sub-m-comparacao" class="sub-tab-content" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Comparação de Valor Unitário — Mês a Mês</span>
+          <span class="badge green">Por unidade</span>
+        </div>
+        <p class="card-subtext" style="margin-bottom:1rem">
+          Compara o <strong>valor unitário</strong> de cada produto entre os meses.
+        </p>
+        <div id="lista-comparacao"></div>
+      </div>
+    </div>
+
+    <!-- SUB-ABA 3: RECORRÊNCIA -->
+    <div id="sub-m-recorrencia" class="sub-tab-content" style="display:none">
+      <div class="card" style="margin-bottom:1.5rem">
+        <div class="card-header">
+          <span class="card-title">Itens Comprados Mais de Uma Vez</span>
+          <span class="badge amber">Recorrência</span>
+        </div>
+        <div id="lista-recorrencia"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Comparativo por Marca — Qual Vale Mais?</span>
+          <span class="badge green">Menor preço</span>
+        </div>
+        <div id="lista-marcas"></div>
+      </div>
+    </div>
+
+    <!-- SUB-ABA 4: HISTÓRICO -->
+    <div id="sub-m-historico" class="sub-tab-content" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Notas Fiscais Cadastradas</span>
+          <span class="badge cyan">🔥 Firebase Realtime</span>
+        </div>
+        <div id="lista-historico"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <!-- 5. ABA RESERVAS & ECONOMIAS (ESTIMATIVA, VALOR REAL & RECOMENDAÇÃO INTELIGENTE) -->
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-reservas" class="tab-content">
+    <div class="grid-summary">
+      <!-- Card Meta Pessoal -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Sua Meta Mensal de Reserva</span>
+          <div class="card-icon amber">🎯</div>
+        </div>
+        <div class="card-value" id="val-meta-reserva" style="color:#fbbf24">R$ 0,00</div>
+        <div class="card-subtext">Quanto você quer guardar por mês</div>
+      </div>
+
+      <!-- Card Valor Real Guardado -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Valor Real Guardado</span>
+          <div class="card-icon green">🏦</div>
+        </div>
+        <div class="card-value" id="val-real-guardado" style="color:#34d399">R$ 0,00</div>
+        <div class="card-subtext">Poupança e Investimentos acumulados</div>
+      </div>
+
+      <!-- Card Recomendação do Sistema -->
+      <div class="card" style="border-color:#a855f7; background:linear-gradient(135deg,rgba(30,41,59,.9),rgba(15,23,42,.95))">
+        <div class="card-header">
+          <span class="card-title" style="color:#c084fc">Recomendação do Sistema</span>
+          <div class="card-icon purple">💡</div>
+        </div>
+        <div class="card-value" id="val-recomendacao-reserva" style="color:#c084fc">R$ 0,00</div>
+        <div class="card-subtext" id="subtext-recomendacao">Sugerido com base no saldo livre real</div>
+      </div>
+    </div>
+
+    <!-- Card de Análise Inteligente de Economias -->
+    <div class="card" style="margin-bottom:1.5rem">
+      <div class="card-header">
+        <span class="card-title">💡 Análise &amp; Recomendação de Reservas</span>
+        <span class="badge purple">Inteligência Financeira</span>
+      </div>
+      <div id="box-analise-reserva-detalhes" style="font-size:.92rem;line-height:1.6"></div>
+    </div>
+
+    <!-- Form para Configurar Meta e Atualizar Saldo Guardado -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Atualizar Metas e Saldo Guardado</span>
+      </div>
+      <form id="form-config-reservas">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="form-group">
+            <label for="inp-meta-mensal">Definir Meta Desejada por Mês (R$)</label>
+            <input type="number" step="0.01" id="inp-meta-mensal" class="form-control" placeholder="Ex: 500,00">
+          </div>
+          <div class="form-group">
+            <label for="inp-saldo-guardado">Atualizar Saldo Real Guardado (R$)</label>
+            <input type="number" step="0.01" id="inp-saldo-guardado" class="form-control" placeholder="Ex: 3500,00">
+          </div>
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%">
+          💾 Salvar Configurações de Reserva
+        </button>
+      </form>
+    </div>
   </section>
 
 </main>
@@ -324,27 +582,27 @@
 <!-- MOBILE NAV -->
 <nav class="mobile-nav">
   <button class="mob-btn active" data-tab="dashboard">
-    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Início
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Geral
   </button>
-  <button class="mob-btn" data-tab="listamensal">
-    <svg viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>Lista
+  <button class="mob-btn" data-tab="salarios">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Salários
   </button>
-  <button class="mob-btn" data-tab="comparacao">
-    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Preços
+  <button class="mob-btn" data-tab="cartoes">
+    <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Cartões
   </button>
-  <button class="mob-btn" data-tab="recorrencia">
-    <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Marcas
+  <button class="mob-btn" data-tab="mercado">
+    <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Mercado
   </button>
-  <button class="mob-btn" data-tab="historico">
-    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Histórico
+  <button class="mob-btn" data-tab="reservas">
+    <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Reservas
   </button>
 </nav>
 
-<!-- MODAL: ADICIONAR NOTA (JANELA POP-UP DE ADIÇÃO) -->
+<!-- MODAL: ADICIONAR NOTA MERCADO -->
 <div id="modal-add-nota" class="modal-overlay">
   <div class="modal-box" style="max-width: 680px;">
     <div class="modal-header">
-      <h2>📷 Adicionar Nota Fiscal</h2>
+      <h2>📷 Adicionar Nota Fiscal de Mercado</h2>
       <button class="btn-close" id="btn-close-modal-add">&times;</button>
     </div>
 
@@ -387,7 +645,7 @@
 
       <p class="status-msg" id="status-msg"></p>
 
-      <!-- Formulário de Revisão e Salvamento (Escondido por padrão) -->
+      <!-- Formulário de Revisão e Salvamento -->
       <form id="form-nfce" style="display:none; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
         <p class="section-title" style="border-top:none; padding-top:0; margin-top:0;">
           📝 Dados da Compra (Confira e Altere Se Necessário)
@@ -482,7 +740,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
 import {
-  getFirestore, collection, onSnapshot, addDoc,
+  getFirestore, collection, onSnapshot, addDoc, setDoc,
   deleteDoc, doc, query, orderBy, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
@@ -508,10 +766,19 @@ const firebaseConfig = {
 };
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
-const COLL = 'compras';
+
+// COLLECTIONS
+const COLL_MERCADO = 'compras';
+const COLL_ENTRADAS = 'entradas';
+const COLL_FATURAS  = 'faturas';
+const COLL_RESERVAS = 'reservas';
 
 // ESTADO GLOBAL
 let todasCompras = [];
+let todasEntradas = [];
+let todasFaturas = [];
+let dadosReservas = { metaMensal: 0, valorAtualGuardado: 0 };
+
 let chartInst = null;
 let qrScanner = null;
 let cameras = [];
@@ -562,28 +829,40 @@ function getBusinessDaysInMonth(year, monthIndex0) {
   const daysInMonth = new Date(year, monthIndex0 + 1, 0).getDate();
   for (let day = 1; day <= daysInMonth; day++) {
     const dayOfWeek = new Date(year, monthIndex0, day).getDay();
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) { // 0 = Dom, 6 = Sáb
-      count++;
-    }
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) { count++; }
   }
   return count;
 }
 
-// TAB SWITCHING
-function goTab(id) {
+// TAB SWITCHING (NAVEGAÇÃO PRINCIPAL)
+window.goTab = function(id) {
   document.querySelectorAll('.tab-content').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('[data-tab]').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.desktop-nav .nav-item').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.mobile-nav .mob-btn').forEach(b => b.classList.remove('active'));
 
   const sec = document.getElementById('tab-' + id);
   if (sec) sec.classList.add('active');
+
   document.querySelectorAll(`[data-tab="${id}"]`).forEach(b => b.classList.add('active'));
-}
+};
 
 document.querySelectorAll('[data-tab]').forEach(btn => {
   btn.addEventListener('click', () => goTab(btn.getAttribute('data-tab')));
 });
 
-// MODAL ADD NOTA
+// SUB-TAB SWITCHING (NAVEGAÇÃO INTERNA DO MERCADO)
+document.querySelectorAll('.sub-item').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sub-item').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.sub-tab-content').forEach(c => c.style.display = 'none');
+
+    btn.classList.add('active');
+    const target = document.getElementById('sub-' + btn.getAttribute('data-sub'));
+    if (target) target.style.display = 'block';
+  });
+});
+
+// MODAL ADD NOTA MERCADO
 function abrirModalAddNota() {
   document.getElementById('modal-add-nota').classList.add('active');
 }
@@ -593,61 +872,98 @@ function fecharModalAddNota() {
 }
 
 document.getElementById('btn-open-modal-home')?.addEventListener('click', abrirModalAddNota);
+document.getElementById('btn-mercado-add-nota')?.addEventListener('click', abrirModalAddNota);
 document.getElementById('btn-close-modal-add')?.addEventListener('click', fecharModalAddNota);
 
-// FIREBASE — ESCUTAR COMPRAS
-const q = query(collection(db, COLL), orderBy('dataEmissao', 'desc'));
-onSnapshot(q, snap => {
+// ═══════════════════════════════════════════════════════════════════════════
+// FIREBASE — LISTENERS EM TEMPO REAL
+// ═══════════════════════════════════════════════════════════════════════════
+
+// 1. Escutar Compras do Mercado
+onSnapshot(query(collection(db, COLL_MERCADO), orderBy('dataEmissao', 'desc')), snap => {
   todasCompras = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  renderDashboard();
+  renderTudo();
+}, err => console.error('Firestore Mercado:', err));
+
+// 2. Escutar Entradas / Salários
+onSnapshot(collection(db, COLL_ENTRADAS), snap => {
+  todasEntradas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderTudo();
+}, err => console.error('Firestore Entradas:', err));
+
+// 3. Escutar Faturas de Cartão
+onSnapshot(collection(db, COLL_FATURAS), snap => {
+  todasFaturas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderTudo();
+}, err => console.error('Firestore Faturas:', err));
+
+// 4. Escutar Configurações de Reservas
+onSnapshot(doc(db, COLL_RESERVAS, 'config'), snap => {
+  if (snap.exists()) {
+    dadosReservas = snap.data();
+  }
+  renderTudo();
+}, err => console.error('Firestore Reservas:', err));
+
+// RENDERIZAÇÃO GERAL UNIFICADA
+function renderTudo() {
+  renderDashboardGeral();
+  renderSalariosEEntradas();
+  renderCartoesCredito();
   renderListaMensal();
   renderHistorico();
   renderComparacao();
   renderRecorrencia();
-}, err => console.error('Firestore:', err));
-
-async function salvar(dados) {
-  return addDoc(collection(db, COLL), { ...dados, createdAt: serverTimestamp() });
-}
-async function excluir(id) {
-  return deleteDoc(doc(db, COLL, id));
+  renderReservasEEconomias();
 }
 
-// DASHBOARD
-function renderDashboard() {
-  let total = 0, desc = 0, alim = 0, cred = 0, deb = 0, qtdItens = 0;
-  const porMes = {};
+// ═══════════════════════════════════════════════════════════════════════════
+// 1. RENDERIZAÇÃO DO DASHBOARD FINANCEIRO PRINCIPAL
+// ═══════════════════════════════════════════════════════════════════════════
+function renderDashboardGeral() {
+  // Entradas Totais
+  let totalEntradas = todasEntradas.reduce((acc, e) => acc + (e.valor || 0), 0);
+
+  // Cartões de Crédito Totais
+  let totalCartoes = todasFaturas.reduce((acc, f) => acc + (f.valor || 0), 0);
+
+  // Mercado Totais (Separado por Alimentação, Crédito e Débito)
+  let totalMercadoDebito = 0;
+  let totalMercadoAlimentacao = 0;
+  let totalMercadoCredito = 0;
+  let totalDescontos = 0;
+  let qtdItensMercado = 0;
+
+  const porMesMercado = {};
 
   todasCompras.forEach(c => {
     const p = c.valorAPagar || 0;
-    const d = c.descontoTotal || 0;
-    total += p; desc += d;
-    qtdItens += c.qtdTotalItens || 0;
+    totalDescontos += c.descontoTotal || 0;
+    qtdItensMercado += c.qtdTotalItens || 0;
+
     if (c.formasPagamento) {
-      alim += c.formasPagamento.valeAlimentacao || 0;
-      cred += c.formasPagamento.cartaoCredito || 0;
-      deb  += c.formasPagamento.cartaoDebito || 0;
+      totalMercadoAlimentacao += c.formasPagamento.valeAlimentacao || 0;
+      totalMercadoCredito     += c.formasPagamento.cartaoCredito || 0;
+      totalMercadoDebito      += c.formasPagamento.cartaoDebito || 0;
     }
     const mes = c.mesAno || 'Outros';
-    porMes[mes] = (porMes[mes] || 0) + p;
+    porMesMercado[mes] = (porMesMercado[mes] || 0) + p;
   });
 
-  const numMeses = Math.max(1, Object.keys(porMes).length);
-  const mediaMensal = total / numMeses;
+  // REGRA: Saldo Líquido em Conta considera apenas Mercado DÉBITO (pois Alimentação e Crédito não reduzem o salário disponível na conta)
+  let saldoLiquido = totalEntradas - totalCartoes - totalMercadoDebito;
 
-  document.getElementById('dash-total').textContent = brl(total);
-  document.getElementById('dash-media-mensal').textContent = brl(mediaMensal);
-  document.getElementById('dash-media-subtext').textContent = `Média calculada em ${numMeses} mês(es)`;
-  document.getElementById('dash-desconto').textContent = brl(desc);
-  const pct = (total + desc) > 0 ? ((desc / (total + desc)) * 100).toFixed(1) : 0;
-  document.getElementById('dash-pct').textContent = `${pct}% economizado no geral`;
-  document.getElementById('dash-qtd-notas').textContent = todasCompras.length;
-  document.getElementById('dash-qtd-itens').textContent = `${qtdItens} itens no total`;
-  document.getElementById('dash-alimentacao').textContent = brl(alim);
-  document.getElementById('dash-credito').textContent = brl(cred);
-  document.getElementById('dash-debito').textContent = brl(deb);
+  // Atualização dos Cards da Home
+  document.getElementById('fin-total-entradas').textContent = brl(totalEntradas);
+  document.getElementById('fin-total-cartoes').textContent = brl(totalCartoes);
+  document.getElementById('fin-mercado-debito').textContent = brl(totalMercadoDebito);
+  document.getElementById('fin-saldo-liquido').textContent = brl(saldoLiquido);
 
-  renderChart(porMes);
+  document.getElementById('dash-alimentacao').textContent = brl(totalMercadoAlimentacao);
+  document.getElementById('dash-credito').textContent = brl(totalMercadoCredito);
+  document.getElementById('dash-debito').textContent = brl(totalMercadoDebito);
+
+  renderChart(porMesMercado);
 }
 
 function renderChart(porMes) {
@@ -664,7 +980,7 @@ function renderChart(porMes) {
     type: 'bar',
     data: {
       labels: labels.length ? labels : ['Sem compras'],
-      datasets: [{ label: 'Gasto R$', data: data.length ? data : [0],
+      datasets: [{ label: 'Gasto Mercado R$', data: data.length ? data : [0],
         backgroundColor: 'rgba(16,185,129,0.78)', borderColor: '#10b981',
         borderWidth: 2, borderRadius: 8 }]
     },
@@ -682,29 +998,254 @@ function renderChart(porMes) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ABA: LISTA MENSAL (PLANEJAMENTO E PREVISÃO BALIZADA PARA O PRÓXIMO MÊS)
+// 2. ABA SALÁRIOS & ENTRADAS (HOLERITES VICTOR + MARIA & EXTRAS)
+// ═══════════════════════════════════════════════════════════════════════════
+function parseHoleriteTexto(texto) {
+  if (!texto) return 0;
+  const match = texto.match(/L[íi]quido(?:\s*a\s*receber)?\s*[:\s]*R?\$\s*([\d\.,]+)/i)
+             || texto.match(/TOTAL\s*L[IÍ]QUIDO\s*[:\s]*R?\$\s*([\d\.,]+)/i)
+             || texto.match(/SAL[ÁA]RIO\s*L[IÍ]QUIDO\s*[:\s]*R?\$\s*([\d\.,]+)/i)
+             || texto.match(/VALOR\s*L[IÍ]QUIDO\s*[:\s]*R?\$\s*([\d\.,]+)/i);
+  if (match) return parseBRL(match[1]);
+  return 0;
+}
+
+// Salvar Holerite Victor
+document.getElementById('form-holerite-victor').addEventListener('submit', async e => {
+  e.preventDefault();
+  const txt = document.getElementById('inp-holerite-txt-victor').value;
+  let val   = parseFloat(document.getElementById('inp-salario-val-victor').value) || 0;
+  if (!val && txt) val = parseHoleriteTexto(txt);
+
+  if (!val) { toastMsg('⚠️ Digite ou cole um holerite válido com valor.'); return; }
+
+  const docId = 'salario_victor';
+  await setDoc(doc(db, COLL_ENTRADAS, docId), {
+    pessoa: 'Victor', tipo: 'holerite', descricao: 'Salário Líquido Victor',
+    valor: val, data: new Date().toISOString()
+  });
+  toastMsg('✅ Salário do Victor salvo!');
+});
+
+// Salvar Holerite Maria
+document.getElementById('form-holerite-maria').addEventListener('submit', async e => {
+  e.preventDefault();
+  const txt = document.getElementById('inp-holerite-txt-maria').value;
+  let val   = parseFloat(document.getElementById('inp-salario-val-maria').value) || 0;
+  if (!val && txt) val = parseHoleriteTexto(txt);
+
+  if (!val) { toastMsg('⚠️ Digite ou cole um holerite válido com valor.'); return; }
+
+  const docId = 'salario_maria';
+  await setDoc(doc(db, COLL_ENTRADAS, docId), {
+    pessoa: 'Maria', tipo: 'holerite', descricao: 'Salário Líquido Maria',
+    valor: val, data: new Date().toISOString()
+  });
+  toastMsg('✅ Salário da Maria salvo!');
+});
+
+// Adicionar Entrada Manual
+document.getElementById('form-entrada-manual').addEventListener('submit', async e => {
+  e.preventDefault();
+  const desc   = document.getElementById('inp-ent-desc').value.trim();
+  const val    = parseFloat(document.getElementById('inp-ent-val').value) || 0;
+  const pessoa = document.getElementById('inp-ent-pessoa').value;
+
+  if (!desc || !val) return;
+
+  await addDoc(collection(db, COLL_ENTRADAS), {
+    pessoa, tipo: 'manual', descricao: desc, valor: val, data: new Date().toISOString()
+  });
+  e.target.reset();
+  toastMsg('🎉 Entrada manual registrada!');
+});
+
+function renderSalariosEEntradas() {
+  const vic = todasEntradas.find(e => e.id === 'salario_victor')?.valor || 0;
+  const mar = todasEntradas.find(e => e.id === 'salario_maria')?.valor || 0;
+  const totalCombinado = todasEntradas.reduce((acc, e) => acc + (e.valor || 0), 0);
+
+  document.getElementById('val-salario-victor').textContent = brl(vic);
+  document.getElementById('val-salario-maria').textContent = brl(mar);
+  document.getElementById('val-entradas-combinado').textContent = brl(totalCombinado);
+
+  const el = document.getElementById('lista-entradas-registradas');
+  if (!todasEntradas.length) {
+    el.innerHTML = `<div class="empty-state">Nenhuma entrada cadastrada ainda.</div>`;
+    return;
+  }
+
+  el.innerHTML = `<div class="table-responsive"><table class="custom-table">
+    <thead><tr><th>Descrição</th><th>Pessoa</th><th>Tipo</th><th class="num">Valor</th><th>Ação</th></tr></thead>
+    <tbody>${todasEntradas.map(e => `<tr>
+      <td><strong>${e.descricao}</strong></td>
+      <td><span class="badge ${e.pessoa==='Victor'?'green':e.pessoa==='Maria'?'purple':'cyan'}">${e.pessoa}</span></td>
+      <td><span class="badge amber">${e.tipo==='holerite'?'Holerite':'Manual'}</span></td>
+      <td class="num" style="color:#34d399"><strong>${brl(e.valor)}</strong></td>
+      <td><button class="btn-danger" onclick="excluirEntrada('${e.id}')">🗑️</button></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+window.excluirEntrada = async function(id) {
+  if (!confirm('Excluir esta entrada?')) return;
+  await deleteDoc(doc(db, COLL_ENTRADAS, id));
+  toastMsg('🗑️ Entrada removida.');
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 3. ABA CARTÕES DE CRÉDITO (IMPORTAÇÃO DE FATURAS & TRANSAÇÕES)
+// ═══════════════════════════════════════════════════════════════════════════
+function parseFaturaCartaoTexto(texto, cartaoNome) {
+  const transacoes = [];
+  const linhas = texto.split('\n');
+  const regex = /(\d{2}[\/\.-]\d{2}(?:[\/\.-]\d{2,4})?|\d{2}\s+[A-Za-z]{3})\s+(.+?)\s+R?\$\s*([\d\.,]+)/i;
+
+  linhas.forEach(linha => {
+    const match = linha.trim().match(regex);
+    if (match) {
+      const desc = match[2].trim();
+      const val = parseBRL(match[3]);
+      if (desc && val > 0) {
+        transacoes.push({ cartao: cartaoNome || 'Cartão', descricao: desc, valor: val, data: new Date().toISOString() });
+      }
+    }
+  });
+  return transacoes;
+}
+
+document.getElementById('form-fatura-cartao').addEventListener('submit', async e => {
+  e.preventDefault();
+  const cartao = document.getElementById('inp-cartao-nome').value;
+  const txt    = document.getElementById('inp-fatura-txt').value;
+
+  const parsed = parseFaturaCartaoTexto(txt, cartao);
+  if (!parsed.length) {
+    toastMsg('⚠️ Nenhuma compra identificada no texto da fatura. Cole o texto da fatura no formato "05/08 Uber R$ 24,90".');
+    return;
+  }
+
+  for (const item of parsed) {
+    await addDoc(collection(db, COLL_FATURAS), item);
+  }
+  document.getElementById('inp-fatura-txt').value = '';
+  toastMsg(`🎉 ${parsed.length} compras da fatura do ${cartao} importadas!`);
+});
+
+function renderCartoesCredito() {
+  const total = todasFaturas.reduce((acc, f) => acc + (f.valor || 0), 0);
+  document.getElementById('badge-total-cartoes').textContent = `${brl(total)} total`;
+
+  const el = document.getElementById('lista-faturas-registradas');
+  if (!todasFaturas.length) {
+    el.innerHTML = `<div class="empty-state">Nenhuma fatura ou compra em cartão importada ainda.</div>`;
+    return;
+  }
+
+  el.innerHTML = `<div class="table-responsive"><table class="custom-table">
+    <thead><tr><th>Cartão</th><th>Descrição</th><th>Data</th><th class="num">Valor</th><th>Ação</th></tr></thead>
+    <tbody>${todasFaturas.map(f => `<tr>
+      <td><span class="badge rose">${f.cartao||'Cartão'}</span></td>
+      <td><strong>${f.descricao}</strong></td>
+      <td>${fmtData(f.data)}</td>
+      <td class="num" style="color:#fb7185"><strong>${brl(f.valor)}</strong></td>
+      <td><button class="btn-danger" onclick="excluirFatura('${f.id}')">🗑️</button></td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+}
+
+window.excluirFatura = async function(id) {
+  if (!confirm('Excluir este lançamento de cartão?')) return;
+  await deleteDoc(doc(db, COLL_FATURAS, id));
+  toastMsg('🗑️ Lançamento de cartão removido.');
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 4. ABA RESERVAS & ECONOMIAS (ESTIMATIVA, VALOR REAL & RECOMENDAÇÃO INTELIGENTE)
+// ═══════════════════════════════════════════════════════════════════════════
+document.getElementById('form-config-reservas').addEventListener('submit', async e => {
+  e.preventDefault();
+  const meta  = parseFloat(document.getElementById('inp-meta-mensal').value) || 0;
+  const guard = parseFloat(document.getElementById('inp-saldo-guardado').value) || 0;
+
+  await setDoc(doc(db, COLL_RESERVAS, 'config'), {
+    metaMensal: meta,
+    valorAtualGuardado: guard,
+    dataAtualizacao: new Date().toISOString()
+  });
+  toastMsg('✅ Reservas e economias atualizadas!');
+});
+
+function renderReservasEEconomias() {
+  const meta = dadosReservas.metaMensal || 0;
+  const real = dadosReservas.valorAtualGuardado || 0;
+
+  document.getElementById('val-meta-reserva').textContent = brl(meta);
+  document.getElementById('val-real-guardado').textContent = brl(real);
+
+  // Cálculo da Recomendação do Sistema baseado no Saldo Líquido Real
+  const totalEntradas = todasEntradas.reduce((acc, e) => acc + (e.valor || 0), 0);
+  const totalCartoes  = todasFaturas.reduce((acc, f) => acc + (f.valor || 0), 0);
+  let totalMercadoDebito = 0;
+  todasCompras.forEach(c => {
+    if (c.formasPagamento) totalMercadoDebito += c.formasPagamento.cartaoDebito || 0;
+  });
+
+  const saldoLiquidoLivre = totalEntradas - totalCartoes - totalMercadoDebito;
+  
+  // Sugestão de reserva inteligente: 50% do saldo livre real (ou 20% da renda se houver saldo positivo)
+  const recomendacaoSistema = saldoLiquidoLivre > 0 ? Math.max(saldoLiquidoLivre * 0.5, totalEntradas * 0.2) : 0;
+  document.getElementById('val-recomendacao-reserva').textContent = brl(recomendacaoSistema);
+
+  const boxAnalise = document.getElementById('box-analise-reserva-detalhes');
+  if (totalEntradas === 0) {
+    boxAnalise.innerHTML = `<p class="empty-state">Cadastre seus salários e entradas na aba "Salários & Entradas" para gerar o diagnóstico inteligente de economias.</p>`;
+    return;
+  }
+
+  const pctGuardado = meta > 0 ? Math.min(100, ((real / meta) * 100)).toFixed(1) : 0;
+
+  boxAnalise.innerHTML = `
+    <p> Com base nos seus <strong>${brl(totalEntradas)}</strong> de Entradas, <strong>${brl(totalCartoes)}</strong> de Faturas de Cartão e <strong>${brl(totalMercadoDebito)}</strong> de Mercado no Débito:</p>
+    <div style="background:rgba(15,23,42,0.6);padding:1rem;border-radius:10px;margin:.75rem 0;border:1px solid var(--border-color)">
+      <div style="display:flex;justify-content:space-between;margin-bottom:.4rem">
+        <span>💰 Saldo Livre em Conta: <strong>${brl(saldoLiquidoLivre)}</strong></span>
+        <span>💡 Recomendação de Reserva: <strong style="color:#c084fc">${brl(recomendacaoSistema)}/mês</strong></span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" style="width:${pctGuardado}%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--text-muted);margin-top:.4rem">
+        <span>Guardado: ${brl(real)}</span>
+        <span>Meta Pessoal: ${brl(meta)} (${pctGuardado}%)</span>
+      </div>
+    </div>
+    <p style="font-size:.84rem;color:var(--text-muted)">
+      💡 <strong>Dica de Inteligência Financeira:</strong> Como o Vale Alimentação e o Crédito no Mercado não saem do seu salário em conta, eles protegem sua renda real! O sistema recomenda destinar pelo menos 50% do seu saldo livre líquido (<strong>${brl(recomendacaoSistema)}</strong>) para sua reserva de emergência e investimentos.
+    </p>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 5. MERCADO & PARSER NFC-e (INTEGRADO À ABA MERCADO)
 // ═══════════════════════════════════════════════════════════════════════════
 function renderListaMensal() {
   const el = document.getElementById('lista-mensal-container');
   if (!el) return;
 
-  // 1. Determina o próximo mês relativo à data atual
   const agora = new Date();
   const proximoMesData = new Date(agora.getFullYear(), agora.getMonth() + 1, 1);
   const mesNome = proximoMesData.toLocaleString('pt-BR', { month: 'long' });
   const ano = proximoMesData.getFullYear();
   const mesAnoStr = `${mesNome.charAt(0).toUpperCase() + mesNome.slice(1)} de ${ano}`;
 
-  // 2. Calcula dias úteis (Segunda a Sexta) do próximo mês
   const diasUteis = getBusinessDaysInMonth(proximoMesData.getFullYear(), proximoMesData.getMonth());
 
-  // 3. Orçamento disponível por dia útil
   const alimPorDia = 31.80;
   const credPorDia = 20.00;
   const alimDisponivel = diasUteis * alimPorDia;
   const credDisponivel = diasUteis * credPorDia;
 
-  // 4. Média de gastos histórica de referência para balizamento
   const porMes = {};
   let totalGastoHistorico = 0;
   todasCompras.forEach(c => {
@@ -716,7 +1257,6 @@ function renderListaMensal() {
   const numMesesHistorico = Math.max(1, Object.keys(porMes).length);
   const mediaMensalHistorica = totalGastoHistorico / numMesesHistorico;
 
-  // 5. Coleta os itens do histórico e calcula a taxa de consumo mensal proporcional ao intervalo médio
   const agregadorItens = {};
 
   todasCompras.forEach(c => {
@@ -739,7 +1279,6 @@ function renderListaMensal() {
     });
   });
 
-  // Converte consumo para taxa mensal proporcional considerando frequência de ocorrência
   const listaBruta = Object.values(agregadorItens).map(i => {
     const mediaUnit = i.valoresUnitarios.length > 0
       ? i.valoresUnitarios.reduce((a, b) => a + b, 0) / i.valoresUnitarios.length
@@ -747,10 +1286,8 @@ function renderListaMensal() {
 
     const qtdMensalTaxa = i.qtdTotal / numMesesHistorico;
     const intervaloMeses = numMesesHistorico / Math.max(1, i.frequenciaNotas);
-    const taxaFrequencia = i.frequenciaNotas / numMesesHistorico; // proporção de meses em que foi comprado
+    const taxaFrequencia = i.frequenciaNotas / numMesesHistorico;
     
-    // Para itens com boa frequência (comprados em mais de 35% dos meses ou com consumo alto), arredonda para cima
-    // Para itens raros (comprados esporadicamente a cada 4-6 meses), usa Math.round para não sobrecarregar a lista do mês
     let totalEstimadoUnidades = 0;
     if (taxaFrequencia >= 0.35 || qtdMensalTaxa >= 0.7) {
       totalEstimadoUnidades = Math.ceil(qtdMensalTaxa);
@@ -773,13 +1310,12 @@ function renderListaMensal() {
       valorUnitario: mediaUnit,
       subtotalCalculado
     };
-  }).filter(i => i.totalEstimadoUnidades > 0); // Exibe apenas itens previstos para este ciclo mensal
+  }).filter(i => i.totalEstimadoUnidades > 0);
 
   listaBruta.sort((a, b) => b.frequenciaNotas - a.frequenciaNotas);
 
   const somaSubtotaisInteiros = listaBruta.reduce((acc, item) => acc + item.subtotalCalculado, 0);
 
-  // Meta de previsão: Próxima ou levemente acima da média histórica (~105% da média mensal)
   const metaLevementeAcima = mediaMensalHistorica > 0 ? mediaMensalHistorica * 1.05 : somaSubtotaisInteiros;
 
   let fatorAjuste = 1;
@@ -796,7 +1332,6 @@ function renderListaMensal() {
     ? Math.min(somaSubtotaisInteiros, metaLevementeAcima)
     : somaSubtotaisInteiros;
 
-  // 6. Distribuição de Orçamento: Alimentação -> Crédito -> Débito
   let restante = totalGeralEstimado;
 
   const cobertoAlim = Math.min(restante, alimDisponivel);
@@ -807,7 +1342,6 @@ function renderListaMensal() {
 
   const cobertoDeb = restante > 0 ? restante : 0;
 
-  // Renderização
   let html = `
     <div class="card" style="margin-bottom:1.5rem; background: linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.95)); border: 1px solid #3b82f6;">
       <div class="card-header">
@@ -854,17 +1388,8 @@ function renderListaMensal() {
       </p>
   `;
 
-  // Salva no cache para o exportador de PDF
   window.dadosListaMensalCache = {
-    mesAnoStr,
-    diasUteis,
-    totalGeralEstimado,
-    cobertoAlim,
-    cobertoCred,
-    cobertoDeb,
-    alimDisponivel,
-    credDisponivel,
-    lista: listaPlanejada
+    mesAnoStr, diasUteis, totalGeralEstimado, cobertoAlim, cobertoCred, cobertoDeb, alimDisponivel, credDisponivel, lista: listaPlanejada
   };
 
   if (listaPlanejada.length === 0) {
@@ -921,7 +1446,6 @@ function renderListaMensal() {
   el.innerHTML = html;
 }
 
-// EXPORTAR LISTA MENSAL EM PDF / IMPRESSÃO
 window.exportarPDFListaMensal = function() {
   if (!window.dadosListaMensalCache || !window.dadosListaMensalCache.lista.length) {
     toastMsg('⚠️ Nenhuma lista mensal disponível para exportar.');
@@ -947,23 +1471,17 @@ window.exportarPDFListaMensal = function() {
         .header-print { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 18px; }
         .header-print h1 { font-size: 20px; margin: 0; color: #0f172a; }
         .header-print p { font-size: 13px; color: #475569; margin: 3px 0 0 0; }
-        
         .box-resumo { border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 8px; padding: 12px 15px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
         .res-item .label { font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: bold; }
         .res-item .val { font-size: 15px; font-weight: bold; color: #0f172a; margin-top: 3px; }
-        
         table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
         th { background: #f1f5f9; text-align: left; padding: 8px 10px; border-bottom: 2px solid #cbd5e1; font-weight: 700; color: #334155; }
         td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
         .num { text-align: right; }
         .check-col { width: 35px; text-align: center; }
         .chk-box { width: 14px; height: 14px; border: 1.5px solid #64748b; border-radius: 3px; display: inline-block; }
-        
         .total-footer { margin-top: 20px; border-top: 2px solid #0f172a; padding-top: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: bold; }
-        
-        @media print {
-          body { padding: 0; }
-        }
+        @media print { body { padding: 0; } }
       </style>
     </head>
     <body>
@@ -1036,7 +1554,7 @@ window.exportarPDFListaMensal = function() {
   printWin.document.close();
 };
 
-// CÂMERA / QR CODE
+// CÂMERA QR CODE
 document.getElementById('btn-start-cam').addEventListener('click', startCam);
 document.getElementById('btn-switch-cam').addEventListener('click', switchCam);
 document.getElementById('btn-stop-cam').addEventListener('click', stopCam);
@@ -1052,17 +1570,14 @@ async function startCam() {
 
     let camConfig;
     if (cameras && cameras.length > 0) {
-      const backIdx = cameras.findIndex(c =>
-        /back|traseira|rear|environment/i.test(c.label)
-      );
+      const backIdx = cameras.findIndex(c => /back|traseira|rear|environment/i.test(c.label));
       camIdx = backIdx >= 0 ? backIdx : 0;
       camConfig = cameras[camIdx].id;
     } else {
       camConfig = { facingMode: 'environment' };
     }
 
-    await qrScanner.start(camConfig, { fps: 10, qrbox: { width: 240, height: 240 } },
-      onQR, () => {});
+    await qrScanner.start(camConfig, { fps: 10, qrbox: { width: 240, height: 240 } }, onQR, () => {});
 
     escaneando = true;
     document.getElementById('btn-start-cam').style.display = 'none';
@@ -1111,7 +1626,6 @@ document.getElementById('btn-carregar-dados').addEventListener('click', async ()
     setStatus('⚠️ Cole a URL do QR Code ou o conteúdo da página para ler a nota fiscal.');
     return;
   }
-
   if (url && !html) {
     setStatus('⏳ Consultando nota fiscal...');
     await processarURL(url);
@@ -1126,14 +1640,9 @@ document.getElementById('btn-carregar-dados').addEventListener('click', async ()
 
 document.getElementById('btn-preencher-manual').addEventListener('click', () => {
   preencherFormularioRevisao({
-    nomeMercado: '',
-    dataEmissao: new Date().toISOString(),
-    valorTotal: 0,
-    descontoTotal: 0,
-    valorAPagar: 0,
-    qtdTotalItens: 0,
-    formasPagamento: { valeAlimentacao: 0, cartaoCredito: 0, cartaoDebito: 0 },
-    itens: []
+    nomeMercado: '', dataEmissao: new Date().toISOString(),
+    valorTotal: 0, descontoTotal: 0, valorAPagar: 0, qtdTotalItens: 0,
+    formasPagamento: { valeAlimentacao: 0, cartaoCredito: 0, cartaoDebito: 0 }, itens: []
   });
   setStatus('✍️ Preencha os dados da compra abaixo e clique em Salvar Nota Fiscal.', 'var(--accent-cyan)');
 });
@@ -1171,7 +1680,6 @@ function preencherFormularioRevisao(dados) {
   } else {
     previewBox.style.display = 'none';
   }
-
   formSection.scrollIntoView({ behavior: 'smooth' });
 }
 
@@ -1189,7 +1697,6 @@ document.getElementById('form-nfce').addEventListener('submit', async e => {
   const cred    = parseFloat(document.getElementById('inp-cred').value) || 0;
   const deb     = parseFloat(document.getElementById('inp-deb').value) || 0;
 
-  // VERIFICAÇÃO DE NOTA DUPLICADA
   const dataEmissaoInput = new Date(dataRaw).toISOString().slice(0, 16);
   const notaDuplicada = todasCompras.find(c => {
     const dataExistente = new Date(c.dataEmissao).toISOString().slice(0, 16);
@@ -1209,20 +1716,15 @@ document.getElementById('form-nfce').addEventListener('submit', async e => {
 
   setStatus('⏳ Salvando nota fiscal no banco...');
   try {
-    await salvar({
-      nomeMercado: mercado,
-      dataEmissao: dataRaw,
-      mesAno,
+    await addDoc(collection(db, COLL_MERCADO), {
+      nomeMercado: mercado, dataEmissao: dataRaw, mesAno,
       qtdTotalItens: qtd || itensNotaCarregada.length,
-      valorTotal: vtotal,
-      descontoTotal: desc,
-      valorAPagar: pagar,
+      valorTotal: vtotal, descontoTotal: desc, valorAPagar: pagar,
       formasPagamento: { valeAlimentacao: alim, cartaoCredito: cred, cartaoDebito: deb },
-      itens: itensNotaCarregada
+      itens: itensNotaCarregada, createdAt: serverTimestamp()
     });
 
     setStatus('✅ Nota salva com sucesso!', '#34d399');
-    
     document.getElementById('form-nfce').style.display = 'none';
     document.getElementById('form-nfce').reset();
     document.getElementById('inp-url').value = '';
@@ -1350,7 +1852,7 @@ function extrairMarca(desc) {
   return up.split(' ')[0] || 'Genérica';
 }
 
-// HISTÓRICO
+// HISTÓRICO MERCADO
 function renderHistorico() {
   const el = document.getElementById('lista-historico');
   if (!todasCompras.length) {
@@ -1373,7 +1875,7 @@ function renderHistorico() {
       <div class="purchase-details" id="detail-${c.id}">
         <div class="details-toolbar">
           <span class="card-subtext">Pagamentos: Alimentação ${brl(c.formasPagamento?.valeAlimentacao)} · Crédito ${brl(c.formasPagamento?.cartaoCredito)} · Débito ${brl(c.formasPagamento?.cartaoDebito)}</span>
-          <button class="btn-danger" onclick="confirmarExcluir('${c.id}')">🗑️ Excluir</button>
+          <button class="btn-danger" onclick="confirmarExcluirMercado('${c.id}')">🗑️ Excluir</button>
         </div>
         ${renderItensCompra(c)}
       </div>
@@ -1401,15 +1903,15 @@ window.toggleDetail = function(id) {
   if (c) c.classList.toggle('open');
 };
 
-window.confirmarExcluir = async function(id) {
-  if (!confirm('Excluir esta compra? Esta ação não pode ser desfeita.')) return;
+window.confirmarExcluirMercado = async function(id) {
+  if (!confirm('Excluir esta compra de mercado?')) return;
   try {
-    await excluir(id);
+    await deleteDoc(doc(db, COLL_MERCADO, id));
     toastMsg('🗑️ Compra excluída.');
   } catch(e) { alert('Erro: ' + e.message); }
 };
 
-// COMPARAÇÃO DE VALORES UNITÁRIOS MÊS A MÊS
+// COMPARAÇÃO MÊS A MÊS
 function renderComparacao() {
   const el = document.getElementById('lista-comparacao');
   const mapa = {};
@@ -1424,7 +1926,7 @@ function renderComparacao() {
 
   const prods = Object.values(mapa);
   if (!prods.length) {
-    el.innerHTML = `<div class="empty-state">Adicione notas com itens detalhados para ver a comparação de preços unitários.</div>`;
+    el.innerHTML = `<div class="empty-state">Adicione notas para ver a comparação de preços unitários.</div>`;
     return;
   }
 
@@ -1473,7 +1975,7 @@ function renderRecorrencia() {
 
   const recArr = Object.values(agr).filter(x => x.notas > 1).sort((a,b) => b.notas - a.notas);
   elRec.innerHTML = !recArr.length
-    ? `<div class="empty-state">Adicione notas diferentes para calcular recorrência dos itens.</div>`
+    ? `<div class="empty-state">Adicione notas para ver a recorrência de itens.</div>`
     : `<div class="table-responsive"><table class="custom-table">
         <thead><tr><th>Item</th><th>Marca</th><th>Compras</th><th class="num">Qtd Total</th><th class="num">Média Unitária</th></tr></thead>
         <tbody>${recArr.map(x => {
@@ -1509,7 +2011,7 @@ function renderRecorrencia() {
     </div>`;
   }).join('');
 
-  elMarc.innerHTML = marcasHTML || `<div class="empty-state">Ao comprar o mesmo tipo de produto com marcas diferentes (ex: Arroz Camil vs Tio João), o sistema mostrará qual teve menor preço unitário.</div>`;
+  elMarc.innerHTML = marcasHTML || `<div class="empty-state">Ao comprar o mesmo tipo de produto com marcas diferentes, o sistema mostrará qual teve menor preço.</div>`;
 }
 
 // MODAL CORS FALLBACK

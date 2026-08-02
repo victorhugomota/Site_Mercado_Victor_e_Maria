@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Controle de Gastos no Mercado</title>
-  <meta name="description" content="Sistema completo para controle de gastos no mercado, leitura de QR Code NFC-e, comparação de preços, previsão mensal e análise de marcas.">
+  <title>Controle Financeiro Completo — Victor &amp; Maria</title>
+  <meta name="description" content="Sistema completo de gestão financeira pessoal: Salários/Holerites, Cartões de Crédito, Mercado, Reservas e Orçamento Familiar.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
@@ -33,17 +33,15 @@
     a{color:inherit}
 
     /* Header */
-    .app-header{position:sticky;top:0;z-index:100;background:rgba(15,23,42,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-color);padding:1rem 1.5rem;display:flex;justify-content:space-between;align-items:center;gap:.75rem}
+    .app-header{position:sticky;top:0;z-index:100;background:rgba(15,23,42,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--border-color);padding:.9rem 1.5rem;display:flex;justify-content:space-between;align-items:center;gap:.75rem}
     .logo-container{display:flex;align-items:center;gap:.75rem}
-    .logo-icon{width:40px;height:40px;border-radius:var(--radius-md);background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;font-size:1.25rem;box-shadow:0 0 15px var(--primary-glow)}
-    .logo-text h1{font-size:1.1rem;font-weight:700;background:linear-gradient(to right,#fff,#cbd5e1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .logo-icon{width:42px;height:42px;border-radius:var(--radius-md);background:linear-gradient(135deg,var(--primary),var(--secondary));display:flex;align-items:center;justify-content:center;font-size:1.3rem;box-shadow:0 0 15px var(--primary-glow)}
+    .logo-text h1{font-size:1.15rem;font-weight:800;background:linear-gradient(to right,#fff,#cbd5e1);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
     .logo-text p{font-size:.72rem;color:var(--text-muted)}
-    .btn-header-add{background:linear-gradient(135deg,var(--primary),#059669);color:#fff;border:none;padding:.55rem 1rem;border-radius:var(--radius-md);font-weight:600;font-size:.85rem;cursor:pointer;display:flex;align-items:center;gap:.4rem;transition:all .2s;box-shadow:0 4px 12px var(--primary-glow);white-space:nowrap}
-    .btn-header-add:hover{transform:translateY(-1px)}
 
     /* Desktop Nav */
-    .desktop-nav{display:flex;gap:.4rem;flex-wrap:wrap}
-    .nav-item{background:transparent;color:var(--text-muted);border:none;padding:.55rem .9rem;border-radius:var(--radius-sm);font-weight:500;font-size:.85rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:.35rem;font-family:inherit}
+    .desktop-nav{display:flex;gap:.35rem;flex-wrap:wrap}
+    .nav-item{background:transparent;color:var(--text-muted);border:none;padding:.55rem .85rem;border-radius:var(--radius-sm);font-weight:500;font-size:.85rem;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:.35rem;font-family:inherit}
     .nav-item:hover{color:var(--text-main);background:rgba(255,255,255,.06)}
     .nav-item.active{color:#fff;background:var(--bg-card);border:1px solid var(--border-color);font-weight:600}
 
@@ -53,14 +51,20 @@
     .mob-btn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2}
     .mob-btn.active{color:var(--primary)}
 
-    @media(max-width:768px){.desktop-nav{display:none}.mobile-nav{display:flex}.app-header{padding:.8rem 1rem}}
+    @media(max-width:850px){.desktop-nav{display:none}.mobile-nav{display:flex}.app-header{padding:.8rem 1rem}}
 
     /* Layout */
-    .main-container{max-width:1200px;margin:0 auto;padding:1.5rem}
+    .main-container{max-width:1240px;margin:0 auto;padding:1.5rem}
     @media(max-width:600px){.main-container{padding:1rem}}
     .tab-content{display:none;animation:fadeIn .3s ease}
     .tab-content.active{display:block}
     @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Sub-tabs */
+    .sub-nav{display:flex;gap:.5rem;margin-bottom:1.25rem;overflow-x:auto;padding-bottom:.25rem}
+    .sub-item{background:rgba(15,23,42,.6);color:var(--text-muted);border:1px solid var(--border-color);padding:.45rem .85rem;border-radius:20px;font-size:.8rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .2s}
+    .sub-item:hover{color:var(--text-main);background:var(--bg-card-hover)}
+    .sub-item.active{background:var(--secondary);color:#fff;border-color:var(--secondary)}
 
     /* Cards */
     .grid-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1.25rem;margin-bottom:1.5rem}
@@ -68,10 +72,12 @@
     .card:hover{border-color:#475569}
     .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem}
     .card-title{font-size:.82rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)}
-    .card-icon{width:36px;height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+    .card-icon{width:38px;height:38px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;font-size:1.15rem}
     .card-icon.green{background:rgba(16,185,129,.15);color:var(--primary)}
     .card-icon.amber{background:rgba(245,158,11,.15);color:var(--accent-amber)}
     .card-icon.purple{background:rgba(168,85,247,.15);color:var(--accent-purple)}
+    .card-icon.cyan{background:rgba(6,182,212,.15);color:var(--accent-cyan)}
+    .card-icon.rose{background:rgba(244,63,94,.15);color:var(--accent-rose)}
     .card-value{font-size:1.75rem;font-weight:800;margin-bottom:.25rem}
     .card-subtext{font-size:.78rem;color:var(--text-muted)}
 
@@ -81,6 +87,7 @@
     .badge.red{background:rgba(244,63,94,.2);color:#fb7185}
     .badge.amber{background:rgba(245,158,11,.2);color:#fbbf24}
     .badge.cyan{background:rgba(6,182,212,.2);color:#22d3ee}
+    .badge.purple{background:rgba(168,85,247,.2);color:#c084fc}
 
     /* Payment methods */
     .payment-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:.9rem;margin-top:.75rem}
@@ -120,7 +127,7 @@
     .custom-table tr:hover td{background:rgba(255,255,255,.02)}
     .custom-table .num{text-align:right}
 
-    /* Purchase cards (histórico) */
+    /* Purchase cards */
     .purchase-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);margin-bottom:1rem;overflow:hidden}
     .purchase-header{padding:1.1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;gap:.75rem}
     .purchase-header:hover{background:var(--bg-card-hover)}
@@ -136,7 +143,7 @@
     /* Status msg */
     .status-msg{margin-top:.75rem;font-size:.84rem;color:var(--accent-amber);text-align:center;min-height:1.4em}
 
-    /* Divider */
+    /* Section Divider */
     .section-title{font-size:.82rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text-muted);margin-bottom:1rem;margin-top:1.75rem;padding-top:1.25rem;border-top:1px solid var(--border-color)}
     .section-title:first-child{border-top:none;margin-top:0;padding-top:0}
 
@@ -167,100 +174,123 @@
     .brand-chip.best{border-color:var(--primary)}
     .brand-chip .bc-name{font-size:.78rem;color:var(--text-muted)}
     .brand-chip .bc-val{font-size:1rem;font-weight:700}
+
+    /* Progress bar */
+    .progress-bar-bg{width:100%;height:10px;background:rgba(15,23,42,.7);border-radius:5px;overflow:hidden;margin-top:.4rem}
+    .progress-bar-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent-cyan));border-radius:5px;transition:width .4s ease}
   </style>
-  <script type="module" crossorigin src="./assets/index-DLLUnUdf.js"></script>
+  <script type="module" crossorigin src="./assets/index-CsFWTgko.js"></script>
 </head>
 <body>
 
 <!-- HEADER -->
 <header class="app-header">
   <div class="logo-container">
-    <div class="logo-icon">🛒</div>
+    <div class="logo-icon">💼</div>
     <div class="logo-text">
-      <h1>Controle Mercado</h1>
+      <h1>Controle Financeiro</h1>
       <p>Victor &amp; Maria</p>
     </div>
   </div>
 
   <nav class="desktop-nav">
     <button class="nav-item active" data-tab="dashboard">📊 Visão Geral</button>
-    <button class="nav-item" data-tab="listamensal">🗓️ Lista Mensal</button>
-    <button class="nav-item" data-tab="comparacao">📈 Comparar Preços</button>
-    <button class="nav-item" data-tab="recorrencia">🔄 Itens &amp; Marcas</button>
-    <button class="nav-item" data-tab="historico">📋 Histórico</button>
+    <button class="nav-item" data-tab="salarios">💵 Salários &amp; Entradas</button>
+    <button class="nav-item" data-tab="cartoes">💳 Cartões de Crédito</button>
+    <button class="nav-item" data-tab="mercado">🛒 Mercado</button>
+    <button class="nav-item" data-tab="reservas">🐷 Reservas &amp; Economias</button>
   </nav>
 </header>
 
 <!-- MAIN -->
 <main class="main-container">
 
-  <!-- ABA DASHBOARD -->
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <!-- 1. ABA DASHBOARD (VISÃO GERAL DO CONTROLE FINANCEIRO COMPLETO) -->
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
   <section id="tab-dashboard" class="tab-content active">
-    <!-- Botão de Ação Rápida no Dashboard -->
-    <button class="btn-primary" id="btn-open-modal-home" style="width:100%; padding:1rem; margin-bottom:1.5rem; font-size:1.05rem; box-shadow: 0 4px 15px var(--primary-glow);">
-      ➕ Adicionar / Escanear Nova Nota Fiscal
-    </button>
-
+    <!-- Grade de Resumo Geral -->
     <div class="grid-summary">
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Total Gasto</span>
-          <div class="card-icon green">💰</div>
+          <span class="card-title">Entradas / Salários</span>
+          <div class="card-icon green">💵</div>
         </div>
-        <div class="card-value" id="dash-total">R$ 0,00</div>
-        <div class="card-subtext">Soma dos Valores a Pagar</div>
+        <div class="card-value" id="fin-total-entradas" style="color:#34d399">R$ 0,00</div>
+        <div class="card-subtext" id="fin-subtext-entradas">Victor + Maria + Entradas Manuais</div>
       </div>
+
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Média Mensal</span>
-          <div class="card-icon cyan">📊</div>
+          <span class="card-title">Cartão de Crédito</span>
+          <div class="card-icon rose">💳</div>
         </div>
-        <div class="card-value" id="dash-media-mensal">R$ 0,00</div>
-        <div class="card-subtext" id="dash-media-subtext">Média de gasto por mês</div>
+        <div class="card-value" id="fin-total-cartoes" style="color:#fb7185">R$ 0,00</div>
+        <div class="card-subtext" id="fin-subtext-cartoes">Faturas do Mês</div>
       </div>
+
       <div class="card">
         <div class="card-header">
-          <span class="card-title">Descontos Obtidos</span>
-          <div class="card-icon amber">🏷️</div>
+          <span class="card-title">Mercado (Débito)</span>
+          <div class="card-icon amber">🛒</div>
         </div>
-        <div class="card-value" id="dash-desconto">R$ 0,00</div>
-        <div class="card-subtext" id="dash-pct">0% economizado no geral</div>
+        <div class="card-value" id="fin-mercado-debito" style="color:#fbbf24">R$ 0,00</div>
+        <div class="card-subtext">Saída real da conta (Sem Alimentação)</div>
       </div>
-      <div class="card">
+
+      <div class="card" style="border-color:#3b82f6; background:linear-gradient(135deg,rgba(30,41,59,.9),rgba(15,23,42,.95))">
         <div class="card-header">
-          <span class="card-title">Notas Cadastradas</span>
-          <div class="card-icon purple">🧾</div>
+          <span class="card-title" style="color:#60a5fa">Saldo Líquido em Conta</span>
+          <div class="card-icon cyan">💰</div>
         </div>
-        <div class="card-value" id="dash-qtd-notas">0</div>
-        <div class="card-subtext" id="dash-qtd-itens">0 itens no total</div>
+        <div class="card-value" id="fin-saldo-liquido" style="color:#60a5fa">R$ 0,00</div>
+        <div class="card-subtext" id="fin-subtext-saldo">Entradas - Cartões - Mercado (Débito)</div>
       </div>
     </div>
 
+    <!-- Botões de Ação Rápida -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:1.5rem">
+      <button class="btn-primary" id="btn-open-modal-home" style="padding:.9rem">
+        🛒 Escanear Nota Mercado
+      </button>
+      <button class="btn-secondary" onclick="goTab('salarios')" style="padding:.9rem">
+        💵 Cadastrar Holerite / Entrada
+      </button>
+      <button class="btn-secondary" onclick="goTab('cartoes')" style="padding:.9rem">
+        💳 Importar Fatura Cartão
+      </button>
+      <button class="btn-secondary" onclick="goTab('reservas')" style="padding:.9rem">
+        🐷 Ver Meta de Reservas
+      </button>
+    </div>
+
+    <!-- Card Detalhamento do Orçamento do Mercado (Alimentação, Crédito e Débito) -->
     <div class="card" style="margin-bottom:1.5rem">
       <div class="card-header">
-        <span class="card-title">Pagamentos por Categoria</span>
-        <div class="card-icon purple">💳</div>
+        <span class="card-title">Detalhamento dos Gastos de Mercado</span>
+        <span class="badge amber">💡 Apenas Débito reduz o salário</span>
       </div>
       <div class="payment-grid">
         <div class="payment-item">
-          <div class="p-label">🍽️ Vale Alimentação</div>
+          <div class="p-label">🍽️ Vale Alimentação (Benefício)</div>
           <div class="p-val" id="dash-alimentacao">R$ 0,00</div>
         </div>
         <div class="payment-item">
-          <div class="p-label">💳 Cartão de Crédito</div>
+          <div class="p-label">💳 Cartão Crédito no Mercado</div>
           <div class="p-val" id="dash-credito">R$ 0,00</div>
         </div>
-        <div class="payment-item">
-          <div class="p-label">💳 Cartão de Débito</div>
-          <div class="p-val" id="dash-debito">R$ 0,00</div>
+        <div class="payment-item" style="border-color:rgba(245,158,11,.4)">
+          <div class="p-label">💳 Débito no Mercado (Sai da Conta)</div>
+          <div class="p-val" id="dash-debito" style="color:#fbbf24">R$ 0,00</div>
         </div>
       </div>
     </div>
 
+    <!-- Gráficos -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Gastos Mensais</span>
-        <span class="badge green">Tempo Real</span>
+        <span class="card-title">Evolução dos Gastos Mensais no Mercado</span>
+        <span class="badge green">Histórico</span>
       </div>
       <div class="chart-container">
         <canvas id="chart-barras"></canvas>
@@ -268,56 +298,284 @@
     </div>
   </section>
 
-  <!-- ABA LISTA MENSAL (PLANEJAMENTO E PREVISÃO PARA O PRÓXIMO MÊS) -->
-  <section id="tab-listamensal" class="tab-content">
-    <div id="lista-mensal-container"></div>
-  </section>
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <!-- 2. ABA SALÁRIOS & ENTRADAS (HOLERITES VICTOR + MARIA & ENTRADAS MANUAIS) -->
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-salarios" class="tab-content">
+    <!-- Grid Salário Victor e Salário Maria -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.5rem">
+      
+      <!-- Div Victor -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Salário / Holerite — Victor</span>
+          <div class="card-icon green">👨‍💼</div>
+        </div>
+        <div class="card-value" id="val-salario-victor" style="color:#34d399">R$ 0,00</div>
+        <p class="card-subtext" style="margin-bottom:1rem">Cole o texto do holerite para calcular automaticamente ou digite o valor líquido.</p>
 
-  <!-- ABA COMPARAR PREÇOS -->
-  <section id="tab-comparacao" class="tab-content">
+        <form id="form-holerite-victor">
+          <div class="form-group">
+            <label for="inp-holerite-txt-victor">Cole o Texto do Holerite do Victor</label>
+            <textarea id="inp-holerite-txt-victor" class="form-control" rows="3" placeholder="Cole aqui o texto copiado do PDF do holerite..."></textarea>
+          </div>
+          <div class="form-group">
+            <label for="inp-salario-val-victor">Ou Valor Líquido (R$)</label>
+            <input type="number" step="0.01" id="inp-salario-val-victor" class="form-control" placeholder="0,00">
+          </div>
+          <button type="submit" class="btn-primary" style="width:100%">
+            💾 Salvar Salário Victor
+          </button>
+        </form>
+      </div>
+
+      <!-- Div Maria -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Salário / Holerite — Maria</span>
+          <div class="card-icon purple">👩‍💼</div>
+        </div>
+        <div class="card-value" id="val-salario-maria" style="color:#c084fc">R$ 0,00</div>
+        <p class="card-subtext" style="margin-bottom:1rem">Cole o texto do holerite para calcular automaticamente ou digite o valor líquido.</p>
+
+        <form id="form-holerite-maria">
+          <div class="form-group">
+            <label for="inp-holerite-txt-maria">Cole o Texto do Holerite da Maria</label>
+            <textarea id="inp-holerite-txt-maria" class="form-control" rows="3" placeholder="Cole aqui o texto copiado do PDF do holerite..."></textarea>
+          </div>
+          <div class="form-group">
+            <label for="inp-salario-val-maria">Ou Valor Líquido (R$)</label>
+            <input type="number" step="0.01" id="inp-salario-val-maria" class="form-control" placeholder="0,00">
+          </div>
+          <button type="submit" class="btn-primary" style="width:100%">
+            💾 Salvar Salário Maria
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- Div Somatória Geral dos Salários + Entradas Extra -->
+    <div class="card" style="margin-bottom:1.5rem; background:linear-gradient(135deg,rgba(30,41,59,.9),rgba(15,23,42,.95)); border:1px solid #10b981">
+      <div class="card-header">
+        <span class="card-title" style="color:#34d399">💰 Total Combinado de Entradas (Victor + Maria + Extras)</span>
+        <span class="badge green">Renda Familiar</span>
+      </div>
+      <div class="card-value" id="val-entradas-combinado" style="color:#34d399; font-size:2.2rem">R$ 0,00</div>
+      <p class="card-subtext">Soma dos Salários Líquidos e Entradas Manuais cadastradas.</p>
+    </div>
+
+    <!-- Formulário para Entradas Manuais Adicionais -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Comparação de Valor Unitário — Mês a Mês</span>
-        <span class="badge green">Por unidade</span>
+        <span class="card-title">Adicionar Outras Entradas (Freelance, Rendimentos, Extra)</span>
       </div>
-      <p class="card-subtext" style="margin-bottom:1rem">
-        Compara o <strong>valor unitário</strong> de cada produto entre os meses, independente da quantidade comprada.
-        Exemplo: bolacha a R$ 4,35/un em maio vs R$ 4,80/un em junho.
-      </p>
-      <div id="lista-comparacao"></div>
+      <form id="form-entrada-manual">
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:1rem">
+          <div class="form-group">
+            <label for="inp-ent-desc">Descrição</label>
+            <input type="text" id="inp-ent-desc" class="form-control" placeholder="Ex: Freelance, Rendimentos, Cashback..." required>
+          </div>
+          <div class="form-group">
+            <label for="inp-ent-val">Valor (R$)</label>
+            <input type="number" step="0.01" id="inp-ent-val" class="form-control" placeholder="0,00" required>
+          </div>
+          <div class="form-group">
+            <label for="inp-ent-pessoa">Pessoa / Origem</label>
+            <select id="inp-ent-pessoa" class="form-control">
+              <option value="Victor">Victor</option>
+              <option value="Maria">Maria</option>
+              <option value="Geral" selected>Geral / Ambos</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn-secondary" style="width:100%;margin-top:.5rem">
+          ➕ Adicionar Entrada Manual
+        </button>
+      </form>
+
+      <p class="section-title">Lista de Entradas Registradas</p>
+      <div id="lista-entradas-registradas"></div>
     </div>
   </section>
 
-  <!-- ABA RECORRÊNCIA & MARCAS -->
-  <section id="tab-recorrencia" class="tab-content">
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <!-- 3. ABA CARTÕES DE CRÉDITO (IMPORTAÇÃO DE FATURAS & TRANSAÇÕES) -->
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-cartoes" class="tab-content">
     <div class="card" style="margin-bottom:1.5rem">
       <div class="card-header">
-        <span class="card-title">Itens Comprados Mais de Uma Vez</span>
-        <span class="badge amber">Recorrência</span>
+        <span class="card-title">Importar Fatura de Cartão de Crédito</span>
+        <span class="badge rose">💳 Leitura de Fatura</span>
       </div>
-      <p class="card-subtext" style="margin-bottom:1rem">Produtos que aparecem em notas fiscais diferentes — soma de quantidade e frequência.</p>
-      <div id="lista-recorrencia"></div>
+      <p class="card-subtext" style="margin-bottom:1rem">Cole o texto da fatura do seu cartão (PDF ou app) para ler e salvar todas as compras automaticamente.</p>
+
+      <form id="form-fatura-cartao">
+        <div style="display:grid;grid-template-columns:1fr 2fr;gap:1rem">
+          <div class="form-group">
+            <label for="inp-cartao-nome">Selecione o Cartão</label>
+            <select id="inp-cartao-nome" class="form-control">
+              <option value="Nubank">Nubank</option>
+              <option value="XP">XP Investimentos</option>
+              <option value="Itaú">Itaú</option>
+              <option value="Inter">Banco Inter</option>
+              <option value="Bradesco">Bradesco</option>
+              <option value="Outro">Outro Cartão</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="inp-fatura-txt">Texto da Fatura / Compras</label>
+            <textarea id="inp-fatura-txt" class="form-control" rows="4" placeholder="Cole aqui o texto copiado da fatura do cartão (ex: 05/08  Uber  R$ 24,90)..."></textarea>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%">
+          🔍 Ler &amp; Importar Fatura do Cartão
+        </button>
+      </form>
     </div>
+
+    <!-- Lista de Gastos em Cartão de Crédito -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Comparativo por Marca — Qual Vale Mais?</span>
-        <span class="badge green">Menor preço</span>
+        <span class="card-title">Lançamentos em Cartão de Crédito</span>
+        <span class="badge rose" id="badge-total-cartoes">R$ 0,00 total</span>
       </div>
-      <p class="card-subtext" style="margin-bottom:1rem">Quando a marca de um item muda entre compras, indicamos qual teve o menor valor unitário.</p>
-      <div id="lista-marcas"></div>
+      <div id="lista-faturas-registradas"></div>
     </div>
   </section>
 
-  <!-- ABA HISTÓRICO -->
-  <section id="tab-historico" class="tab-content">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
-      <div>
-        <h2 style="font-size:1.1rem;font-weight:700">Notas Fiscais Cadastradas</h2>
-        <p class="card-subtext">Clique para expandir e ver os itens</p>
-      </div>
-      <span class="badge cyan">🔥 Firebase Realtime</span>
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <!-- 4. ABA MERCADO (MERCADO, LEITOR, COMPARATIVO, LISTA MENSAL & HISTÓRICO) -->
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-mercado" class="tab-content">
+    <!-- Sub-navegação do Mercado -->
+    <div class="sub-nav">
+      <button class="sub-item active" data-sub="m-listamensal">🗓️ Lista Mensal (Previsão &amp; PDF)</button>
+      <button class="sub-item" data-sub="m-comparacao">📈 Comparar Preços</button>
+      <button class="sub-item" data-sub="m-recorrencia">🔄 Itens &amp; Marcas</button>
+      <button class="sub-item" data-sub="m-historico">📋 Histórico de Compras</button>
     </div>
-    <div id="lista-historico"></div>
+
+    <!-- Botão de escanear nota -->
+    <button class="btn-primary" id="btn-mercado-add-nota" style="width:100%; padding:.9rem; margin-bottom:1.25rem; font-size:1rem; box-shadow: 0 4px 15px var(--primary-glow);">
+      ➕ Escanear / Adicionar Nova Nota Fiscal de Mercado
+    </button>
+
+    <!-- SUB-ABA 1: LISTA MENSAL -->
+    <div id="sub-m-listamensal" class="sub-tab-content">
+      <div id="lista-mensal-container"></div>
+    </div>
+
+    <!-- SUB-ABA 2: COMPARAR PREÇOS -->
+    <div id="sub-m-comparacao" class="sub-tab-content" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Comparação de Valor Unitário — Mês a Mês</span>
+          <span class="badge green">Por unidade</span>
+        </div>
+        <p class="card-subtext" style="margin-bottom:1rem">
+          Compara o <strong>valor unitário</strong> de cada produto entre os meses.
+        </p>
+        <div id="lista-comparacao"></div>
+      </div>
+    </div>
+
+    <!-- SUB-ABA 3: RECORRÊNCIA -->
+    <div id="sub-m-recorrencia" class="sub-tab-content" style="display:none">
+      <div class="card" style="margin-bottom:1.5rem">
+        <div class="card-header">
+          <span class="card-title">Itens Comprados Mais de Uma Vez</span>
+          <span class="badge amber">Recorrência</span>
+        </div>
+        <div id="lista-recorrencia"></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Comparativo por Marca — Qual Vale Mais?</span>
+          <span class="badge green">Menor preço</span>
+        </div>
+        <div id="lista-marcas"></div>
+      </div>
+    </div>
+
+    <!-- SUB-ABA 4: HISTÓRICO -->
+    <div id="sub-m-historico" class="sub-tab-content" style="display:none">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Notas Fiscais Cadastradas</span>
+          <span class="badge cyan">🔥 Firebase Realtime</span>
+        </div>
+        <div id="lista-historico"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <!-- 5. ABA RESERVAS & ECONOMIAS (ESTIMATIVA, VALOR REAL & RECOMENDAÇÃO INTELIGENTE) -->
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-reservas" class="tab-content">
+    <div class="grid-summary">
+      <!-- Card Meta Pessoal -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Sua Meta Mensal de Reserva</span>
+          <div class="card-icon amber">🎯</div>
+        </div>
+        <div class="card-value" id="val-meta-reserva" style="color:#fbbf24">R$ 0,00</div>
+        <div class="card-subtext">Quanto você quer guardar por mês</div>
+      </div>
+
+      <!-- Card Valor Real Guardado -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Valor Real Guardado</span>
+          <div class="card-icon green">🏦</div>
+        </div>
+        <div class="card-value" id="val-real-guardado" style="color:#34d399">R$ 0,00</div>
+        <div class="card-subtext">Poupança e Investimentos acumulados</div>
+      </div>
+
+      <!-- Card Recomendação do Sistema -->
+      <div class="card" style="border-color:#a855f7; background:linear-gradient(135deg,rgba(30,41,59,.9),rgba(15,23,42,.95))">
+        <div class="card-header">
+          <span class="card-title" style="color:#c084fc">Recomendação do Sistema</span>
+          <div class="card-icon purple">💡</div>
+        </div>
+        <div class="card-value" id="val-recomendacao-reserva" style="color:#c084fc">R$ 0,00</div>
+        <div class="card-subtext" id="subtext-recomendacao">Sugerido com base no saldo livre real</div>
+      </div>
+    </div>
+
+    <!-- Card de Análise Inteligente de Economias -->
+    <div class="card" style="margin-bottom:1.5rem">
+      <div class="card-header">
+        <span class="card-title">💡 Análise &amp; Recomendação de Reservas</span>
+        <span class="badge purple">Inteligência Financeira</span>
+      </div>
+      <div id="box-analise-reserva-detalhes" style="font-size:.92rem;line-height:1.6"></div>
+    </div>
+
+    <!-- Form para Configurar Meta e Atualizar Saldo Guardado -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Atualizar Metas e Saldo Guardado</span>
+      </div>
+      <form id="form-config-reservas">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="form-group">
+            <label for="inp-meta-mensal">Definir Meta Desejada por Mês (R$)</label>
+            <input type="number" step="0.01" id="inp-meta-mensal" class="form-control" placeholder="Ex: 500,00">
+          </div>
+          <div class="form-group">
+            <label for="inp-saldo-guardado">Atualizar Saldo Real Guardado (R$)</label>
+            <input type="number" step="0.01" id="inp-saldo-guardado" class="form-control" placeholder="Ex: 3500,00">
+          </div>
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%">
+          💾 Salvar Configurações de Reserva
+        </button>
+      </form>
+    </div>
   </section>
 
 </main>
@@ -325,27 +583,27 @@
 <!-- MOBILE NAV -->
 <nav class="mobile-nav">
   <button class="mob-btn active" data-tab="dashboard">
-    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Início
+    <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Geral
   </button>
-  <button class="mob-btn" data-tab="listamensal">
-    <svg viewBox="0 0 24 24"><path d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>Lista
+  <button class="mob-btn" data-tab="salarios">
+    <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Salários
   </button>
-  <button class="mob-btn" data-tab="comparacao">
-    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Preços
+  <button class="mob-btn" data-tab="cartoes">
+    <svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Cartões
   </button>
-  <button class="mob-btn" data-tab="recorrencia">
-    <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Marcas
+  <button class="mob-btn" data-tab="mercado">
+    <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Mercado
   </button>
-  <button class="mob-btn" data-tab="historico">
-    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Histórico
+  <button class="mob-btn" data-tab="reservas">
+    <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Reservas
   </button>
 </nav>
 
-<!-- MODAL: ADICIONAR NOTA (JANELA POP-UP DE ADIÇÃO) -->
+<!-- MODAL: ADICIONAR NOTA MERCADO -->
 <div id="modal-add-nota" class="modal-overlay">
   <div class="modal-box" style="max-width: 680px;">
     <div class="modal-header">
-      <h2>📷 Adicionar Nota Fiscal</h2>
+      <h2>📷 Adicionar Nota Fiscal de Mercado</h2>
       <button class="btn-close" id="btn-close-modal-add">&times;</button>
     </div>
 
@@ -388,7 +646,7 @@
 
       <p class="status-msg" id="status-msg"></p>
 
-      <!-- Formulário de Revisão e Salvamento (Escondido por padrão) -->
+      <!-- Formulário de Revisão e Salvamento -->
       <form id="form-nfce" style="display:none; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
         <p class="section-title" style="border-top:none; padding-top:0; margin-top:0;">
           📝 Dados da Compra (Confira e Altere Se Necessário)
