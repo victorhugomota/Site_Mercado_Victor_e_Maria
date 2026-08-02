@@ -188,8 +188,6 @@
     <button class="nav-item" data-tab="recorrencia">🔄 Itens &amp; Marcas</button>
     <button class="nav-item" data-tab="historico">📋 Histórico</button>
   </nav>
-
-  <button class="btn-header-add" id="btn-open-modal-header">➕ Adicionar Nota</button>
 </header>
 
 <!-- MAIN -->
@@ -586,7 +584,6 @@ function fecharModalAddNota() {
   document.getElementById('modal-add-nota').classList.remove('active');
 }
 
-document.getElementById('btn-open-modal-header')?.addEventListener('click', abrirModalAddNota);
 document.getElementById('btn-open-modal-home')?.addEventListener('click', abrirModalAddNota);
 document.getElementById('btn-close-modal-add')?.addEventListener('click', fecharModalAddNota);
 
