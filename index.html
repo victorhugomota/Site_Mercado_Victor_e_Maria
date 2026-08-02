@@ -854,6 +854,19 @@ function renderListaMensal() {
       </p>
   `;
 
+  // Salva no cache para o exportador de PDF
+  window.dadosListaMensalCache = {
+    mesAnoStr,
+    diasUteis,
+    totalGeralEstimado,
+    cobertoAlim,
+    cobertoCred,
+    cobertoDeb,
+    alimDisponivel,
+    credDisponivel,
+    lista: listaPlanejada
+  };
+
   if (listaPlanejada.length === 0) {
     html += `<div class="empty-state">Adicione notas fiscais para que o sistema gere automaticamente sua lista mensal de compras.</div></div>`;
   } else {
@@ -896,11 +909,132 @@ function renderListaMensal() {
           </tbody>
         </table>
       </div>
+    </div>
+    
+    <div style="margin-top:1.5rem; text-align:center;">
+      <button type="button" class="btn-primary" onclick="exportarPDFListaMensal()" style="padding: 0.85rem 1.75rem; font-size: 1rem; box-shadow: 0 4px 15px var(--primary-glow);">
+        📄 Exportar Lista em PDF / Imprimir
+      </button>
     </div>`;
   }
 
   el.innerHTML = html;
 }
+
+// EXPORTAR LISTA MENSAL EM PDF / IMPRESSÃO
+window.exportarPDFListaMensal = function() {
+  if (!window.dadosListaMensalCache || !window.dadosListaMensalCache.lista.length) {
+    toastMsg('⚠️ Nenhuma lista mensal disponível para exportar.');
+    return;
+  }
+
+  const { mesAnoStr, diasUteis, totalGeralEstimado, cobertoAlim, cobertoCred, cobertoDeb, lista } = window.dadosListaMensalCache;
+
+  const printWin = window.open('', '_blank', 'width=900,height=750');
+  if (!printWin) {
+    alert('Permita pop-ups no navegador para gerar o PDF da lista.');
+    return;
+  }
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html lang="pt-BR">
+    <head>
+      <meta charset="UTF-8">
+      <title>Lista de Compras - ${mesAnoStr}</title>
+      <style>
+        body { font-family: system-ui, -apple-system, sans-serif; color: #0f172a; padding: 25px; margin: 0; background: #fff; }
+        .header-print { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 18px; }
+        .header-print h1 { font-size: 20px; margin: 0; color: #0f172a; }
+        .header-print p { font-size: 13px; color: #475569; margin: 3px 0 0 0; }
+        
+        .box-resumo { border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 8px; padding: 12px 15px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .res-item .label { font-size: 11px; color: #64748b; text-transform: uppercase; font-weight: bold; }
+        .res-item .val { font-size: 15px; font-weight: bold; color: #0f172a; margin-top: 3px; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+        th { background: #f1f5f9; text-align: left; padding: 8px 10px; border-bottom: 2px solid #cbd5e1; font-weight: 700; color: #334155; }
+        td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+        .num { text-align: right; }
+        .check-col { width: 35px; text-align: center; }
+        .chk-box { width: 14px; height: 14px; border: 1.5px solid #64748b; border-radius: 3px; display: inline-block; }
+        
+        .total-footer { margin-top: 20px; border-top: 2px solid #0f172a; padding-top: 10px; display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: bold; }
+        
+        @media print {
+          body { padding: 0; }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="header-print">
+        <div>
+          <h1>🛒 Controle Mercado — Lista de Compras</h1>
+          <p>Previsão para <strong>${mesAnoStr}</strong> (${diasUteis} dias úteis)</p>
+        </div>
+        <div style="text-align:right;">
+          <p style="font-size:11px; color:#64748b;">Victor & Maria</p>
+        </div>
+      </div>
+
+      <div class="box-resumo">
+        <div class="res-item">
+          <div class="label">🍽️ Vale Alimentação</div>
+          <div class="val">${brl(cobertoAlim)}</div>
+        </div>
+        <div class="res-item">
+          <div class="label">💳 Cartão Crédito</div>
+          <div class="val">${brl(cobertoCred)}</div>
+        </div>
+        <div class="res-item">
+          <div class="label">💳 Débito (Excedente)</div>
+          <div class="val">${brl(cobertoDeb)}</div>
+        </div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th class="check-col">[  ]</th>
+            <th>Item</th>
+            <th>Marca</th>
+            <th class="num">Qtd. Estimada</th>
+            <th class="num">Preço Unit. Médio</th>
+            <th class="num">Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${lista.map(item => `
+            <tr>
+              <td class="check-col"><div class="chk-box"></div></td>
+              <td><strong>${item.nome}</strong></td>
+              <td>${item.marca}</td>
+              <td class="num"><strong>${item.totalEstimadoUnidades.toFixed(1)} un</strong></td>
+              <td class="num">${brl(item.valorUnitario)}</td>
+              <td class="num"><strong>${brl(item.subtotalFinal)}</strong></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <div class="total-footer">
+        <span>Total Estimado da Compra:</span>
+        <span style="font-size:18px; color:#059669;">${brl(totalGeralEstimado)}</span>
+      </div>
+
+      <script>
+        window.onload = function() {
+          setTimeout(function() { window.print(); }, 350);
+        };
+      <\/script>
+    </body>
+    </html>
+  `;
+
+  printWin.document.open();
+  printWin.document.write(htmlContent);
+  printWin.document.close();
+};
 
 // CÂMERA / QR CODE
 document.getElementById('btn-start-cam').addEventListener('click', startCam);
