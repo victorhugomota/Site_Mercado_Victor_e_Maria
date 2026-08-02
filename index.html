@@ -321,6 +321,20 @@
   <!-- 2. ABA SALÁRIOS & ENTRADAS (HOLERITES VICTOR + MARIA & ENTRADAS MANUAIS) -->
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
   <section id="tab-salarios" class="tab-content">
+    <!-- Seleção do Mês de Referência para Entradas -->
+    <div class="card" style="margin-bottom:1.5rem">
+      <div class="card-header">
+        <span class="card-title">📅 Mês e Ano de Referência das Entradas</span>
+        <span class="badge green">Competência Mensal</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:0">
+          <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.4rem;color:var(--text-muted)">Selecione o Mês e Ano das Entradas (Holerites e Extras):</label>
+          <input type="month" id="inp-entradas-mes-ano" class="form-control" onchange="renderSalariosEEntradas()">
+        </div>
+      </div>
+    </div>
+
     <!-- Grid Salário Victor e Salário Maria -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.5rem">
       
@@ -1085,8 +1099,9 @@ function renderTudo() {
 // 1. RENDERIZAÇÃO DO DASHBOARD FINANCEIRO PRINCIPAL
 // ═══════════════════════════════════════════════════════════════════════════
 function renderDashboardGeral() {
-  // Entradas Totais
-  let totalEntradas = todasEntradas.reduce((acc, e) => acc + (e.valor || 0), 0);
+  // Média Mensal Combinada das Entradas (Victor + Maria + Extras)
+  let mediaMensalEntradas = calcularMediaMensalEntradas();
+  let totalEntradasBase = mediaMensalEntradas > 0 ? mediaMensalEntradas : todasEntradas.reduce((acc, e) => acc + (e.valor || 0), 0);
 
   // Cartões de Crédito Totais
   let totalCartoes = todasFaturas.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
@@ -1117,11 +1132,14 @@ function renderDashboardGeral() {
     porMesMercado[mes] = (porMesMercado[mes] || 0) + p;
   });
 
-  // REGRA: Saldo Líquido em Conta considera Entradas - Cartões - Boletos - Mercado DÉBITO
-  let saldoLiquido = totalEntradas - totalCartoes - totalBoletos - totalMercadoDebito;
+  // REGRA: Saldo Líquido em Conta considera Média Entradas - Cartões - Boletos - Mercado DÉBITO
+  let saldoLiquido = totalEntradasBase - totalCartoes - totalBoletos - totalMercadoDebito;
 
   // Atualização dos Cards da Home
-  document.getElementById('fin-total-entradas').textContent = brl(totalEntradas);
+  document.getElementById('fin-total-entradas').textContent = brl(totalEntradasBase);
+  const subEnt = document.getElementById('fin-subtext-entradas');
+  if (subEnt) subEnt.textContent = 'Média Mensal Combinada (Victor + Maria)';
+
   document.getElementById('fin-total-cartoes').textContent = brl(totalCartoes);
   document.getElementById('fin-total-boletos').textContent = brl(totalBoletos);
   document.getElementById('fin-mercado-debito').textContent = brl(totalMercadoDebito);
@@ -1178,43 +1196,57 @@ function parseHoleriteTexto(texto) {
   return 0;
 }
 
-// Salvar Holerite Victor
+function initDataEntradasMesAno() {
+  const inp = document.getElementById('inp-entradas-mes-ano');
+  if (inp && !inp.value) {
+    const hoje = new Date();
+    const ano = hoje.getFullYear();
+    const mes = String(hoje.getMonth() + 1).padStart(2, '0');
+    inp.value = `${ano}-${mes}`;
+  }
+}
+setTimeout(initDataEntradasMesAno, 300);
+
+// Salvar Holerite Victor (Correlacionado por Mês/Ano)
 document.getElementById('form-holerite-victor').addEventListener('submit', async e => {
   e.preventDefault();
+  const mesAno = document.getElementById('inp-entradas-mes-ano').value || new Date().toISOString().slice(0, 7);
   const txt = document.getElementById('inp-holerite-txt-victor').value;
   let val   = parseFloat(document.getElementById('inp-salario-val-victor').value) || 0;
   if (!val && txt) val = parseHoleriteTexto(txt);
 
   if (!val) { toastMsg('⚠️ Digite ou cole um holerite válido com valor.'); return; }
 
-  const docId = 'salario_victor';
+  const docId = `salario_victor_${mesAno}`;
   await setDoc(doc(db, COLL_ENTRADAS, docId), {
-    pessoa: 'Victor', tipo: 'holerite', descricao: 'Salário Líquido Victor',
-    valor: val, data: new Date().toISOString()
+    pessoa: 'Victor', tipo: 'holerite', descricao: `Salário Líquido Victor (${mesAno})`,
+    valor: val, mesAno, data: new Date().toISOString()
   });
-  toastMsg('✅ Salário do Victor salvo!');
+  toastMsg(`✅ Salário do Victor (${mesAno}) salvo!`);
 });
 
-// Salvar Holerite Maria
+// Salvar Holerite Maria (Correlacionado por Mês/Ano)
 document.getElementById('form-holerite-maria').addEventListener('submit', async e => {
   e.preventDefault();
+  const mesAno = document.getElementById('inp-entradas-mes-ano').value || new Date().toISOString().slice(0, 7);
   const txt = document.getElementById('inp-holerite-txt-maria').value;
   let val   = parseFloat(document.getElementById('inp-salario-val-maria').value) || 0;
   if (!val && txt) val = parseHoleriteTexto(txt);
 
   if (!val) { toastMsg('⚠️ Digite ou cole um holerite válido com valor.'); return; }
 
-  const docId = 'salario_maria';
+  const docId = `salario_maria_${mesAno}`;
   await setDoc(doc(db, COLL_ENTRADAS, docId), {
-    pessoa: 'Maria', tipo: 'holerite', descricao: 'Salário Líquido Maria',
-    valor: val, data: new Date().toISOString()
+    pessoa: 'Maria', tipo: 'holerite', descricao: `Salário Líquido Maria (${mesAno})`,
+    valor: val, mesAno, data: new Date().toISOString()
   });
-  toastMsg('✅ Salário da Maria salvo!');
+  toastMsg(`✅ Salário da Maria (${mesAno}) salvo!`);
 });
 
-// Adicionar Entrada Manual
+// Adicionar Entrada Manual (Correlacionada por Mês/Ano)
 document.getElementById('form-entrada-manual').addEventListener('submit', async e => {
   e.preventDefault();
+  const mesAno = document.getElementById('inp-entradas-mes-ano').value || new Date().toISOString().slice(0, 7);
   const desc   = document.getElementById('inp-ent-desc').value.trim();
   const val    = parseFloat(document.getElementById('inp-ent-val').value) || 0;
   const pessoa = document.getElementById('inp-ent-pessoa').value;
@@ -1222,20 +1254,50 @@ document.getElementById('form-entrada-manual').addEventListener('submit', async 
   if (!desc || !val) return;
 
   await addDoc(collection(db, COLL_ENTRADAS), {
-    pessoa, tipo: 'manual', descricao: desc, valor: val, data: new Date().toISOString()
+    pessoa, tipo: 'manual', descricao: desc, valor: val, mesAno, data: new Date().toISOString()
   });
   e.target.reset();
-  toastMsg('🎉 Entrada manual registrada!');
+  toastMsg(`🎉 Entrada manual (${mesAno}) registrada!`);
 });
 
+function calcularMediaMensalEntradas() {
+  if (!todasEntradas.length) return 0;
+  const porMes = {};
+  todasEntradas.forEach(e => {
+    const m = e.mesAno || (e.data ? e.data.slice(0, 7) : 'sem-mes');
+    porMes[m] = (porMes[m] || 0) + (e.valor || 0);
+  });
+  const meses = Object.keys(porMes);
+  if (!meses.length) return 0;
+  const totalGeral = Object.values(porMes).reduce((acc, v) => acc + v, 0);
+  return totalGeral / meses.length;
+}
+
 function renderSalariosEEntradas() {
-  const vic = todasEntradas.find(e => e.id === 'salario_victor')?.valor || 0;
-  const mar = todasEntradas.find(e => e.id === 'salario_maria')?.valor || 0;
-  const totalCombinado = todasEntradas.reduce((acc, e) => acc + (e.valor || 0), 0);
+  const mesAnoSel = document.getElementById('inp-entradas-mes-ano')?.value || new Date().toISOString().slice(0, 7);
+  
+  const lblRef = document.getElementById('lbl-entradas-mes-ref');
+  if (lblRef) {
+    const [ano, mes] = mesAnoSel.split('-');
+    const d = new Date(parseInt(ano), parseInt(mes) - 1, 1);
+    const mesNome = d.toLocaleString('pt-BR', { month: 'long' });
+    lblRef.textContent = `Referência: ${mesNome.charAt(0).toUpperCase() + mesNome.slice(1)}/${ano}`;
+  }
+
+  // Victor e Maria no Mês Selecionado
+  const vic = todasEntradas.find(e => e.pessoa === 'Victor' && e.tipo === 'holerite' && (e.mesAno === mesAnoSel || e.id === 'salario_victor'))?.valor || 0;
+  const mar = todasEntradas.find(e => e.pessoa === 'Maria' && e.tipo === 'holerite' && (e.mesAno === mesAnoSel || e.id === 'salario_maria'))?.valor || 0;
+
+  // Entradas no Mês Selecionado
+  const entradasMes = todasEntradas.filter(e => e.mesAno === mesAnoSel || (!e.mesAno && (e.id === 'salario_victor' || e.id === 'salario_maria')));
+  const totalMesSelecionado = entradasMes.reduce((acc, e) => acc + (e.valor || 0), 0);
+
+  // Média Mensal Combinada (Victor + Maria + Extras)
+  const mediaMensalCombinada = calcularMediaMensalEntradas();
 
   document.getElementById('val-salario-victor').textContent = brl(vic);
   document.getElementById('val-salario-maria').textContent = brl(mar);
-  document.getElementById('val-entradas-combinado').textContent = brl(totalCombinado);
+  document.getElementById('val-entradas-combinado').textContent = `${brl(totalMesSelecionado)}`;
 
   const el = document.getElementById('lista-entradas-registradas');
   if (!todasEntradas.length) {
@@ -1244,8 +1306,9 @@ function renderSalariosEEntradas() {
   }
 
   el.innerHTML = `<div class="table-responsive"><table class="custom-table">
-    <thead><tr><th>Descrição</th><th>Pessoa</th><th>Tipo</th><th class="num">Valor</th><th>Ação</th></tr></thead>
+    <thead><tr><th>Mês / Ref</th><th>Descrição</th><th>Pessoa</th><th>Tipo</th><th class="num">Valor</th><th>Ação</th></tr></thead>
     <tbody>${todasEntradas.map(e => `<tr>
+      <td><span class="badge green">${e.mesAno || '—'}</span></td>
       <td><strong>${e.descricao}</strong></td>
       <td><span class="badge ${e.pessoa==='Victor'?'green':e.pessoa==='Maria'?'purple':'cyan'}">${e.pessoa}</span></td>
       <td><span class="badge amber">${e.tipo==='holerite'?'Holerite':'Manual'}</span></td>

@@ -186,7 +186,7 @@
     .btn-card-select.active[data-card="Nubank"]{border-color:#a855f7;background:rgba(168,85,247,.2);color:#c084fc;box-shadow:0 0 15px rgba(168,85,247,.3)}
     .btn-card-select.active[data-card="Santander"]{border-color:#f43f5e;background:rgba(244,63,94,.2);color:#fb7185;box-shadow:0 0 15px rgba(244,63,94,.3)}
   </style>
-  <script type="module" crossorigin src="./assets/index-BTiDntO5.js"></script>
+  <script type="module" crossorigin src="./assets/index-qZQF3Tq_.js"></script>
 </head>
 <body>
 
@@ -322,6 +322,20 @@
   <!-- 2. ABA SALÁRIOS & ENTRADAS (HOLERITES VICTOR + MARIA & ENTRADAS MANUAIS) -->
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
   <section id="tab-salarios" class="tab-content">
+    <!-- Seleção do Mês de Referência para Entradas -->
+    <div class="card" style="margin-bottom:1.5rem">
+      <div class="card-header">
+        <span class="card-title">📅 Mês e Ano de Referência das Entradas</span>
+        <span class="badge green">Competência Mensal</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="margin-bottom:0">
+          <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.4rem;color:var(--text-muted)">Selecione o Mês e Ano das Entradas (Holerites e Extras):</label>
+          <input type="month" id="inp-entradas-mes-ano" class="form-control" onchange="renderSalariosEEntradas()">
+        </div>
+      </div>
+    </div>
+
     <!-- Grid Salário Victor e Salário Maria -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;margin-bottom:1.5rem">
       
