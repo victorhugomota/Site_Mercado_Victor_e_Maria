@@ -430,17 +430,20 @@
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
   <section id="tab-salarios" class="tab-content">
     <!-- Seleção do Mês de Referência para Entradas -->
-    <div class="card" style="margin-bottom:1.5rem">
-      <div class="card-header">
-        <span class="card-title">📅 Mês e Ano de Referência das Entradas</span>
-        <span class="badge green">Competência Mensal</span>
-      </div>
-      <div class="form-row">
-        <div class="form-group" style="margin-bottom:0">
-          <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.4rem;color:var(--text-muted)">Selecione o Mês e Ano das Entradas (Holerites e Extras):</label>
-          <input type="month" id="inp-entradas-mes-ano" class="form-control" onchange="renderSalariosEEntradas()">
+    <div class="card" style="margin-bottom:1.5rem; background:linear-gradient(135deg,rgba(30,41,59,.95),rgba(15,23,42,.98)); border-color:var(--primary)">
+      <div class="card-header" style="flex-wrap:wrap;gap:.5rem">
+        <div>
+          <span class="card-title" style="color:#34d399">📅 Mês e Ano das Entradas &amp; Holerites</span>
+          <p style="font-size:.78rem;color:var(--text-muted);margin-top:.2rem" id="lbl-entradas-mes-ref">Selecione o mês para visualizar e cadastrar as entradas daquele período.</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <label style="font-size:.78rem;color:var(--text-muted);font-weight:600">Escolher Mês:</label>
+          <input type="month" id="inp-entradas-mes-ano" class="form-control" style="width:auto;padding:.35rem .65rem;font-size:.82rem" onchange="selecionarMesGlobal(this.value)">
         </div>
       </div>
+
+      <!-- Barra com Pílulas dos Meses Disponíveis nas Entradas -->
+      <div id="seletor-meses-bar-salarios" style="display:flex;gap:.5rem;overflow-x:auto;padding:.5rem 0 .2rem 0"></div>
     </div>
 
     <!-- Grid Salário Victor e Salário Maria -->
@@ -1252,20 +1255,21 @@ window.verMesEIrParaControle = function(mesAno) {
 };
 
 function renderSeletorMeses() {
-  const bar = document.getElementById('seletor-meses-bar');
-  if (!bar) return;
+  const bar1 = document.getElementById('seletor-meses-bar');
+  const bar2 = document.getElementById('seletor-meses-bar-salarios');
 
   const meses = getMesesDisponiveis();
   if (!meses.includes(mesSelecionado)) {
     mesSelecionado = meses[0] || new Date().toISOString().slice(0, 7);
   }
 
-  const inp = document.getElementById('inp-seletor-mes-global');
-  if (inp && inp.value !== mesSelecionado) {
-    inp.value = mesSelecionado;
-  }
+  const inp1 = document.getElementById('inp-seletor-mes-global');
+  if (inp1 && inp1.value !== mesSelecionado) inp1.value = mesSelecionado;
 
-  bar.innerHTML = meses.map(m => {
+  const inp2 = document.getElementById('inp-entradas-mes-ano');
+  if (inp2 && inp2.value !== mesSelecionado) inp2.value = mesSelecionado;
+
+  const htmlPills = meses.map(m => {
     const [ano, mes] = m.split('-');
     const dataObj = new Date(parseInt(ano), parseInt(mes) - 1, 1);
     const nomeMes = dataObj.toLocaleString('pt-BR', { month: 'short' }).toUpperCase().replace('.', '');
@@ -1280,6 +1284,9 @@ function renderSeletorMeses() {
       </button>
     `;
   }).join('');
+
+  if (bar1) bar1.innerHTML = htmlPills;
+  if (bar2) bar2.innerHTML = htmlPills;
 }
 
 window.switchMensalSub = function(secId) {
@@ -1664,10 +1671,17 @@ function initDataEntradasMesAno() {
 }
 setTimeout(initDataEntradasMesAno, 300);
 
-// Salvar Holerite Victor (Correlacionado por Mês/Ano)
+let modoFiltroEntradasTabela = 'mes';
+
+window.toggleFiltroEntradasTabela = function(modo) {
+  modoFiltroEntradasTabela = modo;
+  renderSalariosEEntradas();
+};
+
+// Salvar Holerite Victor (Correlacionado por Mês/Ano Selecionado)
 document.getElementById('form-holerite-victor').addEventListener('submit', async e => {
   e.preventDefault();
-  const mesAno = document.getElementById('inp-entradas-mes-ano').value || new Date().toISOString().slice(0, 7);
+  const mesAno = mesSelecionado || document.getElementById('inp-entradas-mes-ano').value || new Date().toISOString().slice(0, 7);
   const txt = document.getElementById('inp-holerite-txt-victor').value;
   let val   = parseFloat(document.getElementById('inp-salario-val-victor').value) || 0;
   if (!val && txt) val = parseHoleriteTexto(txt);
@@ -1679,13 +1693,15 @@ document.getElementById('form-holerite-victor').addEventListener('submit', async
     pessoa: 'Victor', tipo: 'holerite', descricao: `Salário Líquido Victor (${mesAno})`,
     valor: val, mesAno, data: new Date().toISOString()
   });
-  toastMsg(`✅ Salário do Victor (${mesAno}) salvo!`);
+  document.getElementById('inp-holerite-txt-victor').value = '';
+  document.getElementById('inp-salario-val-victor').value = '';
+  toastMsg(`✅ Salário do Victor (${mesAno}) salvo com sucesso!`);
 });
 
-// Salvar Holerite Maria (Correlacionado por Mês/Ano)
+// Salvar Holerite Maria (Correlacionado por Mês/Ano Selecionado)
 document.getElementById('form-holerite-maria').addEventListener('submit', async e => {
   e.preventDefault();
-  const mesAno = document.getElementById('inp-entradas-mes-ano').value || new Date().toISOString().slice(0, 7);
+  const mesAno = mesSelecionado || document.getElementById('inp-entradas-mes-ano').value || new Date().toISOString().slice(0, 7);
   const txt = document.getElementById('inp-holerite-txt-maria').value;
   let val   = parseFloat(document.getElementById('inp-salario-val-maria').value) || 0;
   if (!val && txt) val = parseHoleriteTexto(txt);
@@ -1697,13 +1713,15 @@ document.getElementById('form-holerite-maria').addEventListener('submit', async 
     pessoa: 'Maria', tipo: 'holerite', descricao: `Salário Líquido Maria (${mesAno})`,
     valor: val, mesAno, data: new Date().toISOString()
   });
-  toastMsg(`✅ Salário da Maria (${mesAno}) salvo!`);
+  document.getElementById('inp-holerite-txt-maria').value = '';
+  document.getElementById('inp-salario-val-maria').value = '';
+  toastMsg(`✅ Salário da Maria (${mesAno}) salvo com sucesso!`);
 });
 
-// Adicionar Entrada Manual (Correlacionada por Mês/Ano)
+// Adicionar Entrada Manual (Correlacionada por Mês/Ano Selecionado)
 document.getElementById('form-entrada-manual').addEventListener('submit', async e => {
   e.preventDefault();
-  const mesAno = document.getElementById('inp-entradas-mes-ano').value || new Date().toISOString().slice(0, 7);
+  const mesAno = mesSelecionado || document.getElementById('inp-entradas-mes-ano').value || new Date().toISOString().slice(0, 7);
   const desc   = document.getElementById('inp-ent-desc').value.trim();
   const val    = parseFloat(document.getElementById('inp-ent-val').value) || 0;
   const pessoa = document.getElementById('inp-ent-pessoa').value;
@@ -1731,48 +1749,68 @@ function calcularMediaMensalEntradas() {
 }
 
 function renderSalariosEEntradas() {
-  const mesAnoSel = document.getElementById('inp-entradas-mes-ano')?.value || new Date().toISOString().slice(0, 7);
+  const mesAnoSel = mesSelecionado || document.getElementById('inp-entradas-mes-ano')?.value || new Date().toISOString().slice(0, 7);
   
   const lblRef = document.getElementById('lbl-entradas-mes-ref');
   if (lblRef) {
     const [ano, mes] = mesAnoSel.split('-');
     const d = new Date(parseInt(ano), parseInt(mes) - 1, 1);
     const mesNome = d.toLocaleString('pt-BR', { month: 'long' });
-    lblRef.textContent = `Referência: ${mesNome.charAt(0).toUpperCase() + mesNome.slice(1)}/${ano}`;
+    const mesFmt = mesNome.charAt(0).toUpperCase() + mesNome.slice(1);
+    lblRef.textContent = `Visualizando e inserindo entradas para: ${mesFmt} de ${ano}`;
   }
 
   // Victor e Maria no Mês Selecionado
-  const vic = todasEntradas.find(e => e.pessoa === 'Victor' && e.tipo === 'holerite' && (e.mesAno === mesAnoSel || e.id === 'salario_victor'))?.valor || 0;
-  const mar = todasEntradas.find(e => e.pessoa === 'Maria' && e.tipo === 'holerite' && (e.mesAno === mesAnoSel || e.id === 'salario_maria'))?.valor || 0;
+  const vic = todasEntradas.find(e => e.pessoa === 'Victor' && e.tipo === 'holerite' && e.mesAno === mesAnoSel)?.valor || 0;
+  const mar = todasEntradas.find(e => e.pessoa === 'Maria' && e.tipo === 'holerite' && e.mesAno === mesAnoSel)?.valor || 0;
 
   // Entradas no Mês Selecionado
-  const entradasMes = todasEntradas.filter(e => e.mesAno === mesAnoSel || (!e.mesAno && (e.id === 'salario_victor' || e.id === 'salario_maria')));
+  const entradasMes = todasEntradas.filter(e => e.mesAno === mesAnoSel);
   const totalMesSelecionado = entradasMes.reduce((acc, e) => acc + (e.valor || 0), 0);
-
-  // Média Mensal Combinada (Victor + Maria + Extras)
-  const mediaMensalCombinada = calcularMediaMensalEntradas();
 
   document.getElementById('val-salario-victor').textContent = brl(vic);
   document.getElementById('val-salario-maria').textContent = brl(mar);
   document.getElementById('val-entradas-combinado').textContent = `${brl(totalMesSelecionado)}`;
 
   const el = document.getElementById('lista-entradas-registradas');
-  if (!todasEntradas.length) {
-    el.innerHTML = `<div class="empty-state">Nenhuma entrada cadastrada ainda.</div>`;
+  if (!el) return;
+
+  const listaExibicao = (modoFiltroEntradasTabela === 'mes') ? entradasMes : todasEntradas;
+
+  if (!listaExibicao.length) {
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;flex-wrap:wrap;gap:.5rem">
+        <span style="font-size:.84rem;color:var(--text-muted)">Modo de Exibição da Tabela:</span>
+        <div style="display:flex;gap:.35rem">
+          <button type="button" class="btn-secondary" style="padding:.25rem .6rem;font-size:.78rem;${modoFiltroEntradasTabela==='mes'?'background:var(--secondary);color:#fff':''}" onclick="toggleFiltroEntradasTabela('mes')">📅 Mês (${mesAnoSel})</button>
+          <button type="button" class="btn-secondary" style="padding:.25rem .6rem;font-size:.78rem;${modoFiltroEntradasTabela==='todos'?'background:var(--secondary);color:#fff':''}" onclick="toggleFiltroEntradasTabela('todos')">🌐 Todas as Entradas</button>
+        </div>
+      </div>
+      <div class="empty-state">Nenhuma entrada registrada para ${modoFiltroEntradasTabela === 'mes' ? 'o mês ' + mesAnoSel : 'o sistema'}.</div>
+    `;
     return;
   }
 
-  el.innerHTML = `<div class="table-responsive"><table class="custom-table">
-    <thead><tr><th>Mês / Ref</th><th>Descrição</th><th>Pessoa</th><th>Tipo</th><th class="num">Valor</th><th>Ação</th></tr></thead>
-    <tbody>${todasEntradas.map(e => `<tr>
-      <td><span class="badge green">${e.mesAno || '—'}</span></td>
-      <td><strong>${e.descricao}</strong></td>
-      <td><span class="badge ${e.pessoa==='Victor'?'green':e.pessoa==='Maria'?'purple':'cyan'}">${e.pessoa}</span></td>
-      <td><span class="badge amber">${e.tipo==='holerite'?'Holerite':'Manual'}</span></td>
-      <td class="num" style="color:#34d399"><strong>${brl(e.valor)}</strong></td>
-      <td><button class="btn-danger" onclick="excluirEntrada('${e.id}')">🗑️</button></td>
-    </tr>`).join('')}</tbody>
-  </table></div>`;
+  el.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-wrap:wrap;gap:.5rem">
+      <span style="font-size:.84rem;color:var(--text-muted);font-weight:600">Exibindo ${listaExibicao.length} entrada(s) em tabela:</span>
+      <div style="display:flex;gap:.35rem">
+        <button type="button" class="btn-secondary" style="padding:.25rem .6rem;font-size:.78rem;${modoFiltroEntradasTabela==='mes'?'background:var(--secondary);color:#fff':''}" onclick="toggleFiltroEntradasTabela('mes')">📅 Mês ${mesAnoSel}</button>
+        <button type="button" class="btn-secondary" style="padding:.25rem .6rem;font-size:.78rem;${modoFiltroEntradasTabela==='todos'?'background:var(--secondary);color:#fff':''}" onclick="toggleFiltroEntradasTabela('todos')">🌐 Todas</button>
+      </div>
+    </div>
+    <div class="table-responsive"><table class="custom-table">
+      <thead><tr><th>Mês / Ref</th><th>Descrição</th><th>Pessoa</th><th>Tipo</th><th class="num">Valor</th><th>Ação</th></tr></thead>
+      <tbody>${listaExibicao.map(e => `<tr>
+        <td><span class="badge green">${e.mesAno || '—'}</span></td>
+        <td><strong>${e.descricao}</strong></td>
+        <td><span class="badge ${e.pessoa==='Victor'?'green':e.pessoa==='Maria'?'purple':'cyan'}">${e.pessoa}</span></td>
+        <td><span class="badge amber">${e.tipo==='holerite'?'Holerite':'Manual'}</span></td>
+        <td class="num" style="color:#34d399"><strong>${brl(e.valor)}</strong></td>
+        <td><button class="btn-danger" onclick="excluirEntrada('${e.id}')">🗑️</button></td>
+      </tr>`).join('')}</tbody>
+    </table></div>
+  `;
 }
 
 window.excluirEntrada = async function(id) {

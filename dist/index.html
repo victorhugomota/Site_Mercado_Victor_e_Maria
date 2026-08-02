@@ -186,7 +186,7 @@
     .btn-card-select.active[data-card="Nubank"]{border-color:#a855f7;background:rgba(168,85,247,.2);color:#c084fc;box-shadow:0 0 15px rgba(168,85,247,.3)}
     .btn-card-select.active[data-card="Santander"]{border-color:#f43f5e;background:rgba(244,63,94,.2);color:#fb7185;box-shadow:0 0 15px rgba(244,63,94,.3)}
   </style>
-  <script type="module" crossorigin src="./assets/index-ko9ND6UV.js"></script>
+  <script type="module" crossorigin src="./assets/index-Df7GWULH.js"></script>
 </head>
 <body>
 
@@ -431,17 +431,20 @@
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
   <section id="tab-salarios" class="tab-content">
     <!-- Seleção do Mês de Referência para Entradas -->
-    <div class="card" style="margin-bottom:1.5rem">
-      <div class="card-header">
-        <span class="card-title">📅 Mês e Ano de Referência das Entradas</span>
-        <span class="badge green">Competência Mensal</span>
-      </div>
-      <div class="form-row">
-        <div class="form-group" style="margin-bottom:0">
-          <label style="display:block;font-size:.84rem;font-weight:600;margin-bottom:.4rem;color:var(--text-muted)">Selecione o Mês e Ano das Entradas (Holerites e Extras):</label>
-          <input type="month" id="inp-entradas-mes-ano" class="form-control" onchange="renderSalariosEEntradas()">
+    <div class="card" style="margin-bottom:1.5rem; background:linear-gradient(135deg,rgba(30,41,59,.95),rgba(15,23,42,.98)); border-color:var(--primary)">
+      <div class="card-header" style="flex-wrap:wrap;gap:.5rem">
+        <div>
+          <span class="card-title" style="color:#34d399">📅 Mês e Ano das Entradas &amp; Holerites</span>
+          <p style="font-size:.78rem;color:var(--text-muted);margin-top:.2rem" id="lbl-entradas-mes-ref">Selecione o mês para visualizar e cadastrar as entradas daquele período.</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <label style="font-size:.78rem;color:var(--text-muted);font-weight:600">Escolher Mês:</label>
+          <input type="month" id="inp-entradas-mes-ano" class="form-control" style="width:auto;padding:.35rem .65rem;font-size:.82rem" onchange="selecionarMesGlobal(this.value)">
         </div>
       </div>
+
+      <!-- Barra com Pílulas dos Meses Disponíveis nas Entradas -->
+      <div id="seletor-meses-bar-salarios" style="display:flex;gap:.5rem;overflow-x:auto;padding:.5rem 0 .2rem 0"></div>
     </div>
 
     <!-- Grid Salário Victor e Salário Maria -->
