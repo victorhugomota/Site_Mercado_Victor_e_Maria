@@ -279,19 +279,32 @@
 
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Adicionar por Link ou Chave de Acesso</span>
+        <span class="card-title">Adicionar por Link ou Texto da NFC-e</span>
+        <button type="button" class="btn-secondary" id="btn-preencher-manual" style="font-size:0.78rem;padding:0.35rem 0.75rem;">✍️ Preencher Manualmente</button>
       </div>
-      <form id="form-nfce">
+
+      <div id="box-entrada-nfce">
         <div class="form-group">
           <label for="inp-url">URL do QR Code da Nota Fiscal</label>
           <input type="url" id="inp-url" class="form-control" placeholder="https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/...">
         </div>
         <div class="form-group">
           <label for="inp-html">Ou cole o conteúdo/HTML da página da nota (fallback)</label>
-          <textarea id="inp-html" class="form-control" rows="4" placeholder="Copie o conteúdo da página da SEFAZ e cole aqui..."></textarea>
+          <textarea id="inp-html" class="form-control" rows="3" placeholder="Copie o conteúdo da página da SEFAZ e cole aqui..."></textarea>
         </div>
+        <button type="button" id="btn-carregar-dados" class="btn-primary" style="width:100%;">
+          🔍 Carregar e Ler Dados da Nota
+        </button>
+      </div>
 
-        <p class="section-title">Dados da Compra (preencha se a leitura automática falhar)</p>
+      <p class="status-msg" id="status-msg"></p>
+
+      <!-- FORMULÁRIO DE REVISÃO E SALVAMENTO (Escondido por padrão até ler a nota ou clicar em preencher) -->
+      <form id="form-nfce" style="display:none; margin-top: 1.5rem; border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
+        <p class="section-title" style="border-top:none; padding-top:0; margin-top:0;">
+          📝 Dados da Compra (Confira e Altere Se Necessário)
+        </p>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
           <div class="form-group">
             <label for="inp-mercado">Nome do Mercado</label>
@@ -335,10 +348,19 @@
           </div>
         </div>
 
-        <button type="submit" class="btn-primary" style="width:100%;margin-top:.5rem">
+        <!-- Preview dos Itens extraídos -->
+        <div id="preview-itens-box" style="display:none; margin-top:1.25rem;">
+          <p class="section-title" style="border-top:none; padding-top:0; margin-top:0;">
+            🛒 Itens Extraídos da Nota (<span id="count-preview-itens">0</span>)
+          </p>
+          <div id="lista-preview-itens" style="max-height: 220px; overflow-y: auto; background: rgba(15,23,42,0.6); padding: 0.75rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); font-size: 0.82rem;"></div>
+        </div>
+
+        <button type="submit" class="btn-primary" style="width:100%;margin-top:1.5rem; padding: 0.85rem; font-size: 1rem;">
           ✨ Salvar Nota Fiscal
         </button>
       </form>
+    </div>
       <p class="status-msg" id="status-msg"></p>
     </div>
   </section>
@@ -662,12 +684,31 @@ async function onQR(text) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// FORM — SALVAR NOTA
+// FORM & LEITURA DE NOTAS (PRÉ-PREENCHIMENTO E REVISÃO ANTES DE SALVAR)
 // ═══════════════════════════════════════════════════════════════════════════
-document.getElementById('form-nfce').addEventListener('submit', async e => {
-  e.preventDefault();
+let itensNotaCarregada = [];
+
+function toDatetimeInputString(isoOrDateStr) {
+  if (!isoOrDateStr) return new Date().toISOString().slice(0, 16);
+  try {
+    const d = new Date(isoOrDateStr);
+    if (isNaN(d.getTime())) return new Date().toISOString().slice(0, 16);
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  } catch {
+    return new Date().toISOString().slice(0, 16);
+  }
+}
+
+// Botão "Carregar e Ler Dados da Nota"
+document.getElementById('btn-carregar-dados').addEventListener('click', async () => {
   const url  = document.getElementById('inp-url').value.trim();
   const html = document.getElementById('inp-html').value.trim();
+
+  if (!url && !html) {
+    setStatus('⚠️ Cole a URL do QR Code ou o conteúdo da página para ler a nota fiscal.');
+    return;
+  }
 
   if (url && !html) {
     setStatus('⏳ Consultando nota fiscal...');
@@ -679,8 +720,67 @@ document.getElementById('form-nfce').addEventListener('submit', async e => {
     await processarHTML(html);
     return;
   }
+});
 
-  // Salvar manual
+// Botão "Preencher Manualmente"
+document.getElementById('btn-preencher-manual').addEventListener('click', () => {
+  preencherFormularioRevisao({
+    nomeMercado: '',
+    dataEmissao: new Date().toISOString(),
+    valorTotal: 0,
+    descontoTotal: 0,
+    valorAPagar: 0,
+    qtdTotalItens: 0,
+    formasPagamento: { valeAlimentacao: 0, cartaoCredito: 0, cartaoDebito: 0 },
+    itens: []
+  });
+  setStatus('✍️ Preencha os dados da compra abaixo e clique em Salvar Nota Fiscal.', 'var(--accent-cyan)');
+});
+
+// Exibe a seção dos campos pré-preenchidos para o usuário alterar se quiser
+function preencherFormularioRevisao(dados) {
+  document.getElementById('inp-mercado').value = dados.nomeMercado || '';
+  document.getElementById('inp-data').value = toDatetimeInputString(dados.dataEmissao);
+  document.getElementById('inp-vtotal').value = dados.valorTotal !== undefined ? dados.valorTotal : 0;
+  document.getElementById('inp-desconto').value = dados.descontoTotal !== undefined ? dados.descontoTotal : 0;
+  document.getElementById('inp-pagar').value = dados.valorAPagar !== undefined ? dados.valorAPagar : 0;
+  document.getElementById('inp-qtd').value = dados.qtdTotalItens !== undefined ? dados.qtdTotalItens : 0;
+
+  document.getElementById('inp-alim').value = dados.formasPagamento?.valeAlimentacao || 0;
+  document.getElementById('inp-cred').value = dados.formasPagamento?.cartaoCredito || 0;
+  document.getElementById('inp-deb').value = dados.formasPagamento?.cartaoDebito || 0;
+
+  itensNotaCarregada = dados.itens || [];
+
+  // Exibe a seção de revisão/edição
+  const formSection = document.getElementById('form-nfce');
+  formSection.style.display = 'block';
+
+  // Preview dos Itens
+  const previewBox = document.getElementById('preview-itens-box');
+  const countEl = document.getElementById('count-preview-itens');
+  const listaEl = document.getElementById('lista-preview-itens');
+
+  if (itensNotaCarregada.length > 0) {
+    previewBox.style.display = 'block';
+    countEl.textContent = itensNotaCarregada.length;
+    listaEl.innerHTML = itensNotaCarregada.map(item => `
+      <div style="display:flex; justify-content:space-between; padding: 0.35rem 0; border-bottom: 1px dashed var(--border-color);">
+        <span><strong>${item.nome}</strong> (${item.quantidade} ${item.unidade || 'Un'})</span>
+        <span>${brl(item.valorUnitario)}/un = <strong>${brl(item.valorTotal)}</strong></span>
+      </div>
+    `).join('');
+  } else {
+    previewBox.style.display = 'none';
+  }
+
+  formSection.scrollIntoView({ behavior: 'smooth' });
+}
+
+// SUBMIT FINAL: Só salva no banco quando o usuário clica no botão "Salvar Nota Fiscal"
+document.getElementById('form-nfce').addEventListener('submit', async e => {
+  e.preventDefault();
+
   const mercado = document.getElementById('inp-mercado').value.trim() || 'Mercado';
   const dataRaw = document.getElementById('inp-data').value || new Date().toISOString();
   const vtotal  = parseFloat(document.getElementById('inp-vtotal').value) || 0;
@@ -694,25 +794,38 @@ document.getElementById('form-nfce').addEventListener('submit', async e => {
   const d = new Date(dataRaw);
   const mesAno = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
 
-  setStatus('⏳ Salvando...');
+  setStatus('⏳ Salvando nota fiscal no banco...');
   try {
     await salvar({
-      nomeMercado: mercado, dataEmissao: dataRaw, mesAno,
-      qtdTotalItens: qtd, valorTotal: vtotal, descontoTotal: desc, valorAPagar: pagar,
+      nomeMercado: mercado,
+      dataEmissao: dataRaw,
+      mesAno,
+      qtdTotalItens: qtd || itensNotaCarregada.length,
+      valorTotal: vtotal,
+      descontoTotal: desc,
+      valorAPagar: pagar,
       formasPagamento: { valeAlimentacao: alim, cartaoCredito: cred, cartaoDebito: deb },
-      itens: []
+      itens: itensNotaCarregada
     });
-    setStatus('✅ Compra salva com sucesso!', '#34d399');
-    e.target.reset();
+
+    setStatus('✅ Nota salva com sucesso!', '#34d399');
+    
+    // Oculta e reseta o formulário
+    document.getElementById('form-nfce').style.display = 'none';
+    document.getElementById('form-nfce').reset();
+    document.getElementById('inp-url').value = '';
+    document.getElementById('inp-html').value = '';
+    itensNotaCarregada = [];
+
     goTab('dashboard');
-    toastMsg('🎉 Nota fiscal salva!');
+    toastMsg('🎉 Nota fiscal registrada no Firebase!');
   } catch(err) {
     setStatus('❌ Erro ao salvar: ' + err.message, '#fb7185');
   }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PARSER NFC-e
+// PARSER NFC-e (Preenche o formulário para o usuário revisar ao invés de salvar direto)
 // ═══════════════════════════════════════════════════════════════════════════
 async function processarURL(url) {
   const proxies = [
@@ -731,7 +844,6 @@ async function processarURL(url) {
       }
     } catch {}
   }
-  // Abre modal para o usuário abrir o link e colar
   abrirModalFallback(url);
 }
 
@@ -743,16 +855,8 @@ function abrirModalFallback(url) {
 
 async function processarHTML(html) {
   const dados = parseNFCe(html);
-  try {
-    await salvar(dados);
-    setStatus('✅ Nota salva com sucesso!', '#34d399');
-    document.getElementById('inp-url').value = '';
-    document.getElementById('inp-html').value = '';
-    goTab('dashboard');
-    toastMsg('🎉 Nota fiscal registrada!');
-  } catch(err) {
-    setStatus('❌ Erro: ' + err.message, '#fb7185');
-  }
+  preencherFormularioRevisao(dados);
+  setStatus('✅ Nota lida com sucesso! Confira os valores abaixo e altere se necessário antes de Salvar.', '#34d399');
 }
 
 function parseNFCe(html) {
