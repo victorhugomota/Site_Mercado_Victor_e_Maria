@@ -211,6 +211,14 @@
       </div>
       <div class="card">
         <div class="card-header">
+          <span class="card-title">Média Mensal</span>
+          <div class="card-icon cyan">📊</div>
+        </div>
+        <div class="card-value" id="dash-media-mensal">R$ 0,00</div>
+        <div class="card-subtext" id="dash-media-subtext">Média de gasto por mês</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
           <span class="card-title">Descontos Obtidos</span>
           <div class="card-icon amber">🏷️</div>
         </div>
@@ -624,7 +632,12 @@ function renderDashboard() {
     porMes[mes] = (porMes[mes] || 0) + p;
   });
 
+  const numMeses = Math.max(1, Object.keys(porMes).length);
+  const mediaMensal = total / numMeses;
+
   document.getElementById('dash-total').textContent = brl(total);
+  document.getElementById('dash-media-mensal').textContent = brl(mediaMensal);
+  document.getElementById('dash-media-subtext').textContent = `Média calculada em ${numMeses} mês(es)`;
   document.getElementById('dash-desconto').textContent = brl(desc);
   const pct = (total + desc) > 0 ? ((desc / (total + desc)) * 100).toFixed(1) : 0;
   document.getElementById('dash-pct').textContent = `${pct}% economizado no geral`;
@@ -669,7 +682,7 @@ function renderChart(porMes) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// ABA: LISTA MENSAL (PLANEJAMENTO E PREVISÃO PARA O PRÓXIMO MÊS)
+// ABA: LISTA MENSAL (PLANEJAMENTO E PREVISÃO BALIZADA PARA O PRÓXIMO MÊS)
 // ═══════════════════════════════════════════════════════════════════════════
 function renderListaMensal() {
   const el = document.getElementById('lista-mensal-container');
@@ -682,21 +695,31 @@ function renderListaMensal() {
   const ano = proximoMesData.getFullYear();
   const mesAnoStr = `${mesNome.charAt(0).toUpperCase() + mesNome.slice(1)} de ${ano}`;
 
-  // 2. Calcula dias úteis do próximo mês
+  // 2. Calcula dias úteis (Segunda a Sexta) do próximo mês
   const diasUteis = getBusinessDaysInMonth(proximoMesData.getFullYear(), proximoMesData.getMonth());
 
-  // 3. Orçamento disponível
+  // 3. Orçamento disponível por dia útil
   const alimPorDia = 31.80;
   const credPorDia = 20.00;
   const alimDisponivel = diasUteis * alimPorDia;
   const credDisponivel = diasUteis * credPorDia;
 
-  // 4. Coleta os itens mais comprados do histórico
+  // 4. Média de gastos histórica de referência para balizamento
+  const porMes = {};
+  let totalGastoHistorico = 0;
+  todasCompras.forEach(c => {
+    const p = c.valorAPagar || 0;
+    totalGastoHistorico += p;
+    const mes = c.mesAno || 'Outros';
+    porMes[mes] = (porMes[mes] || 0) + p;
+  });
+  const numMesesHistorico = Math.max(1, Object.keys(porMes).length);
+  const mediaMensalHistorica = totalGastoHistorico / numMesesHistorico;
+
+  // 5. Coleta os itens do histórico e calcula a taxa de consumo mensal proporcional ao intervalo médio
   const agregadorItens = {};
-  const mesesUnicos = new Set();
 
   todasCompras.forEach(c => {
-    if (c.mesAno) mesesUnicos.add(c.mesAno);
     (c.itens || []).forEach(item => {
       const chave = (item.nome || '').toLowerCase().trim();
       if (!chave) return;
@@ -706,38 +729,58 @@ function renderListaMensal() {
           nome: item.nome,
           marca: item.marca || 'Geral',
           qtdTotal: 0,
-          frequencia: 0,
+          frequenciaNotas: 0,
           valoresUnitarios: []
         };
       }
       agregadorItens[chave].qtdTotal += item.quantidade || 1;
-      agregadorItens[chave].frequencia += 1;
+      agregadorItens[chave].frequenciaNotas += 1;
       if (item.valorUnitario) agregadorItens[chave].valoresUnitarios.push(item.valorUnitario);
     });
   });
 
-  const numMesesHistorico = Math.max(1, mesesUnicos.size);
-
-  const listaPlanejada = Object.values(agregadorItens).map(i => {
+  // Converte consumo para taxa mensal proporcional:
+  // Se comprou 2 pacotes em 6 meses -> consome 2/6 = 0.33 pacotes por mês (a cada 3 meses)
+  const listaBruta = Object.values(agregadorItens).map(i => {
     const mediaUnit = i.valoresUnitarios.length > 0
       ? i.valoresUnitarios.reduce((a, b) => a + b, 0) / i.valoresUnitarios.length
       : 0;
-    const qtdEst = Math.max(1, Math.ceil(i.qtdTotal / numMesesHistorico));
+
+    const qtdMensalTaxa = i.qtdTotal / numMesesHistorico;
+    const intervaloMeses = numMesesHistorico / Math.max(1, i.frequenciaNotas);
+    const subtotalBruto = qtdMensalTaxa * mediaUnit;
+
     return {
       nome: i.nome,
       marca: i.marca,
-      frequencia: i.frequencia,
-      qtdSugerida: qtdEst,
+      frequenciaNotas: i.frequenciaNotas,
+      intervaloMeses,
+      qtdMensalTaxa,
       valorUnitario: mediaUnit,
-      subtotal: qtdEst * mediaUnit
+      subtotalBruto
     };
   });
 
-  listaPlanejada.sort((a, b) => b.frequencia - a.frequencia);
+  listaBruta.sort((a, b) => b.frequenciaNotas - a.frequenciaNotas);
 
-  const totalGeralEstimado = listaPlanejada.reduce((acc, item) => acc + item.subtotal, 0);
+  const somaSubtotaisBruta = listaBruta.reduce((acc, item) => acc + item.subtotalBruto, 0);
 
-  // 5. Distribuição de Orçamento: Alimentação -> Crédito -> Débito
+  // 6. Balizamento com a média mensal histórica para não inflar a estimativa além do gasto médio real
+  let fatorAjuste = 1;
+  if (somaSubtotaisBruta > 0 && mediaMensalHistorica > 0 && somaSubtotaisBruta > mediaMensalHistorica) {
+    fatorAjuste = mediaMensalHistorica / somaSubtotaisBruta;
+  }
+
+  const listaPlanejada = listaBruta.map(i => ({
+    ...i,
+    subtotalFinal: i.subtotalBruto * fatorAjuste
+  }));
+
+  const totalGeralEstimado = mediaMensalHistorica > 0 
+    ? Math.min(somaSubtotaisBruta, mediaMensalHistorica)
+    : somaSubtotaisBruta;
+
+  // 7. Distribuição de Orçamento: Alimentação -> Crédito -> Débito
   let restante = totalGeralEstimado;
 
   const cobertoAlim = Math.min(restante, alimDisponivel);
@@ -755,7 +798,7 @@ function renderListaMensal() {
         <div>
           <span class="card-title" style="color:#60a5fa;">📅 Previsão de Compras — ${mesAnoStr}</span>
           <p class="card-subtext" style="color:#cbd5e1; margin-top:0.25rem;">
-            Orçamento gerado para os <strong>${diasUteis} dias úteis</strong> de ${mesNome}.
+            Balizada na sua <strong>média histórica de ${brl(mediaMensalHistorica)}/mês</strong> (${diasUteis} dias úteis em ${mesNome}).
           </p>
         </div>
         <span class="badge green" style="font-size:0.8rem; padding:0.4rem 0.75rem;">${diasUteis} Dias Úteis</span>
@@ -777,18 +820,21 @@ function renderListaMensal() {
       </div>
 
       <div style="margin-top:1.25rem; padding-top:1rem; border-top:1px solid var(--border-color); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
-        <span style="font-size:0.9rem; font-weight:600; color:var(--text-muted);">Total Estimado da Lista de Compras:</span>
+        <div>
+          <span style="font-size:0.85rem; color:var(--text-muted);">Estimativa Ajustada para o Mês:</span>
+          <p style="font-size:0.75rem; color:#60a5fa;">Média Histórica: ${brl(mediaMensalHistorica)}</p>
+        </div>
         <span style="font-size:1.6rem; font-weight:800; color:var(--primary);">${brl(totalGeralEstimado)}</span>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Lista Sugerida para ${mesNome}</span>
-        <span class="badge amber">${listaPlanejada.length} itens previstos</span>
+        <span class="card-title">Lista de Itens com Frequência e Consumo Mensal</span>
+        <span class="badge amber">${listaPlanejada.length} itens cadastrados</span>
       </div>
       <p class="card-subtext" style="margin-bottom:1rem;">
-        Esta aba é apenas uma estimativa para o próximo mês e <strong>não altera</strong> os gastos reais exibidos na página inicial.
+        O consumo mensal considera a frequência em que o item reaparece nas compras (ex: itens comprados a cada 2 ou 3 meses são fracionados proporcionalmente).
       </p>
   `;
 
@@ -802,21 +848,32 @@ function renderListaMensal() {
             <tr>
               <th>Item</th>
               <th>Marca</th>
-              <th class="num">Qtd. Sugerida</th>
+              <th>Frequência de Compra</th>
+              <th class="num">Consumo Estimado/Mês</th>
               <th class="num">Preço Unit. Médio</th>
-              <th class="num">Subtotal Previsto</th>
+              <th class="num">Subtotal Mensal</th>
             </tr>
           </thead>
           <tbody>
-            ${listaPlanejada.map(item => `
-              <tr>
-                <td><strong>${item.nome}</strong></td>
-                <td><span class="badge amber">${item.marca}</span></td>
-                <td class="num">${item.qtdSugerida} un</td>
-                <td class="num">${brl(item.valorUnitario)}</td>
-                <td class="num"><strong>${brl(item.subtotal)}</strong></td>
-              </tr>
-            `).join('')}
+            ${listaPlanejada.map(item => {
+              const freqStr = item.intervaloMeses > 1.2
+                ? `A cada ${item.intervaloMeses.toFixed(1)} meses`
+                : `Todo mês (${item.frequenciaNotas}x)`;
+              const qtdFmt = item.qtdMensalTaxa < 1
+                ? item.qtdMensalTaxa.toFixed(2)
+                : item.qtdMensalTaxa.toFixed(1);
+
+              return `
+                <tr>
+                  <td><strong>${item.nome}</strong></td>
+                  <td><span class="badge amber">${item.marca}</span></td>
+                  <td><span class="badge cyan">${freqStr}</span></td>
+                  <td class="num">${qtdFmt} un/mês</td>
+                  <td class="num">${brl(item.valorUnitario)}</td>
+                  <td class="num"><strong>${brl(item.subtotalFinal)}</strong></td>
+                </tr>
+              `;
+            }).join('')}
           </tbody>
         </table>
       </div>
