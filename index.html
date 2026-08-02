@@ -361,9 +361,12 @@
           <span class="card-title" style="color:#a5b4fc">📅 Seleção do Mês Financeiro</span>
           <p style="font-size:.78rem;color:var(--text-muted);margin-top:.2rem">Os meses abaixo são atualizados automaticamente conforme novas faturas, boletos, salários ou notas são registrados.</p>
         </div>
-        <div style="display:flex;align-items:center;gap:.5rem">
+        <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
           <label style="font-size:.78rem;color:var(--text-muted);font-weight:600">Escolher Mês:</label>
           <input type="month" id="inp-seletor-mes-global" class="form-control" style="width:auto;padding:.35rem .65rem;font-size:.82rem" onchange="selecionarMesGlobal(this.value)">
+          <button type="button" class="btn-danger" style="padding:.35rem .75rem;font-size:.82rem" onclick="excluirDadosDoMes(mesSelecionado)" title="Excluir todos os registros do mês selecionado">
+            🗑️ Excluir Mês Selecionado
+          </button>
         </div>
       </div>
 
@@ -1718,9 +1721,14 @@ function renderTabelaResumoMensal() {
         <td style="color:#fbbf24">${brl(debitoMes)}</td>
         <td style="color:${saldoMes >= 0 ? '#60a5fa' : '#fb7185'}; font-weight:800">${brl(saldoMes)}</td>
         <td>
-          <button class="btn-secondary" style="padding:.25rem .65rem; font-size:.78rem" onclick="verMesEIrParaControle('${m}')">
-            🔍 Ver Mês
-          </button>
+          <div style="display:flex;gap:.35rem;align-items:center">
+            <button class="btn-secondary" style="padding:.25rem .65rem; font-size:.78rem" onclick="verMesEIrParaControle('${m}')">
+              🔍 Ver Mês
+            </button>
+            <button class="btn-danger" style="padding:.25rem .65rem; font-size:.78rem" onclick="excluirDadosDoMes('${m}')">
+              🗑️ Excluir
+            </button>
+          </div>
         </td>
       </tr>
     `;
@@ -1737,7 +1745,7 @@ function renderTabelaResumoMensal() {
             <th>Boletos</th>
             <th>Mercado (Débito)</th>
             <th>Saldo Líquido</th>
-            <th>Ação</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody>
@@ -1747,6 +1755,51 @@ function renderTabelaResumoMensal() {
     </div>
   `;
 }
+
+window.excluirDadosDoMes = async function(mesAno) {
+  if (!mesAno) return;
+  const [ano, mes] = mesAno.split('-');
+  const dObj = new Date(parseInt(ano), parseInt(mes) - 1, 1);
+  const mesNomeFmt = dObj.toLocaleString('pt-BR', { month: 'long' });
+  const mesFmt = `${mesNomeFmt.charAt(0).toUpperCase() + mesNomeFmt.slice(1)} de ${ano}`;
+
+  const entFiltro = todasEntradas.filter(e => e.mesAno === mesAno);
+  const fatFiltro = todasFaturas.filter(f => f.mesAno === mesAno);
+  const bolFiltro = todosBoletos.filter(b => b.mesAno === mesAno);
+  const merFiltro = todasCompras.filter(c => c.mesAno === mesAno);
+  const estFiltro = todasEstimativas.filter(e => e.id === mesAno);
+
+  const msgConfirmacao = `⚠️ TEM CERTEZA QUE DESEJA EXCLUIR O MÊS ${mesFmt.toUpperCase()} (${mesAno})?\n\n` +
+    `Isso irá APAGAR PERMANENTEMENTE todos os registros vinculados a este mês:\n` +
+    `• ${entFiltro.length} Salário(s) / Entrada(s)\n` +
+    `• ${fatFiltro.length} Fatura(s) de Cartão\n` +
+    `• ${bolFiltro.length} Boleto(s) & Conta(s)\n` +
+    `• ${merFiltro.length} Nota(s) de Mercado\n` +
+    `• Estimativa orçamentária do mês\n\n` +
+    `Esta ação é irreversível. Confirmar exclusão do mês?`;
+
+  if (!confirm(msgConfirmacao)) return;
+
+  try {
+    const batchDeletes = [];
+
+    entFiltro.forEach(e => batchDeletes.push(deleteDoc(doc(db, COLL_ENTRADAS, e.id))));
+    fatFiltro.forEach(f => batchDeletes.push(deleteDoc(doc(db, COLL_FATURAS, f.id))));
+    bolFiltro.forEach(b => batchDeletes.push(deleteDoc(doc(db, COLL_BOLETOS, b.id))));
+    merFiltro.forEach(c => batchDeletes.push(deleteDoc(doc(db, COLL_MERCADO, c.id))));
+    estFiltro.forEach(e => batchDeletes.push(deleteDoc(doc(db, COLL_ESTIMATIVAS, e.id))));
+
+    await Promise.all(batchDeletes);
+
+    toastMsg(`🗑️ O mês ${mesFmt} e todos os seus dados foram excluídos com sucesso!`);
+
+    const mesesRestantes = getMesesDisponiveis().filter(m => m !== mesAno);
+    mesSelecionado = mesesRestantes[0] || new Date().toISOString().slice(0, 7);
+    renderTudo();
+  } catch (err) {
+    alert('Erro ao excluir dados do mês: ' + err.message);
+  }
+};
 
 function renderChart(porMes) {
   if (typeof Chart === 'undefined') return setTimeout(() => renderChart(porMes), 300);
