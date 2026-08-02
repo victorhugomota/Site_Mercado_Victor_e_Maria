@@ -215,7 +215,7 @@
     .btn-card-select.active[data-card="Nubank"]{border-color:#a855f7;background:rgba(168,85,247,.2);color:#c084fc;box-shadow:0 0 15px rgba(168,85,247,.3)}
     .btn-card-select.active[data-card="Santander"]{border-color:#f43f5e;background:rgba(244,63,94,.2);color:#fb7185;box-shadow:0 0 15px rgba(244,63,94,.3)}
   </style>
-  <script type="module" crossorigin src="./assets/index-SrkrdFv8.js"></script>
+  <script type="module" crossorigin src="./assets/index-CPP9WS5c.js"></script>
 </head>
 <body>
 
@@ -236,6 +236,7 @@
     <button class="nav-item" data-tab="cartoes">💳 Cartões de Crédito</button>
     <button class="nav-item" data-tab="boletos">📄 Boletos</button>
     <button class="nav-item" data-tab="mercado">🛒 Mercado</button>
+    <button class="nav-item" data-tab="estimativa">🔮 Estimativa de Custos</button>
     <button class="nav-item" data-tab="reservas">🐷 Reservas &amp; Economias</button>
   </nav>
 </header>
@@ -348,16 +349,6 @@
       <div id="tabela-resumo-mensal"></div>
     </div>
 
-    <!-- Gráficos -->
-    <div class="card" style="margin-top:1.5rem">
-      <div class="card-header">
-        <span class="card-title">Evolução dos Gastos Mensais no Mercado</span>
-        <span class="badge green">Histórico</span>
-      </div>
-      <div class="chart-container">
-        <canvas id="chart-barras"></canvas>
-      </div>
-    </div>
   </section>
 
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
@@ -824,6 +815,59 @@
         </div>
         <div id="lista-historico"></div>
       </div>
+    <!-- Gráfico de Evolução dos Gastos no Mercado -->
+    <div class="card" style="margin-top:1.5rem">
+      <div class="card-header">
+        <span class="card-title">📊 Evolução dos Gastos Mensais no Mercado</span>
+        <span class="badge green">Histórico</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="chart-barras"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <!-- 4.5 ABA ESTIMATIVA DE CUSTOS (INDEPENDENTE & PREVISÃO DE GASTOS MENSAL) -->
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-estimativa" class="tab-content">
+    <!-- Header / Seletor de Mês da Estimativa -->
+    <div class="card" style="margin-bottom:1.5rem; background:linear-gradient(135deg,rgba(30,41,59,.95),rgba(15,23,42,.98)); border-color:var(--secondary)">
+      <div class="card-header" style="flex-wrap:wrap;gap:.5rem">
+        <div>
+          <span class="card-title" style="color:#a5b4fc">🔮 Previsão &amp; Estimativa de Custos</span>
+          <p style="font-size:.78rem;color:var(--text-muted);margin-top:.2rem">Aba 100% independente para simulação e planejamento orçamentário mensal sem alterar os dados oficiais do sistema.</p>
+        </div>
+      </div>
+      <div id="seletor-meses-bar-estimativa" style="display:flex;gap:.5rem;overflow-x:auto;padding:.5rem 0 .2rem 0"></div>
+    </div>
+
+    <!-- Banner com Total da Estimativa do Mês -->
+    <div class="card" style="margin-bottom:1.5rem; background:linear-gradient(135deg,rgba(79,70,229,.25),rgba(15,23,42,.95)); border-color:var(--primary)">
+      <div class="card-header" style="flex-wrap:wrap;gap:1rem">
+        <div>
+          <div style="font-size:.82rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700">Total Estimado para o Mês Selecionado</div>
+          <div id="val-total-estimativa-mes" style="font-size:2.2rem;font-weight:800;color:#818cf8;margin-top:.2rem">R$ 0,00</div>
+          <div id="subtext-estimativa-mes" style="font-size:.82rem;color:var(--text-muted);margin-top:.3rem">Calculado a partir de 0 itens previstos</div>
+        </div>
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center">
+          <button type="button" class="btn-primary" onclick="abrirModalAddEstimativa()" style="padding:.7rem 1.1rem;font-size:.88rem">
+            ➕ Adicionar Novo Gastos
+          </button>
+          <button type="button" class="btn-secondary" onclick="resetarItensEstimativaPadrao()" style="padding:.7rem 1.1rem;font-size:.88rem">
+            🔄 Carregar/Resetar Itens Padrão
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabela / Lista de Itens da Estimativa -->
+    <div class="card">
+      <div class="card-header" style="flex-wrap:wrap;gap:.5rem">
+        <span class="card-title">📋 Itens e Gastos Previstos no Mês</span>
+        <span class="badge purple" id="badge-count-estimativa">0 itens</span>
+      </div>
+      <div id="container-lista-estimativa"></div>
     </div>
   </section>
 
@@ -920,10 +964,43 @@
   <button class="mob-btn" data-tab="mercado">
     <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Mercado
   </button>
+  <button class="mob-btn" data-tab="estimativa">
+    <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Estimativa
+  </button>
   <button class="mob-btn" data-tab="reservas">
     <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Reservas
   </button>
 </nav>
+
+<!-- MODAL ADICIONAR / EDITAR ITEM ESTIMATIVA -->
+<div id="modal-add-estimativa" class="modal-overlay">
+  <div class="modal-box" style="max-width: 500px;">
+    <div class="modal-header">
+      <h2 id="titulo-modal-estimativa">➕ Adicionar Gastos Previsto</h2>
+      <button class="btn-close" onclick="fecharModalAddEstimativa()">&times;</button>
+    </div>
+    <form id="form-item-estimativa">
+      <input type="hidden" id="inp-est-id">
+      <div class="form-group">
+        <label for="inp-est-nome">Descrição do Gasto / Item:</label>
+        <input type="text" id="inp-est-nome" class="form-control" placeholder="Ex: Farmácia, Posto de Combustível..." required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="inp-est-qtd">Quantidade:</label>
+          <input type="number" step="1" min="1" id="inp-est-qtd" class="form-control" value="1" required>
+        </div>
+        <div class="form-group">
+          <label for="inp-est-val">Valor Unitário (R$):</label>
+          <input type="number" step="0.01" min="0" id="inp-est-val" class="form-control" placeholder="0.00" required>
+        </div>
+      </div>
+      <button type="submit" class="btn-primary" style="width:100%;padding:.85rem;font-size:1rem;margin-top:.5rem">
+        💾 Salvar Gastos Previsto
+      </button>
+    </form>
+  </div>
+</div>
 
 <!-- MODAL: ADICIONAR NOTA MERCADO -->
 <div id="modal-add-nota" class="modal-overlay">

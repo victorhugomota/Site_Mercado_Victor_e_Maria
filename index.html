@@ -235,6 +235,7 @@
     <button class="nav-item" data-tab="cartoes">💳 Cartões de Crédito</button>
     <button class="nav-item" data-tab="boletos">📄 Boletos</button>
     <button class="nav-item" data-tab="mercado">🛒 Mercado</button>
+    <button class="nav-item" data-tab="estimativa">🔮 Estimativa de Custos</button>
     <button class="nav-item" data-tab="reservas">🐷 Reservas &amp; Economias</button>
   </nav>
 </header>
@@ -347,16 +348,6 @@
       <div id="tabela-resumo-mensal"></div>
     </div>
 
-    <!-- Gráficos -->
-    <div class="card" style="margin-top:1.5rem">
-      <div class="card-header">
-        <span class="card-title">Evolução dos Gastos Mensais no Mercado</span>
-        <span class="badge green">Histórico</span>
-      </div>
-      <div class="chart-container">
-        <canvas id="chart-barras"></canvas>
-      </div>
-    </div>
   </section>
 
   <!-- ═════════════════════════════════════════════════════════════════════════ -->
@@ -823,6 +814,59 @@
         </div>
         <div id="lista-historico"></div>
       </div>
+    <!-- Gráfico de Evolução dos Gastos no Mercado -->
+    <div class="card" style="margin-top:1.5rem">
+      <div class="card-header">
+        <span class="card-title">📊 Evolução dos Gastos Mensais no Mercado</span>
+        <span class="badge green">Histórico</span>
+      </div>
+      <div class="chart-container">
+        <canvas id="chart-barras"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <!-- 4.5 ABA ESTIMATIVA DE CUSTOS (INDEPENDENTE & PREVISÃO DE GASTOS MENSAL) -->
+  <!-- ═════════════════════════════════════════════════════════════════════════ -->
+  <section id="tab-estimativa" class="tab-content">
+    <!-- Header / Seletor de Mês da Estimativa -->
+    <div class="card" style="margin-bottom:1.5rem; background:linear-gradient(135deg,rgba(30,41,59,.95),rgba(15,23,42,.98)); border-color:var(--secondary)">
+      <div class="card-header" style="flex-wrap:wrap;gap:.5rem">
+        <div>
+          <span class="card-title" style="color:#a5b4fc">🔮 Previsão &amp; Estimativa de Custos</span>
+          <p style="font-size:.78rem;color:var(--text-muted);margin-top:.2rem">Aba 100% independente para simulação e planejamento orçamentário mensal sem alterar os dados oficiais do sistema.</p>
+        </div>
+      </div>
+      <div id="seletor-meses-bar-estimativa" style="display:flex;gap:.5rem;overflow-x:auto;padding:.5rem 0 .2rem 0"></div>
+    </div>
+
+    <!-- Banner com Total da Estimativa do Mês -->
+    <div class="card" style="margin-bottom:1.5rem; background:linear-gradient(135deg,rgba(79,70,229,.25),rgba(15,23,42,.95)); border-color:var(--primary)">
+      <div class="card-header" style="flex-wrap:wrap;gap:1rem">
+        <div>
+          <div style="font-size:.82rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:700">Total Estimado para o Mês Selecionado</div>
+          <div id="val-total-estimativa-mes" style="font-size:2.2rem;font-weight:800;color:#818cf8;margin-top:.2rem">R$ 0,00</div>
+          <div id="subtext-estimativa-mes" style="font-size:.82rem;color:var(--text-muted);margin-top:.3rem">Calculado a partir de 0 itens previstos</div>
+        </div>
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:center">
+          <button type="button" class="btn-primary" onclick="abrirModalAddEstimativa()" style="padding:.7rem 1.1rem;font-size:.88rem">
+            ➕ Adicionar Novo Gastos
+          </button>
+          <button type="button" class="btn-secondary" onclick="resetarItensEstimativaPadrao()" style="padding:.7rem 1.1rem;font-size:.88rem">
+            🔄 Carregar/Resetar Itens Padrão
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabela / Lista de Itens da Estimativa -->
+    <div class="card">
+      <div class="card-header" style="flex-wrap:wrap;gap:.5rem">
+        <span class="card-title">📋 Itens e Gastos Previstos no Mês</span>
+        <span class="badge purple" id="badge-count-estimativa">0 itens</span>
+      </div>
+      <div id="container-lista-estimativa"></div>
     </div>
   </section>
 
@@ -919,10 +963,43 @@
   <button class="mob-btn" data-tab="mercado">
     <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Mercado
   </button>
+  <button class="mob-btn" data-tab="estimativa">
+    <svg viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Estimativa
+  </button>
   <button class="mob-btn" data-tab="reservas">
     <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Reservas
   </button>
 </nav>
+
+<!-- MODAL ADICIONAR / EDITAR ITEM ESTIMATIVA -->
+<div id="modal-add-estimativa" class="modal-overlay">
+  <div class="modal-box" style="max-width: 500px;">
+    <div class="modal-header">
+      <h2 id="titulo-modal-estimativa">➕ Adicionar Gastos Previsto</h2>
+      <button class="btn-close" onclick="fecharModalAddEstimativa()">&times;</button>
+    </div>
+    <form id="form-item-estimativa">
+      <input type="hidden" id="inp-est-id">
+      <div class="form-group">
+        <label for="inp-est-nome">Descrição do Gasto / Item:</label>
+        <input type="text" id="inp-est-nome" class="form-control" placeholder="Ex: Farmácia, Posto de Combustível..." required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="inp-est-qtd">Quantidade:</label>
+          <input type="number" step="1" min="1" id="inp-est-qtd" class="form-control" value="1" required>
+        </div>
+        <div class="form-group">
+          <label for="inp-est-val">Valor Unitário (R$):</label>
+          <input type="number" step="0.01" min="0" id="inp-est-val" class="form-control" placeholder="0.00" required>
+        </div>
+      </div>
+      <button type="submit" class="btn-primary" style="width:100%;padding:.85rem;font-size:1rem;margin-top:.5rem">
+        💾 Salvar Gastos Previsto
+      </button>
+    </form>
+  </div>
+</div>
 
 <!-- MODAL: ADICIONAR NOTA MERCADO -->
 <div id="modal-add-nota" class="modal-overlay">
@@ -1099,12 +1176,14 @@ const COLL_ENTRADAS = 'entradas';
 const COLL_FATURAS  = 'faturas';
 const COLL_BOLETOS  = 'boletos';
 const COLL_RESERVAS = 'reservas';
+const COLL_ESTIMATIVAS = 'estimativas';
 
 // ESTADO GLOBAL
 let todasCompras = [];
 let todasEntradas = [];
 let todasFaturas = [];
 let todosBoletos = [];
+let todasEstimativas = [];
 let dadosReservas = { metaMensal: 0, valorAtualGuardado: 0 };
 
 let chartInst = null;
@@ -1239,6 +1318,12 @@ onSnapshot(doc(db, COLL_RESERVAS, 'config'), snap => {
   renderTudo();
 }, err => console.error('Firestore Reservas:', err));
 
+// 4.5 Escutar Estimativa de Custos
+onSnapshot(collection(db, COLL_ESTIMATIVAS), snap => {
+  todasEstimativas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  renderTudo();
+}, err => console.error('Firestore Estimativas:', err));
+
 // ESTADO DE NAVEGAÇÃO MENSAL
 let mesSelecionado = new Date().toISOString().slice(0, 7);
 
@@ -1246,12 +1331,21 @@ function getMesesDisponiveis() {
   const set = new Set();
   const hoje = new Date().toISOString().slice(0, 7);
   set.add(hoje);
+
+  // Considerar o próximo mês para previsão orçamentária
+  const now = new Date();
+  const nextMonthObj = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const pad = n => String(n).padStart(2, '0');
+  const proximoMes = `${nextMonthObj.getFullYear()}-${pad(nextMonthObj.getMonth() + 1)}`;
+  set.add(proximoMes);
+
   if (mesSelecionado) set.add(mesSelecionado);
 
   todasEntradas.forEach(e => { if (e.mesAno) set.add(e.mesAno); });
   todasFaturas.forEach(f => { if (f.mesAno) set.add(f.mesAno); });
   todosBoletos.forEach(b => { if (b.mesAno) set.add(b.mesAno); });
   todasCompras.forEach(c => { if (c.mesAno) set.add(c.mesAno); });
+  todasEstimativas.forEach(est => { if (est.mesAno) set.add(est.mesAno); });
 
   return Array.from(set).sort().reverse();
 }
@@ -1289,6 +1383,7 @@ window.verMesEIrParaControle = function(mesAno) {
 function renderSeletorMeses() {
   const bar1 = document.getElementById('seletor-meses-bar');
   const bar2 = document.getElementById('seletor-meses-bar-salarios');
+  const bar3 = document.getElementById('seletor-meses-bar-estimativa');
 
   const meses = getMesesDisponiveis();
   if (!meses.includes(mesSelecionado)) {
@@ -1319,6 +1414,7 @@ function renderSeletorMeses() {
 
   if (bar1) bar1.innerHTML = htmlPills;
   if (bar2) bar2.innerHTML = htmlPills;
+  if (bar3) bar3.innerHTML = htmlPills;
 }
 
 window.switchMensalSub = function(secId) {
@@ -1340,6 +1436,7 @@ function renderTudo() {
   renderSalariosEEntradas();
   renderCartoesCredito();
   renderBoletos();
+  renderEstimativaCustos();
   renderListaMensal();
   renderHistorico();
   renderComparacao();
@@ -3116,6 +3213,231 @@ function renderAnaliseMensalEconomias() {
       ${cardsHtml}
     </div>
   `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 4.8 ABA ESTIMATIVA DE CUSTOS (INDEPENDENTE & PREVISÃO DE GASTOS MENSAL)
+// ═══════════════════════════════════════════════════════════════════════════
+const ITENS_ESTIMATIVA_PADRAO = [
+  { id: 'est_1',  nome: 'Corte de Cabelo Victor', quantidade: 2,  valorUnitario: 70.00 },
+  { id: 'est_2',  nome: 'Compra Programada Tunico', quantidade: 1, valorUnitario: 150.00 },
+  { id: 'est_3',  nome: 'Sobrancelha Maria',      quantidade: 1,  valorUnitario: 50.00 },
+  { id: 'est_4',  nome: 'Unha Maria',             quantidade: 1,  valorUnitario: 90.00 },
+  { id: 'est_5',  nome: 'Banho Tunico',           quantidade: 1,  valorUnitario: 65.00 },
+  { id: 'est_6',  nome: 'Saída Simples',          quantidade: 2,  valorUnitario: 100.00 },
+  { id: 'est_7',  nome: 'Saída Premiun',          quantidade: 1,  valorUnitario: 150.00 },
+  { id: 'est_8',  nome: 'Saída Premiun Plus',     quantidade: 1,  valorUnitario: 200.00 },
+  { id: 'est_9',  nome: 'Mercado Pontual',        quantidade: 4,  valorUnitario: 70.00 },
+  { id: 'est_10', nome: 'Farmacia',               quantidade: 2,  valorUnitario: 35.00 },
+  { id: 'est_11', nome: 'Padaria 3D',             quantidade: 10, valorUnitario: 10.00 }
+];
+
+window.abrirModalAddEstimativa = function(id = null) {
+  const modal = document.getElementById('modal-add-estimativa');
+  if (!modal) return;
+  document.getElementById('inp-est-id').value = id || '';
+  
+  if (id) {
+    document.getElementById('titulo-modal-estimativa').textContent = '✏️ Editar Gastos Previsto';
+    const estDoc = todasEstimativas.find(e => e.id === mesSelecionado);
+    const item = (estDoc?.itens || []).find(i => i.id === id);
+    if (item) {
+      document.getElementById('inp-est-nome').value = item.nome || '';
+      document.getElementById('inp-est-qtd').value = item.quantidade || 1;
+      document.getElementById('inp-est-val').value = item.valorUnitario || 0;
+    }
+  } else {
+    document.getElementById('titulo-modal-estimativa').textContent = '➕ Adicionar Gastos Previsto';
+    document.getElementById('inp-est-nome').value = '';
+    document.getElementById('inp-est-qtd').value = 1;
+    document.getElementById('inp-est-val').value = '';
+  }
+  modal.classList.add('active');
+};
+
+window.fecharModalAddEstimativa = function() {
+  document.getElementById('modal-add-estimativa')?.classList.remove('active');
+};
+
+document.getElementById('form-item-estimativa')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const id = document.getElementById('inp-est-id').value;
+  const nome = document.getElementById('inp-est-nome').value.trim();
+  const quantidade = parseFloat(document.getElementById('inp-est-qtd').value) || 1;
+  const valorUnitario = parseFloat(document.getElementById('inp-est-val').value) || 0;
+
+  if (!nome) {
+    alert('Preencha a descrição do gasto.');
+    return;
+  }
+
+  const estDoc = todasEstimativas.find(e => e.id === mesSelecionado);
+  let itens = estDoc ? [...(estDoc.itens || [])] : [...ITENS_ESTIMATIVA_PADRAO];
+
+  if (id) {
+    itens = itens.map(i => i.id === id ? { ...i, nome, quantidade, valorUnitario } : i);
+  } else {
+    itens.push({
+      id: 'est_' + Date.now(),
+      nome,
+      quantidade,
+      valorUnitario
+    });
+  }
+
+  await setDoc(doc(db, COLL_ESTIMATIVAS, mesSelecionado), {
+    mesAno: mesSelecionado,
+    itens,
+    ultimaAtualizacao: new Date().toISOString()
+  });
+
+  fecharModalAddEstimativa();
+  toastMsg('✅ Estimativa atualizada!');
+});
+
+window.atualizarQtdItemEstimativa = async function(itemId, novaQtd) {
+  const estDoc = todasEstimativas.find(e => e.id === mesSelecionado);
+  if (!estDoc) return;
+  const q = Math.max(1, parseInt(novaQtd) || 1);
+  const itens = (estDoc.itens || []).map(i => i.id === itemId ? { ...i, quantidade: q } : i);
+
+  await setDoc(doc(db, COLL_ESTIMATIVAS, mesSelecionado), {
+    mesAno: mesSelecionado,
+    itens,
+    ultimaAtualizacao: new Date().toISOString()
+  });
+};
+
+window.atualizarValorItemEstimativa = async function(itemId, novoVal) {
+  const estDoc = todasEstimativas.find(e => e.id === mesSelecionado);
+  if (!estDoc) return;
+  const v = Math.max(0, parseFloat(novoVal) || 0);
+  const itens = (estDoc.itens || []).map(i => i.id === itemId ? { ...i, valorUnitario: v } : i);
+
+  await setDoc(doc(db, COLL_ESTIMATIVAS, mesSelecionado), {
+    mesAno: mesSelecionado,
+    itens,
+    ultimaAtualizacao: new Date().toISOString()
+  });
+};
+
+window.excluirItemEstimativa = async function(itemId) {
+  if (!confirm('Remover este item da estimativa do mês?')) return;
+  const estDoc = todasEstimativas.find(e => e.id === mesSelecionado);
+  if (!estDoc) return;
+  const itens = (estDoc.itens || []).filter(i => i.id !== itemId);
+
+  await setDoc(doc(db, COLL_ESTIMATIVAS, mesSelecionado), {
+    mesAno: mesSelecionado,
+    itens,
+    ultimaAtualizacao: new Date().toISOString()
+  });
+  toastMsg('🗑️ Item removido da estimativa.');
+};
+
+window.resetarItensEstimativaPadrao = async function() {
+  if (!confirm(`Deseja carregar/resetar os 11 itens padrão de previsão para ${mesSelecionado}?`)) return;
+  await setDoc(doc(db, COLL_ESTIMATIVAS, mesSelecionado), {
+    mesAno: mesSelecionado,
+    itens: ITENS_ESTIMATIVA_PADRAO,
+    ultimaAtualizacao: new Date().toISOString()
+  });
+  toastMsg('🔄 Itens padrão de estimativa carregados!');
+};
+
+function renderEstimativaCustos() {
+  const container = document.getElementById('container-lista-estimativa');
+  if (!container) return;
+
+  const estDoc = todasEstimativas.find(e => e.id === mesSelecionado);
+
+  let itens = [];
+  if (estDoc && Array.isArray(estDoc.itens)) {
+    itens = estDoc.itens;
+  } else {
+    itens = ITENS_ESTIMATIVA_PADRAO;
+    setDoc(doc(db, COLL_ESTIMATIVAS, mesSelecionado), {
+      mesAno: mesSelecionado,
+      itens: ITENS_ESTIMATIVA_PADRAO,
+      ultimaAtualizacao: new Date().toISOString()
+    }).catch(err => console.error('Auto init estimativa error:', err));
+  }
+
+  let totalEstimativa = 0;
+  itens.forEach(i => {
+    totalEstimativa += (i.quantidade || 0) * (i.valorUnitario || 0);
+  });
+
+  const valEl = document.getElementById('val-total-estimativa-mes');
+  if (valEl) valEl.textContent = brl(totalEstimativa);
+  
+  const [ano, mes] = mesSelecionado.split('-');
+  const dObj = new Date(parseInt(ano), parseInt(mes) - 1, 1);
+  const nomeMesFmt = dObj.toLocaleString('pt-BR', { month: 'long' });
+  const mesCapitalizado = nomeMesFmt.charAt(0).toUpperCase() + nomeMesFmt.slice(1);
+
+  const subEl = document.getElementById('subtext-estimativa-mes');
+  if (subEl) subEl.textContent = `Total previsto para ${mesCapitalizado} de ${ano} (${itens.length} itens cadastrados)`;
+  
+  const bdgEl = document.getElementById('badge-count-estimativa');
+  if (bdgEl) bdgEl.textContent = `${itens.length} itens previstos`;
+
+  if (!itens.length) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <p>Nenhum gasto estimado para ${mesSelecionado}.</p>
+        <button class="btn-secondary" onclick="resetarItensEstimativaPadrao()" style="margin-top:.5rem">
+          🔄 Carregar Itens Padrão
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  const tableHtml = `
+    <div class="table-responsive">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Gasto / Item Previsto</th>
+            <th class="num" style="width:110px">Qtd</th>
+            <th class="num" style="width:130px">Vl. Unit. (R$)</th>
+            <th class="num">Subtotal</th>
+            <th style="text-align:right;width:120px">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itens.map(i => {
+            const sub = (i.quantidade || 0) * (i.valorUnitario || 0);
+            return `
+              <tr>
+                <td>
+                  <strong style="color:#f8fafc">${i.nome}</strong>
+                </td>
+                <td class="num">
+                  <input type="number" min="1" step="1" class="form-control" style="width:70px;padding:.2rem .4rem;font-size:.82rem;text-align:center" value="${i.quantidade}" onchange="atualizarQtdItemEstimativa('${i.id}', this.value)">
+                </td>
+                <td class="num">
+                  <input type="number" min="0" step="0.01" class="form-control" style="width:95px;padding:.2rem .4rem;font-size:.82rem;text-align:right" value="${i.valorUnitario}" onchange="atualizarValorItemEstimativa('${i.id}', this.value)">
+                </td>
+                <td class="num">
+                  <strong style="color:#a5b4fc">${brl(sub)}</strong>
+                </td>
+                <td style="text-align:right">
+                  <div style="display:flex;gap:.35rem;justify-content:flex-end">
+                    <button type="button" class="btn-secondary" style="padding:.2rem .4rem;font-size:.75rem" onclick="abrirModalAddEstimativa('${i.id}')" title="Editar">✏️</button>
+                    <button type="button" class="btn-danger" style="padding:.2rem .4rem;font-size:.75rem" onclick="excluirItemEstimativa('${i.id}')" title="Excluir">🗑️</button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  container.innerHTML = tableHtml;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
