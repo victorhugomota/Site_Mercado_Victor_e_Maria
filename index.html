@@ -1219,17 +1219,53 @@ async function extrairTextoPDF(file) {
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
     let fullText = '';
+
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const content = await page.getTextContent();
-      const strings = content.items.map(item => item.str);
-      fullText += strings.join(' ') + '\n';
+
+      let lastY = null;
+      let pageText = '';
+
+      for (const item of content.items) {
+        if (!item.str) continue;
+        const currentY = item.transform ? item.transform[5] : null;
+        if (lastY !== null && Math.abs(currentY - lastY) > 3) {
+          pageText += '\n';
+        } else if (pageText.length > 0 && !pageText.endsWith('\n') && !pageText.endsWith(' ')) {
+          pageText += ' ';
+        }
+        pageText += item.str;
+        lastY = currentY;
+      }
+      fullText += pageText + '\n';
     }
     return fullText;
   } catch (err) {
     console.error('Erro ao ler PDF:', err);
     return '';
   }
+}
+
+function extrairDataVencimentoDoTexto(texto) {
+  if (!texto) return null;
+  const match = texto.match(/Data\s*de\s*vencimento\s*[:\s]*(\d{2})\s+([A-Za-z]{3})\s+(\d{4})/i)
+             || texto.match(/Vencimento\s*[:\s]*(\d{2}[\/\.-]\d{2}[\/\.-]\d{4})/i)
+             || texto.match(/FATURA\s+(\d{2})\s+([A-Za-z]{3})\s+(\d{4})/i);
+  if (match) {
+    if (match[2] && match[3]) {
+      const dia = match[1];
+      const mesStr = match[2].toUpperCase();
+      const ano = match[3];
+      const mesesMap = { JAN:'01', FEB:'02', MAR:'03', ABR:'04', APR:'04', MAI:'05', MAY:'05', JUN:'06', JUL:'07', AGO:'08', AUG:'08', SET:'09', SEP:'09', OUT:'10', OCT:'10', NOV:'11', DEZ:'12', DEC:'12' };
+      const mes = mesesMap[mesStr] || '07';
+      return `${ano}-${mes}-${dia.padStart(2,'0')}`;
+    } else if (match[1]) {
+      const [d, m, a] = match[1].split(/[\/\.-]/);
+      return `${a}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+    }
+  }
+  return null;
 }
 
 window.importarFaturaManualOuArquivo = async function() {
@@ -1242,9 +1278,17 @@ window.importarFaturaManualOuArquivo = async function() {
 };
 
 async function processarEExibirRevisaoFatura(texto, cartaoNome) {
+  // 1. Tenta extrair a Data de Vencimento automaticamente do cabeçalho da fatura
+  const dataVencDetectada = extrairDataVencimentoDoTexto(texto);
+  if (dataVencDetectada) {
+    document.getElementById('inp-fatura-vencimento').value = dataVencDetectada;
+    atualizarMesRefFatura();
+  }
+
+  // 2. Extrai os itens da fatura
   const itens = parseLinhasFatura(texto);
   if (!itens.length) {
-    toastMsg(`⚠️ Nenhuma compra identificada no texto da fatura do ${cartaoNome}. Cole linhas como "3 25/06 SAVEGNAGO 57,73".`);
+    toastMsg(`⚠️ Nenhuma compra individual identificada na fatura do ${cartaoNome}.`);
     return;
   }
 
@@ -1275,7 +1319,7 @@ async function processarEExibirRevisaoFatura(texto, cartaoNome) {
   boxRevisao.style.display = 'block';
   boxRevisao.scrollIntoView({ behavior: 'smooth' });
 
-  toastMsg(`✅ ${itens.length} compras encontradas na fatura! Confira abaixo e clique em Salvar.`);
+  toastMsg(`✅ ${itens.length} compras encontradas na fatura (${brl(valorTotalCalculado)})! Confira e salve.`);
 }
 
 window.confirmarEGravarFaturaDocumento = async function() {
@@ -1306,38 +1350,58 @@ window.confirmarEGravarFaturaDocumento = async function() {
 };
 
 function parseLinhasFatura(texto) {
+  if (!texto) return [];
   const itens = [];
+
+  // Regex 1: Leitura por linhas (Nubank e Santander)
   const linhas = texto.split('\n');
-
-  // Suporta formatos Nubank / Santander:
-  // Ex: 3 25/06 AUTOPOSTOQUINHONE 22,99
-  // Ex: 3 25/06 SAVEGNAGO LOJA 20 RIBE 57,73
-  // Ex: 25/06 UBER *TRIP 24,90
-  const regex = /(?:\d+\s+)?(\d{2}[\/\.-]\d{2}(?:[\/\.-]\d{2,4})?|\d{2}\s+[A-Za-z]{3})\s+(.+?)\s+R?\$\s*([\d\.,]+)$/i;
-
   linhas.forEach(linha => {
-    const lTrim = linha.trim();
-    if (!lTrim) return;
+    const l = linha.trim();
+    if (!l) return;
 
-    if (/EMISS[ÃA]O|TRANSA[ÇC][ÕO]ES|RESUMO|PAGAMENTO DE FATURA|TOTAL DA FATURA|FATURA ANTERIOR|SALDO ANTERIOR|LIMITE DISPON[ÍI]VEL/i.test(lTrim)) {
+    if (/EMISS[ÃA]O|TRANSA[ÇC][ÕO]ES|RESUMO|PAGAMENTO DE FATURA|TOTAL DA FATURA|FATURA ANTERIOR|SALDO ANTERIOR|LIMITE DISPON[ÍI]VEL|OPÇÕES DE PAGAMENTO|ALTERNATIVAS DE PAGAMENTO/i.test(l)) {
       return;
     }
 
-    const match = lTrim.match(regex);
-    if (match) {
-      const dataStr = match[1];
-      const desc = match[2].trim();
-      const val = parseBRL(match[3]);
-
-      if (desc && val > 0 && desc.length > 2) {
-        itens.push({
-          dataCompra: dataStr,
-          descricao: desc,
-          valor: val
-        });
+    const m = l.match(/^(?:\d+\s+)?(\d{2}[\/\.-]\d{2}(?:[\/\.-]\d{2,4})?|\d{2}\s+[A-Za-z]{3})\s+(.+?)\s+R?\$\s*([\d\.,]+)$/i)
+           || l.match(/(\d{2}[\/\.-]\d{2}(?:[\/\.-]\d{2,4})?|\d{2}\s+[A-Za-z]{3})\s+(.+?)\s+R?\$\s*([\d\.,]+)/i);
+    if (m) {
+      const dataStr = m[1];
+      const desc = m[2].trim();
+      const val = parseBRL(m[3]);
+      if (desc && val > 0 && desc.length > 2 && !/fatura|limite|pagamento|saldo|alternativas|opções/i.test(desc)) {
+        itens.push({ dataCompra: dataStr, descricao: desc, valor: val });
       }
     }
   });
+
+  if (itens.length > 0) return itens;
+
+  // Regex 2: Leitura global em texto contínuo
+  const regexGlobal = /(\b\d{2}[\/\.-]\d{2}(?:[\/\.-]\d{2,4})?|\b\d{2}\s+[A-Za-z]{3})\s+(.+?)\s+R?\$\s*([\d\.,]+)/gi;
+  let match;
+  while ((match = regexGlobal.exec(texto)) !== null) {
+    const dataStr = match[1];
+    const desc = match[2].trim();
+    const val = parseBRL(match[3]);
+
+    if (desc && val > 0 && desc.length > 2 && !/fatura|limite|pagamento|saldo|alternativas|opções|período|emissão/i.test(desc)) {
+      itens.push({ dataCompra: dataStr, descricao: desc, valor: val });
+    }
+  }
+
+  // Fallback: Se não encontrou itens individuais mas encontrou o valor total da fatura (ex: no valor de R$ 391,10)
+  if (itens.length === 0) {
+    const mTotal = texto.match(/no\s*valor\s*de\s*R?\$\s*([\d\.,]+)/i)
+                || texto.match(/Valor\s*total\s*da\s*fatura\s*[:\s]*R?\$\s*([\d\.,]+)/i)
+                || texto.match(/Total\s*da\s*fatura\s*[:\s]*R?\$\s*([\d\.,]+)/i);
+    if (mTotal) {
+      const valTotal = parseBRL(mTotal[1]);
+      if (valTotal > 0) {
+        itens.push({ dataCompra: 'Fatura Mês', descricao: 'Fatura do Cartão (Total Consolidado)', valor: valTotal });
+      }
+    }
+  }
 
   return itens;
 }
