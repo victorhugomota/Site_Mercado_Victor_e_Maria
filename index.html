@@ -120,6 +120,35 @@
     #qr-reader video{border-radius:var(--radius-md)}
     .scanner-actions{display:flex;justify-content:center;gap:.75rem;margin-top:1rem;flex-wrap:wrap}
 
+    /* Modal Detalhes Estabelecimento */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(15, 23, 42, 0.82); backdrop-filter: blur(8px);
+      z-index: 1000; display: flex; align-items: center; justify-content: center;
+      padding: 1rem; animation: fadeIn .2s ease;
+    }
+    .modal-card {
+      background: linear-gradient(135deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.99));
+      border: 1px solid #fb7185; border-radius: var(--radius-lg);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+      width: 100%; max-width: 680px; max-height: 85vh; display: flex; flex-direction: column;
+      overflow: hidden;
+    }
+    .modal-header {
+      padding: 1.1rem 1.25rem; border-bottom: 1px solid var(--border-color);
+      display: flex; justify-content: space-between; align-items: center;
+      background: rgba(15, 23, 42, 0.5);
+    }
+    .modal-body {
+      padding: 1.25rem; overflow-y: auto; flex: 1;
+    }
+    .modal-close {
+      background: rgba(244, 63, 94, 0.15); color: #fb7185; border: 1px solid rgba(244, 63, 94, 0.3);
+      width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center;
+      justify-content: center; font-weight: 700; cursor: pointer; transition: all .15s;
+    }
+    .modal-close:hover { background: rgba(244, 63, 94, 0.3); transform: scale(1.05); }
+
     /* Table */
     .table-responsive{width:100%;overflow-x:auto}
     .custom-table{width:100%;border-collapse:collapse;text-align:left;font-size:.87rem}
@@ -2184,6 +2213,8 @@ function parseLinhasFatura(texto) {
   return itens;
 }
 
+window.ultimosLocaisAnalisados = {};
+
 function normalizarNomeEstabelecimento(desc) {
   if (!desc) return 'DIVERSOS';
   let s = desc.replace(/\(\d{1,2}\/\d{1,2}\)/gi, '')
@@ -2203,10 +2234,17 @@ function analisarGastosPorEstabelecimento(faturas) {
       if (!item.descricao || !item.valor) return;
       const nomeFmt = normalizarNomeEstabelecimento(item.descricao);
       if (!mapa[nomeFmt]) {
-        mapa[nomeFmt] = { nome: nomeFmt, qtd: 0, valorTotal: 0 };
+        mapa[nomeFmt] = { nome: nomeFmt, qtd: 0, valorTotal: 0, compras: [] };
       }
       mapa[nomeFmt].qtd += 1;
       mapa[nomeFmt].valorTotal += (item.valor || 0);
+      mapa[nomeFmt].compras.push({
+        dataCompra: item.dataCompra || '—',
+        descricao: item.descricao,
+        valor: item.valor || 0,
+        cartao: f.cartao || 'Cartão',
+        mesAno: f.mesAno || '—'
+      });
     });
   });
 
@@ -2215,8 +2253,13 @@ function analisarGastosPorEstabelecimento(faturas) {
   return repetidos;
 }
 
-function renderHtmlAnaliseLocaisFrequentes(faturas) {
+function renderHtmlAnaliseLocaisFrequentes(faturas, prefixoId = 'geral') {
   const analise = analisarGastosPorEstabelecimento(faturas);
+  
+  analise.forEach(loc => {
+    window.ultimosLocaisAnalisados[`${prefixoId}_${loc.nome}`] = loc;
+  });
+
   if (!analise.length) {
     return `
       <div class="card" style="margin-bottom:1.5rem; background:linear-gradient(135deg,rgba(30,41,59,0.7),rgba(15,23,42,0.8)); border-color:rgba(251,113,133,0.3)">
@@ -2236,28 +2279,115 @@ function renderHtmlAnaliseLocaisFrequentes(faturas) {
       <div class="card-header" style="flex-wrap:wrap; gap:.5rem">
         <div>
           <span class="card-title" style="color:#fb7185; font-size:1.05rem">🏬 Locais Mais Frequentados (${analise.length} estabelecimentos com 2+ compras)</span>
-          <p style="font-size:.78rem; color:var(--text-muted); margin-top:.2rem">Locais onde você comprou 2 ou mais vezes e a soma total gasta em cada um:</p>
+          <p style="font-size:.78rem; color:var(--text-muted); margin-top:.2rem">💡 Clique em qualquer quadrado para ver o detalhamento de cada compra individual!</p>
         </div>
         <span class="badge rose" style="font-size:.85rem; padding:.35rem .75rem">Soma Repetidos: ${brl(totalEmRepetidos)}</span>
       </div>
 
       <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:0.85rem; margin-top:.5rem">
-        ${analise.map(loc => `
-          <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(251,113,133,0.35); border-radius:10px; padding:.75rem 1rem; display:flex; justify-content:space-between; align-items:center; transition:transform .15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-            <div>
-              <div style="font-weight:700; font-size:.88rem; color:#f8fafc; margin-bottom:.3rem; word-break:break-word">🏪 ${loc.nome}</div>
-              <span class="badge rose" style="font-size:.72rem">🛒 ${loc.qtd} compras registradas</span>
+        ${analise.map(loc => {
+          const chave = `${prefixoId}_${loc.nome}`;
+          return `
+            <div style="background:rgba(15,23,42,0.85); border:1px solid rgba(251,113,133,0.35); border-radius:10px; padding:.85rem 1rem; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:all .2s; box-shadow:0 2px 8px rgba(0,0,0,0.3)"
+                 onclick="abrirModalComprasEstabelecimento('${chave}')"
+                 onmouseover="this.style.transform='translateY(-3px)'; this.style.borderColor='#fb7185'; this.style.background='rgba(30,41,59,0.95)'" 
+                 onmouseout="this.style.transform='none'; this.style.borderColor='rgba(251,113,133,0.35)'; this.style.background='rgba(15,23,42,0.85)'"
+                 title="Clique para ver as ${loc.qtd} compras de ${loc.nome}">
+              <div>
+                <div style="font-weight:700; font-size:.88rem; color:#f8fafc; margin-bottom:.3rem; word-break:break-word">🏪 ${loc.nome}</div>
+                <span class="badge rose" style="font-size:.72rem">🛒 ${loc.qtd} compras 🔍</span>
+              </div>
+              <div style="text-align:right; min-width:95px">
+                <div style="font-weight:800; font-size:1.08rem; color:#fb7185">${brl(loc.valorTotal)}</div>
+                <div style="font-size:.72rem; color:var(--text-muted)">total gasto 🔍</div>
+              </div>
             </div>
-            <div style="text-align:right; min-width:90px">
-              <div style="font-weight:800; font-size:1.05rem; color:#fb7185">${brl(loc.valorTotal)}</div>
-              <div style="font-size:.7rem; color:var(--text-muted)">total gasto</div>
-            </div>
-          </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
     </div>
   `;
 }
+
+window.abrirModalComprasEstabelecimento = function(chave) {
+  const itemAnalise = window.ultimosLocaisAnalisados[chave];
+  if (!itemAnalise) {
+    toastMsg('⚠️ Não foi possível carregar os detalhes do estabelecimento.');
+    return;
+  }
+
+  let modalEl = document.getElementById('modal-detalhes-estabelecimento');
+  if (!modalEl) {
+    const div = document.createElement('div');
+    div.id = 'modal-detalhes-estabelecimento';
+    div.className = 'modal-overlay';
+    div.innerHTML = `
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <h3 id="modal-est-titulo" style="color:#fb7185; font-size:1.1rem; margin:0">🏬 Compras no Estabelecimento</h3>
+            <p id="modal-est-subtitulo" style="font-size:.78rem; color:var(--text-muted); margin:.2rem 0 0 0">Detalhamento individual das compras contempladas</p>
+          </div>
+          <button type="button" class="modal-close" onclick="fecharModalEstabelecimento()">✕</button>
+        </div>
+        <div class="modal-body" id="modal-est-body"></div>
+      </div>
+    `;
+    document.body.appendChild(div);
+    modalEl = div;
+    
+    modalEl.addEventListener('click', (e) => {
+      if (e.target === modalEl) fecharModalEstabelecimento();
+    });
+  }
+
+  document.getElementById('modal-est-titulo').innerHTML = `🏬 Estabelecimento: <span style="color:#fff">${itemAnalise.nome}</span>`;
+  document.getElementById('modal-est-subtitulo').textContent = `${itemAnalise.qtd} compra(s) somando o valor total de ${brl(itemAnalise.valorTotal)}`;
+
+  const bodyEl = document.getElementById('modal-est-body');
+  bodyEl.innerHTML = `
+    <div style="margin-bottom:1rem; background:rgba(251,113,133,0.08); border:1px dashed rgba(251,113,133,0.3); border-radius:8px; padding:.75rem 1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem">
+      <div>
+        <span style="font-size:.82rem; color:var(--text-muted)">Total de Lançamentos:</span>
+        <strong style="color:#fff; margin-left:.3rem; font-size:.95rem">${itemAnalise.qtd} compras</strong>
+      </div>
+      <div>
+        <span style="font-size:.82rem; color:var(--text-muted)">Soma Total Gasta:</span>
+        <strong style="color:#fb7185; margin-left:.3rem; font-size:1.1rem">${brl(itemAnalise.valorTotal)}</strong>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="custom-table">
+        <thead>
+          <tr>
+            <th>Data Compra</th>
+            <th>Descrição do Lançamento</th>
+            <th>Cartão / Origem</th>
+            <th class="num">Valor (R$)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemAnalise.compras.map(c => `
+            <tr>
+              <td><strong>${c.dataCompra || '—'}</strong></td>
+              <td>${c.descricao}</td>
+              <td><span class="badge ${c.cartao.toLowerCase().includes('nubank') ? 'purple' : 'red'}">${c.cartao}</span></td>
+              <td class="num" style="color:#fb7185; font-weight:700">${brl(c.valor)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  modalEl.style.display = 'flex';
+};
+
+window.fecharModalEstabelecimento = function() {
+  const modalEl = document.getElementById('modal-detalhes-estabelecimento');
+  if (modalEl) modalEl.style.display = 'none';
+};
 
 function renderCartoesCredito() {
   const total = todasFaturas.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
@@ -2269,7 +2399,7 @@ function renderCartoesCredito() {
     return;
   }
 
-  const analiseGeral = renderHtmlAnaliseLocaisFrequentes(todasFaturas);
+  const analiseGeral = renderHtmlAnaliseLocaisFrequentes(todasFaturas, 'geral');
 
   el.innerHTML = analiseGeral + todasFaturas.map(f => {
     const valorTotalFatura = f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0);
@@ -2309,19 +2439,29 @@ function renderCartoesCredito() {
 function renderItensFatura(f) {
   if (f.itens && f.itens.length > 0) {
     const repetidos = analisarGastosPorEstabelecimento([f]);
+    const prefixoCard = `fatura_${f.id}`;
+    repetidos.forEach(loc => {
+      window.ultimosLocaisAnalisados[`${prefixoCard}_${loc.nome}`] = loc;
+    });
+
     let analiseCardHtml = '';
     if (repetidos.length > 0) {
       analiseCardHtml = `
         <div style="background:rgba(251,113,133,0.08); border:1px dashed rgba(251,113,133,0.35); border-radius:8px; padding:.75rem 1rem; margin-bottom:1rem">
           <div style="font-weight:700; font-size:.84rem; color:#fb7185; margin-bottom:.5rem">
-            🏬 Locais com 2 ou mais compras nesta fatura (${repetidos.length} estabelecimentos):
+            🏬 Locais com 2 ou mais compras nesta fatura (${repetidos.length} estabelecimentos - clique para ver):
           </div>
           <div style="display:flex; flex-wrap:wrap; gap:.5rem">
-            ${repetidos.map(loc => `
-              <span style="background:rgba(15,23,42,0.9); border:1px solid rgba(251,113,133,0.4); border-radius:6px; padding:.3rem .6rem; font-size:.78rem; color:#f1f5f9; display:inline-flex; align-items:center; gap:.35rem">
-                🏬 <strong>${loc.nome}</strong>: <span class="badge rose" style="font-size:.7rem">${loc.qtd}x compras</span> <strong style="color:#fb7185; margin-left:.25rem">${brl(loc.valorTotal)}</strong>
-              </span>
-            `).join('')}
+            ${repetidos.map(loc => {
+              const chave = `${prefixoCard}_${loc.nome}`;
+              return `
+                <span style="background:rgba(15,23,42,0.9); border:1px solid rgba(251,113,133,0.4); border-radius:6px; padding:.3rem .6rem; font-size:.78rem; color:#f1f5f9; display:inline-flex; align-items:center; gap:.35rem; cursor:pointer"
+                      onclick="event.stopPropagation(); abrirModalComprasEstabelecimento('${chave}')"
+                      title="Clique para ver detalhadamente as compras de ${loc.nome}">
+                  🏬 <strong>${loc.nome}</strong>: <span class="badge rose" style="font-size:.7rem">${loc.qtd}x compras</span> <strong style="color:#fb7185; margin-left:.25rem">${brl(loc.valorTotal)}</strong>
+                </span>
+              `;
+            }).join('')}
           </div>
         </div>
       `;
