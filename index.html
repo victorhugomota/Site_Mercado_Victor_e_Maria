@@ -364,7 +364,7 @@
         <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
           <label style="font-size:.78rem;color:var(--text-muted);font-weight:600">Escolher Mês:</label>
           <input type="month" id="inp-seletor-mes-global" class="form-control" style="width:auto;padding:.35rem .65rem;font-size:.82rem" onchange="selecionarMesGlobal(this.value)">
-          <button type="button" class="btn-danger" style="padding:.35rem .75rem;font-size:.82rem" onclick="excluirDadosDoMes(mesSelecionado)" title="Excluir todos os registros do mês selecionado">
+          <button type="button" class="btn-danger" style="padding:.35rem .75rem;font-size:.82rem" onclick="excluirMesSelecionadoAtual()" title="Excluir todos os registros do mês selecionado">
             🗑️ Excluir Mês Selecionado
           </button>
         </div>
@@ -1329,6 +1329,7 @@ onSnapshot(collection(db, COLL_ESTIMATIVAS), snap => {
 
 // ESTADO DE NAVEGAÇÃO MENSAL
 let mesSelecionado = new Date().toISOString().slice(0, 7);
+const mesesExcluidosManualmente = new Set();
 
 function getMesesDisponiveis() {
   const set = new Set();
@@ -1350,8 +1351,12 @@ function getMesesDisponiveis() {
   todasCompras.forEach(c => { if (c.mesAno) set.add(c.mesAno); });
   todasEstimativas.forEach(est => { if (est.mesAno) set.add(est.mesAno); });
 
-  return Array.from(set).sort().reverse();
+  return Array.from(set).filter(m => !mesesExcluidosManualmente.has(m)).sort().reverse();
 }
+
+window.excluirMesSelecionadoAtual = function() {
+  window.excluirDadosDoMes(mesSelecionado);
+};
 
 window.selecionarMesGlobal = function(mesAno) {
   if (!mesAno) return;
@@ -1766,8 +1771,10 @@ function renderTabelaResumoMensal() {
   `;
 }
 
-window.excluirDadosDoMes = async function(mesAno) {
+window.excluirDadosDoMes = async function(targetMesAno) {
+  const mesAno = targetMesAno || mesSelecionado;
   if (!mesAno) return;
+
   const [ano, mes] = mesAno.split('-');
   const dObj = new Date(parseInt(ano), parseInt(mes) - 1, 1);
   const mesNomeFmt = dObj.toLocaleString('pt-BR', { month: 'long' });
@@ -1799,11 +1806,15 @@ window.excluirDadosDoMes = async function(mesAno) {
     merFiltro.forEach(c => batchDeletes.push(deleteDoc(doc(db, COLL_MERCADO, c.id))));
     estFiltro.forEach(e => batchDeletes.push(deleteDoc(doc(db, COLL_ESTIMATIVAS, e.id))));
 
-    await Promise.all(batchDeletes);
+    if (batchDeletes.length > 0) {
+      await Promise.all(batchDeletes);
+    }
+
+    mesesExcluidosManualmente.add(mesAno);
 
     toastMsg(`🗑️ O mês ${mesFmt} e todos os seus dados foram excluídos com sucesso!`);
 
-    const mesesRestantes = getMesesDisponiveis().filter(m => m !== mesAno);
+    const mesesRestantes = getMesesDisponiveis();
     mesSelecionado = mesesRestantes[0] || new Date().toISOString().slice(0, 7);
     renderTudo();
   } catch (err) {
