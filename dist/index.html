@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Controle de Gastos no Mercado</title>
   <meta name="description" content="Sistema completo para controle de gastos no mercado, leitura de QR Code NFC-e, comparação de preços unitários mês a mês e análise de marcas.">
-  <script type="module" crossorigin src="./assets/index-8Y4N98Fr.js"></script>
+  <script type="module" crossorigin src="./assets/index-CC-rkKRy.js"></script>
   <link rel="stylesheet" crossorigin href="./assets/index-BsXfqASL.css">
 </head>
 <body>
@@ -39,7 +39,7 @@
       </button>
     </nav>
 
-    <button class="btn-header-add" onclick="document.querySelector('[data-tab-target=\'tab-add\']').click()">
+    <button class="btn-header-add" onclick="window.mudarAba('tab-add')">
       <span>📷</span> Escanear Nota
     </button>
   </header>
@@ -226,9 +226,28 @@
     </button>
     <button class="mobile-nav-btn" data-tab-target="tab-historico">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-      Histórico
-    </button>
   </nav>
+
+  <!-- Modal Fallback NFC-e CORS -->
+  <div id="modal-paste-html" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h2>Aviso: Consulta Externa NFC-e</h2>
+        <button class="btn-close" onclick="document.getElementById('modal-paste-html').classList.remove('active')">&times;</button>
+      </div>
+      <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:1rem;">
+        Devido a restrições de segurança do servidor da SEFAZ, abra o link da nota fiscal abaixo, copie todo o texto ou HTML da página e cole no campo de texto para concluir o salvamento.
+      </p>
+      <div style="display:flex; gap:0.5rem; margin-bottom:1rem; flex-wrap:wrap;">
+        <a id="btn-abrir-link-nfce" href="#" target="_blank" rel="noopener noreferrer" class="btn-primary" style="text-decoration:none;">
+          🌐 Abrir Link da SEFAZ
+        </a>
+      </div>
+      <button class="btn-secondary" style="width:100%; justify-content:center;" onclick="document.getElementById('modal-paste-html').classList.remove('active')">
+        Entendi
+      </button>
+    </div>
+  </div>
 
 </body>
 </html>

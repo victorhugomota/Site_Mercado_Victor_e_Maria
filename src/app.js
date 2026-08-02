@@ -13,40 +13,59 @@ let cameraDispositivos = [];
 let indexCameraAtual = 0;
 let escaneando = false;
 
-// Elementos DOM
-const navBtns = document.querySelectorAll('[data-tab-target]');
-const tabContents = document.querySelectorAll('.tab-content');
+// Função para mudar de aba exposta globalmente
+export function mudarAba(targetId) {
+  const allNavBtns = document.querySelectorAll('[data-tab-target]');
+  const allTabContents = document.querySelectorAll('.tab-content');
+
+  allNavBtns.forEach(b => {
+    if (b.getAttribute('data-tab-target') === targetId) {
+      b.classList.add('active');
+    } else {
+      b.classList.remove('active');
+    }
+  });
+
+  allTabContents.forEach(content => {
+    if (content.id === targetId) {
+      content.classList.add('active');
+    } else {
+      content.classList.remove('active');
+    }
+  });
+
+  if (targetId !== 'tab-add' && escaneando) {
+    pararScanner();
+  }
+}
+
+window.mudarAba = mudarAba;
 
 // Inicialização da Aplicação
-document.addEventListener('DOMContentLoaded', () => {
+function initApp() {
   configurarNavegacao();
   configurarFormulariosEModais();
   iniciarEscutaFirebase();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initApp);
+} else {
+  initApp();
+}
 
 // Navigation & Tab Switching
 function configurarNavegacao() {
-  navBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
+  const allNavBtns = document.querySelectorAll('[data-tab-target]');
+  allNavBtns.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
       const targetId = btn.getAttribute('data-tab-target');
-      
-      navBtns.forEach(b => b.classList.remove('active'));
-      document.querySelectorAll(`[data-tab-target="${targetId}"]`).forEach(b => b.classList.add('active'));
-
-      tabContents.forEach(content => {
-        content.classList.remove('active');
-        if (content.id === targetId) {
-          content.classList.add('active');
-        }
-      });
-
-      // Se mudar de aba enquanto a câmera está ligada, desliga a câmera
-      if (targetId !== 'tab-add' && escaneando) {
-        pararScanner();
-      }
+      mudarAba(targetId);
     });
   });
 }
+
 
 // Inicia escuta em tempo real do Firebase Firestore
 function iniciarEscutaFirebase() {
