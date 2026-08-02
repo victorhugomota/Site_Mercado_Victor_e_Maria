@@ -1526,7 +1526,7 @@ function renderSubConteudoMensal(entradasMes, faturasMes, boletosMes, comprasMes
   const secCar = document.getElementById('content-cartoes-mes');
   if (secCar) {
     const totalCar = faturasMes.reduce((a,f)=>a+(f.valorTotal||0),0);
-    const analiseHtmlMensal = faturasMes.length ? renderHtmlAnaliseLocaisFrequentes(faturasMes) : '';
+    const analiseHtmlMensal = faturasMes.length ? renderHtmlAnaliseLocaisFrequentes(faturasMes, 'mes_' + mesSelecionado) : '';
 
     secCar.innerHTML = `
       ${analiseHtmlMensal}

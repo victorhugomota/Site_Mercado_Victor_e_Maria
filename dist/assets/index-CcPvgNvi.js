@@ -19,7 +19,7 @@ import{initializeApp as Jt}from"https://www.gstatic.com/firebasejs/10.14.1/fireb
               </tr>`).join("")}</tbody>
             </table></div>`:`<div class="empty-state">Nenhuma entrada cadastrada para ${h}. Use a aba "Salários & Entradas" para cadastrar.</div>`}
       </div>
-    `);const s=document.getElementById("content-cartoes-mes");if(s){const c=e.reduce((u,m)=>u+(m.valorTotal||0),0),i=e.length?zt(e):"";s.innerHTML=`
+    `);const s=document.getElementById("content-cartoes-mes");if(s){const c=e.reduce((u,m)=>u+(m.valorTotal||0),0),i=e.length?zt(e,"mes_"+h):"";s.innerHTML=`
       ${i}
       <div class="card" style="margin-bottom:1.5rem">
         <div class="card-header">
