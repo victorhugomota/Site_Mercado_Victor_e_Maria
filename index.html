@@ -976,7 +976,7 @@ function renderDashboardGeral() {
   let totalEntradas = todasEntradas.reduce((acc, e) => acc + (e.valor || 0), 0);
 
   // Cartões de Crédito Totais
-  let totalCartoes = todasFaturas.reduce((acc, f) => acc + (f.valor || 0), 0);
+  let totalCartoes = todasFaturas.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
 
   // Mercado Totais (Separado por Alimentação, Crédito e Débito)
   let totalMercadoDebito = 0;
@@ -1562,7 +1562,7 @@ function renderReservasEEconomias() {
 
   // Cálculo da Recomendação do Sistema baseado no Saldo Líquido Real
   const totalEntradas = todasEntradas.reduce((acc, e) => acc + (e.valor || 0), 0);
-  const totalCartoes  = todasFaturas.reduce((acc, f) => acc + (f.valor || 0), 0);
+  const totalCartoes  = todasFaturas.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
   let totalMercadoDebito = 0;
   todasCompras.forEach(c => {
     if (c.formasPagamento) totalMercadoDebito += c.formasPagamento.cartaoDebito || 0;
