@@ -739,19 +739,29 @@ function renderListaMensal() {
     });
   });
 
-  // Converte consumo para taxa mensal proporcional:
-  // Se comprou 2 pacotes em 6 meses -> consome 2/6 = 0.33 pacotes por mês (a cada 3 meses)
-  const listaPlanejada = Object.values(agregadorItens).map(i => {
+  // Converte consumo para taxa mensal proporcional considerando frequência de ocorrência
+  const listaBruta = Object.values(agregadorItens).map(i => {
     const mediaUnit = i.valoresUnitarios.length > 0
       ? i.valoresUnitarios.reduce((a, b) => a + b, 0) / i.valoresUnitarios.length
       : 0;
 
     const qtdMensalTaxa = i.qtdTotal / numMesesHistorico;
     const intervaloMeses = numMesesHistorico / Math.max(1, i.frequenciaNotas);
+    const taxaFrequencia = i.frequenciaNotas / numMesesHistorico; // proporção de meses em que foi comprado
     
-    // Total Estimado arredondado para cima (unidades inteiras exatas)
-    const totalEstimadoUnidades = Math.ceil(qtdMensalTaxa);
-    const subtotalFinal = totalEstimadoUnidades * mediaUnit;
+    // Para itens com boa frequência (comprados em mais de 35% dos meses ou com consumo alto), arredonda para cima
+    // Para itens raros (comprados esporadicamente a cada 4-6 meses), usa Math.round para não sobrecarregar a lista do mês
+    let totalEstimadoUnidades = 0;
+    if (taxaFrequencia >= 0.35 || qtdMensalTaxa >= 0.7) {
+      totalEstimadoUnidades = Math.ceil(qtdMensalTaxa);
+    } else {
+      totalEstimadoUnidades = Math.round(qtdMensalTaxa);
+    }
+    if (totalEstimadoUnidades < 1 && i.frequenciaNotas >= numMesesHistorico) {
+      totalEstimadoUnidades = 1;
+    }
+
+    const subtotalCalculado = totalEstimadoUnidades * mediaUnit;
 
     return {
       nome: i.nome,
@@ -761,13 +771,30 @@ function renderListaMensal() {
       qtdMensalTaxa,
       totalEstimadoUnidades,
       valorUnitario: mediaUnit,
-      subtotalFinal
+      subtotalCalculado
     };
-  });
+  }).filter(i => i.totalEstimadoUnidades > 0); // Exibe apenas itens previstos para este ciclo mensal
 
-  listaPlanejada.sort((a, b) => b.frequenciaNotas - a.frequenciaNotas);
+  listaBruta.sort((a, b) => b.frequenciaNotas - a.frequenciaNotas);
 
-  const totalGeralEstimado = listaPlanejada.reduce((acc, item) => acc + item.subtotalFinal, 0);
+  const somaSubtotaisInteiros = listaBruta.reduce((acc, item) => acc + item.subtotalCalculado, 0);
+
+  // Meta de previsão: Próxima ou levemente acima da média histórica (~105% da média mensal)
+  const metaLevementeAcima = mediaMensalHistorica > 0 ? mediaMensalHistorica * 1.05 : somaSubtotaisInteiros;
+
+  let fatorAjuste = 1;
+  if (somaSubtotaisInteiros > metaLevementeAcima && mediaMensalHistorica > 0) {
+    fatorAjuste = metaLevementeAcima / somaSubtotaisInteiros;
+  }
+
+  const listaPlanejada = listaBruta.map(i => ({
+    ...i,
+    subtotalFinal: i.subtotalCalculado * fatorAjuste
+  }));
+
+  const totalGeralEstimado = mediaMensalHistorica > 0 
+    ? Math.min(somaSubtotaisInteiros, metaLevementeAcima)
+    : somaSubtotaisInteiros;
 
   // 6. Distribuição de Orçamento: Alimentação -> Crédito -> Débito
   let restante = totalGeralEstimado;
