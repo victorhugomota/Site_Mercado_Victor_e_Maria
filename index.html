@@ -1658,15 +1658,35 @@ function renderSubConteudoMensal(entradasMes, faturasMes, boletosMes, comprasMes
 // 1. RENDERIZAÇÃO DO DASHBOARD FINANCEIRO PRINCIPAL
 // ═══════════════════════════════════════════════════════════════════════════
 function renderDashboardGeral() {
-  // Totais Acumulados do Sistema
-  let totalEntradasAcumulado = todasEntradas.reduce((acc, e) => acc + (e.valor || 0), 0);
-  let totalCartoesAcumulado  = todasFaturas.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
-  let totalBoletosAcumulado  = todosBoletos.reduce((acc, b) => acc + (b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0)), 0);
+  const meses = getMesesDisponiveis();
 
-  let totalMercadoDebitoAcumulado = 0;
+  let somaEntradasTabela = 0;
+  let somaCartoesTabela = 0;
+  let somaBoletosTabela = 0;
+  let somaDebitoTabela = 0;
+  let somaSaldoLiquidoTabela = 0;
+
+  meses.forEach(m => {
+    const entradasMes = todasEntradas.filter(e => e.mesAno === m).reduce((a,e) => a + (e.valor || 0), 0);
+    const cartoesMes  = todasFaturas.filter(f => f.mesAno === m).reduce((a,f) => a + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
+    const boletosMes  = todosBoletos.filter(b => b.mesAno === m).reduce((a,b) => a + (b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0)), 0);
+    
+    let debitoMes = 0;
+    todasCompras.filter(c => c.mesAno === m).forEach(c => {
+      if (c.formasPagamento) debitoMes += c.formasPagamento.cartaoDebito || 0;
+    });
+
+    const saldoMes = entradasMes - cartoesMes - boletosMes - debitoMes;
+
+    somaEntradasTabela += entradasMes;
+    somaCartoesTabela += cartoesMes;
+    somaBoletosTabela += boletosMes;
+    somaDebitoTabela += debitoMes;
+    somaSaldoLiquidoTabela += saldoMes;
+  });
+
   let totalMercadoAlimentacao = 0;
   let totalMercadoCredito = 0;
-
   const porMesMercado = {};
 
   todasCompras.forEach(c => {
@@ -1674,27 +1694,34 @@ function renderDashboardGeral() {
     if (c.formasPagamento) {
       totalMercadoAlimentacao += c.formasPagamento.valeAlimentacao || 0;
       totalMercadoCredito     += c.formasPagamento.cartaoCredito || 0;
-      totalMercadoDebitoAcumulado += c.formasPagamento.cartaoDebito || 0;
     }
     const mes = c.mesAno || 'Outros';
     porMesMercado[mes] = (porMesMercado[mes] || 0) + p;
   });
 
-  let saldoLiquidoGeral = totalEntradasAcumulado - totalCartoesAcumulado - totalBoletosAcumulado - totalMercadoDebitoAcumulado;
+  const saldoGuardado = (dadosReservas && dadosReservas.valorAtualGuardado !== undefined) ? dadosReservas.valorAtualGuardado : 3000;
+  const saldoTotalComGuardado = somaSaldoLiquidoTabela + saldoGuardado;
 
-  // Atualização dos Cards da Visão Geral (Acumulados)
-  document.getElementById('fin-total-entradas').textContent = brl(totalEntradasAcumulado);
+  // Atualização dos Cards da Visão Geral (100% alinhados à tabela de resumo mensal)
+  document.getElementById('fin-total-entradas').textContent = brl(somaEntradasTabela);
   const subEnt = document.getElementById('fin-subtext-entradas');
-  if (subEnt) subEnt.textContent = 'Total de Entradas Cadastradas';
+  if (subEnt) subEnt.textContent = 'Soma Total das Entradas da Tabela Mensal';
 
-  document.getElementById('fin-total-cartoes').textContent = brl(totalCartoesAcumulado);
-  document.getElementById('fin-total-boletos').textContent = brl(totalBoletosAcumulado);
-  document.getElementById('fin-mercado-debito').textContent = brl(totalMercadoDebitoAcumulado);
-  document.getElementById('fin-saldo-liquido').textContent = brl(saldoLiquidoGeral);
+  document.getElementById('fin-total-cartoes').textContent = brl(somaCartoesTabela);
+  document.getElementById('fin-total-boletos').textContent = brl(somaBoletosTabela);
+  document.getElementById('fin-mercado-debito').textContent = brl(somaDebitoTabela);
+
+  document.getElementById('fin-saldo-liquido').textContent = brl(somaSaldoLiquidoTabela);
+  document.getElementById('fin-saldo-liquido').style.color = somaSaldoLiquidoTabela >= 0 ? '#60a5fa' : '#fb7185';
+
+  const subSal = document.getElementById('fin-subtext-saldo');
+  if (subSal) {
+    subSal.innerHTML = `Saldo Líquido + Reserva Guardada (${brl(saldoGuardado)}): <strong style="color:#34d399">${brl(saldoTotalComGuardado)}</strong>`;
+  }
 
   document.getElementById('dash-alimentacao').textContent = brl(totalMercadoAlimentacao);
   document.getElementById('dash-credito').textContent = brl(totalMercadoCredito);
-  document.getElementById('dash-debito').textContent = brl(totalMercadoDebitoAcumulado);
+  document.getElementById('dash-debito').textContent = brl(somaDebitoTabela);
 
   renderTabelaResumoMensal();
   renderChart(porMesMercado);
@@ -3054,23 +3081,27 @@ document.getElementById('form-config-reservas').addEventListener('submit', async
   const metaAnual = parseFloat(document.getElementById('inp-meta-anual').value) || 0;
   const guard = parseFloat(document.getElementById('inp-saldo-guardado').value) || 0;
 
+  dadosReservas.metaAnual = metaAnual;
+  dadosReservas.valorAtualGuardado = guard;
+
   await setDoc(doc(db, COLL_RESERVAS, 'config'), {
     metaAnual,
     valorAtualGuardado: guard,
     dataAtualizacao: new Date().toISOString()
   });
   toastMsg('✅ Reservas e configurações de economias salvas!');
+  renderTudo();
 });
 
 function renderReservasEEconomias() {
-  const metaAnual = dadosReservas.metaAnual || 15000;
-  const real = dadosReservas.valorAtualGuardado || 3000;
+  const metaAnual = (dadosReservas && dadosReservas.metaAnual !== undefined) ? dadosReservas.metaAnual : 15000;
+  const real = (dadosReservas && dadosReservas.valorAtualGuardado !== undefined) ? dadosReservas.valorAtualGuardado : 3000;
 
   // Preencher os campos do formulário com os valores salvos
   const inpAnual = document.getElementById('inp-meta-anual');
-  if (inpAnual && !inpAnual.value && metaAnual) inpAnual.value = metaAnual;
+  if (inpAnual && document.activeElement !== inpAnual) inpAnual.value = metaAnual;
   const inpGuard = document.getElementById('inp-saldo-guardado');
-  if (inpGuard && !inpGuard.value && real) inpGuard.value = real;
+  if (inpGuard && document.activeElement !== inpGuard) inpGuard.value = real;
 
   // 1. Cálculo da quantidade de meses restantes no ano corrente (Agosto a Dezembro = 5 meses)
   const hoje = new Date();
