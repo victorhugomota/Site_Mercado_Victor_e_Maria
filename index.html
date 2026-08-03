@@ -3122,25 +3122,34 @@ function renderReservasEEconomias() {
   // Card 2: Valor Real Guardado
   document.getElementById('val-real-guardado').textContent = brl(real);
 
-  // 3. Totais Acumulados de TODOS os Meses no Sistema (Soma completa das saídas)
-  const totalEntradas = todasEntradas.reduce((acc, e) => acc + (e.valor || 0), 0);
-  const totalCartoes  = todasFaturas.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
-  const totalBoletos  = todosBoletos.reduce((acc, b) => acc + (b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0)), 0);
-  
-  let totalMercadoOut = 0;
-  todasCompras.forEach(c => {
-    if (c.formasPagamento) {
-      totalMercadoOut += (c.formasPagamento.cartaoDebito || 0) + (c.formasPagamento.dinheiro || 0) + (c.formasPagamento.pix || 0);
-    } else {
-      totalMercadoOut += (c.valorAPagar || 0);
-    }
+  // 3. Totais Acumulados estritamente da Tabela Mensal (getMesesDisponiveis)
+  const meses = getMesesDisponiveis();
+
+  let totalEntradas = 0;
+  let totalCartoes = 0;
+  let totalBoletos = 0;
+  let totalDebito = 0;
+
+  meses.forEach(m => {
+    const e = todasEntradas.filter(x => x.mesAno === m).reduce((a, x) => a + (x.valor || 0), 0);
+    const f = todasFaturas.filter(x => x.mesAno === m).reduce((a, x) => a + (x.valorTotal !== undefined ? x.valorTotal : (x.valor || 0)), 0);
+    const b = todosBoletos.filter(x => x.mesAno === m).reduce((a, x) => a + (x.valorTotal !== undefined ? x.valorTotal : (x.valor || 0)), 0);
+    let d = 0;
+    todasCompras.filter(x => x.mesAno === m).forEach(c => {
+      if (c.formasPagamento) d += c.formasPagamento.cartaoDebito || 0;
+    });
+
+    totalEntradas += e;
+    totalCartoes += f;
+    totalBoletos += b;
+    totalDebito += d;
   });
 
-  const totalSaidasAcumuladas = totalCartoes + totalBoletos + totalMercadoOut;
+  const totalSaidasAcumuladas = totalCartoes + totalBoletos + totalDebito;
   const saldoLiquidoAcumulado = totalEntradas - totalSaidasAcumuladas;
 
   // 4. Recomendação ANUAL do Sistema (Projeção / Sugestão Anual para Guardar)
-  const numMesesCadastrados = Math.max(1, getMesesDisponiveis().length);
+  const numMesesCadastrados = Math.max(1, meses.length);
   const mediaMensalLivre = saldoLiquidoAcumulado / numMesesCadastrados;
   const recomendacaoMensal = mediaMensalLivre > 0 ? (mediaMensalLivre * 0.5) : 0;
   const recomendacaoAnual = recomendacaoMensal * 12;
@@ -3160,22 +3169,37 @@ function renderReservasEEconomias() {
       const pctGuardadoAnual = metaAnual > 0 ? Math.min(100, ((real / metaAnual) * 100)).toFixed(1) : 0;
 
       boxAnalise.innerHTML = `
-        <p>Com base na soma acumulada de todos os meses (<strong>${brl(totalEntradas)}</strong> Entradas vs <strong>${brl(totalSaidasAcumuladas)}</strong> Saídas Totais):</p>
-        <div style="background:rgba(15,23,42,0.6);padding:1rem;border-radius:10px;margin:.75rem 0;border:1px solid var(--border-color)">
-          <div style="display:flex;justify-content:space-between;margin-bottom:.4rem;flex-wrap:wrap;gap:.5rem">
-            <span>💰 Saldo Livre Acumulado no Sistema: <strong>${brl(saldoLiquidoAcumulado)}</strong></span>
-            <span>🎯 Meta Anual Desejada: <strong>${brl(metaAnual)}</strong></span>
+        <p style="margin-bottom:.5rem;font-weight:600">
+          Com base na soma acumulada de todos os meses (<strong>${brl(totalEntradas)}</strong> Entradas vs <strong>${brl(totalSaidasAcumuladas)}</strong> Saídas Totais):
+        </p>
+        <div style="background:rgba(15,23,42,0.6);padding:1.1rem;border-radius:10px;margin:.75rem 0;border:1px solid var(--border-color)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;flex-wrap:wrap;gap:.75rem">
+            <div>
+              <span style="font-size:.82rem;color:var(--text-muted);display:block">💰 Saldo Líquido em Conta</span>
+              <strong style="font-size:1.15rem;color:#60a5fa">${brl(saldoLiquidoAcumulado)}</strong>
+            </div>
+            <div>
+              <span style="font-size:.82rem;color:var(--text-muted);display:block">🏦 Total Guardado na Reserva</span>
+              <strong style="font-size:1.15rem;color:#34d399">${brl(real)}</strong>
+            </div>
+            <div>
+              <span style="font-size:.82rem;color:var(--text-muted);display:block">🎯 Meta Anual Desejada</span>
+              <strong style="font-size:1.15rem;color:#a5b4fc">${brl(metaAnual)}</strong>
+            </div>
           </div>
-          <div class="progress-bar-bg">
-            <div class="progress-bar-fill" style="width:${pctGuardadoAnual}%"></div>
+
+          <div class="progress-bar-bg" style="height:12px;border-radius:6px;background:rgba(255,255,255,0.08);overflow:hidden;margin:.75rem 0 .4rem 0">
+            <div class="progress-bar-fill" style="width:${pctGuardadoAnual}%;height:100%;background:linear-gradient(90deg,#10b981,#34d399);border-radius:6px"></div>
           </div>
-          <div style="display:flex;justify-content:space-between;font-size:.78rem;color:var(--text-muted);margin-top:.4rem">
-            <span>Guardado: ${brl(real)} (${pctGuardadoAnual}%)</span>
-            <span>Faltam guardar: ${brl(valorFaltanteMeta)} nos próximos ${mesesRestantes} meses</span>
+
+          <div style="display:flex;justify-content:space-between;font-size:.82rem;color:var(--text-muted);margin-top:.4rem;flex-wrap:wrap;gap:.5rem">
+            <span>Progresso da Meta: <strong style="color:#34d399">${brl(real)}</strong> de ${brl(metaAnual)} (<strong>${pctGuardadoAnual}%</strong> concluído)</span>
+            <span>Faltam guardar: <strong style="color:#fb7185">${brl(valorFaltanteMeta)}</strong> nos próximos ${mesesRestantes} mês(es)</span>
           </div>
         </div>
-        <p style="font-size:.84rem;color:var(--text-muted)">
-          💡 <strong>Planejamento do Sistema:</strong> Guardando <strong>${brl(metaMensalCalculada)}/mês</strong> durante os próximos <strong>${mesesRestantes} meses</strong>, você atingirá com 100% de precisão sua Meta Anual de <strong>${brl(metaAnual)}</strong>!
+
+        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.45">
+          💡 <strong>Planejamento do Sistema:</strong> Guardando <strong style="color:#34d399">${brl(metaMensalCalculada)}/mês</strong> durante os próximos <strong>${mesesRestantes} mês(es)</strong>, você atingirá com 100% de precisão sua Meta Anual de <strong>${brl(metaAnual)}</strong> (considerando seu saldo atual guardado de <strong>${brl(real)}</strong>)!
         </p>
       `;
     }
