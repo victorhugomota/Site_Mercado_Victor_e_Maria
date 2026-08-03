@@ -2654,44 +2654,85 @@ function renderCartoesCredito() {
 
   const analiseGeral = renderHtmlAnaliseLocaisFrequentes(todasFaturas, 'geral');
 
-  el.innerHTML = analiseGeral + todasFaturas.map(f => {
-    const valorTotalFatura = f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0);
-    const cartaoNome = f.cartao || 'Cartão';
-    const isNubank = cartaoNome.toLowerCase().includes('nubank');
-    const badgeClass = isNubank ? 'purple' : 'red';
-    const badgeIcon = isNubank ? '🟣' : '🔴';
+  // Agrupar por mesAno (ex: '2026-08')
+  const porMes = {};
+  todasFaturas.forEach(f => {
+    const m = f.mesAno || 'Outros';
+    if (!porMes[m]) porMes[m] = [];
+    porMes[m].push(f);
+  });
 
-    const dataVencStr = f.dataVencimento ? fmtData(f.dataVencimento).split(',')[0] : '—';
-    const mesAnoStr = f.mesAno || '—';
+  // Ordenar os meses em ordem decrescente (mês mais recente no topo)
+  const mesesOrdenados = Object.keys(porMes).sort((a, b) => b.localeCompare(a));
+
+  const gruposHtml = mesesOrdenados.map((m, idx) => {
+    const faturasDoMes = porMes[m];
+    const totalMes = faturasDoMes.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
+
+    let nomeMesFmt = m;
+    if (m !== 'Outros' && m.includes('-')) {
+      const [ano, mes] = m.split('-');
+      const dObj = new Date(parseInt(ano), parseInt(mes) - 1, 1);
+      const nomeMesStr = dObj.toLocaleString('pt-BR', { month: 'long' });
+      nomeMesFmt = `${nomeMesStr.charAt(0).toUpperCase() + nomeMesStr.slice(1)} de ${ano}`;
+    }
+
+    const isFirst = idx === 0;
 
     return `
-      <div class="purchase-card" style="margin-bottom:1rem">
-        <div class="purchase-header" onclick="toggleDetail('fat-${f.id}')">
-          <div class="purchase-info">
-            <h3><span class="badge ${badgeClass}">${badgeIcon} ${cartaoNome}</span> — Vencimento: ${dataVencStr}</h3>
-            <p>📅 Mês Referência: <strong>${mesAnoStr}</strong> &nbsp;•&nbsp; 🛒 ${f.qtdItens || (f.itens?.length || 1)} itens contemplados</p>
+      <div class="card" style="margin-bottom:1.25rem;background:rgba(15,23,42,0.45);border:1px solid var(--border-color)">
+        <div class="card-header" style="cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center" onclick="toggleGroupMonth('fat-group-${m}')">
+          <span class="card-title" style="font-size:1.05rem">📅 Faturas de ${nomeMesFmt}</span>
+          <div style="display:flex;align-items:center;gap:.75rem">
+            <span class="badge blue" style="font-size:.85rem">Total: ${brl(totalMes)} (${faturasDoMes.length} fatura${faturasDoMes.length > 1 ? 's' : ''})</span>
+            <span class="chevron ${isFirst ? 'open' : ''}" id="chev-fat-group-${m}">▼</span>
           </div>
-          <div class="purchase-values" style="display:flex;align-items:center;gap:.75rem">
-            <div style="text-align:right">
-              <div class="pv-total" style="color:#fb7185">${brl(valorTotalFatura)}</div>
-              <div class="pv-sub">Fatura do Mês</div>
-            </div>
-            <button type="button" class="btn-danger" style="padding:.35rem .65rem;font-size:.78rem;margin-left:.25rem" onclick="event.stopPropagation(); excluirFaturaDocumento('${f.id}')" title="Excluir esta fatura de todos os lugares do sistema">
-              🗑️ Excluir
-            </button>
-          </div>
-          <svg class="chevron" id="chev-fat-${f.id}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div class="purchase-details" id="detail-fat-${f.id}">
-          <div class="details-toolbar">
-            <span class="card-subtext">Detalhamento dos Lançamentos da Fatura</span>
-            <button class="btn-danger" onclick="excluirFaturaDocumento('${f.id}')">🗑️ Excluir Fatura</button>
-          </div>
-          ${renderItensFatura(f)}
+        <div id="fat-group-${m}" class="purchase-details ${isFirst ? 'open' : ''}" style="padding:.75rem 1rem;display:${isFirst ? 'block' : 'none'}">
+          ${faturasDoMes.map(f => {
+            const valorTotalFatura = f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0);
+            const cartaoNome = f.cartao || 'Cartão';
+            const isNubank = cartaoNome.toLowerCase().includes('nubank');
+            const badgeClass = isNubank ? 'purple' : 'red';
+            const badgeIcon = isNubank ? '🟣' : '🔴';
+
+            const dataVencStr = f.dataVencimento ? fmtData(f.dataVencimento).split(',')[0] : '—';
+            const mesAnoStr = f.mesAno || '—';
+
+            return `
+              <div class="purchase-card" style="margin-bottom:1rem">
+                <div class="purchase-header" onclick="toggleDetail('fat-${f.id}')">
+                  <div class="purchase-info">
+                    <h3><span class="badge ${badgeClass}">${badgeIcon} ${cartaoNome}</span> — Vencimento: ${dataVencStr}</h3>
+                    <p>📅 Mês Referência: <strong>${mesAnoStr}</strong> &nbsp;•&nbsp; 🛒 ${f.qtdItens || (f.itens?.length || 1)} itens contemplados</p>
+                  </div>
+                  <div class="purchase-values" style="display:flex;align-items:center;gap:.75rem">
+                    <div style="text-align:right">
+                      <div class="pv-total" style="color:#fb7185">${brl(valorTotalFatura)}</div>
+                      <div class="pv-sub">Fatura do Mês</div>
+                    </div>
+                    <button type="button" class="btn-danger" style="padding:.35rem .65rem;font-size:.78rem;margin-left:.25rem" onclick="event.stopPropagation(); excluirFaturaDocumento('${f.id}')" title="Excluir esta fatura de todos os lugares do sistema">
+                      🗑️ Excluir
+                    </button>
+                  </div>
+                  <svg class="chevron" id="chev-fat-${f.id}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="purchase-details" id="detail-fat-${f.id}">
+                  <div class="details-toolbar">
+                    <span class="card-subtext">Detalhamento dos Lançamentos da Fatura</span>
+                    <button class="btn-danger" onclick="excluirFaturaDocumento('${f.id}')">🗑️ Excluir Fatura</button>
+                  </div>
+                  ${renderItensFatura(f)}
+                </div>
+              </div>
+            `;
+          }).join('')}
         </div>
       </div>
     `;
   }).join('');
+
+  el.innerHTML = analiseGeral + gruposHtml;
 }
 
 function renderItensFatura(f) {
@@ -3025,49 +3066,88 @@ function renderBoletos() {
     return;
   }
 
-  // Ordenar por data de vencimento: da mais distante da data de hoje para a mais perto (ficando no topo da lista)
-  const boletosOrdenados = [...todosBoletos].sort((a, b) => {
-    const dA = a.dataVencimento ? new Date(a.dataVencimento).getTime() : (a.mesAno ? new Date(a.mesAno + '-01').getTime() : 0);
-    const dB = b.dataVencimento ? new Date(b.dataVencimento).getTime() : (b.mesAno ? new Date(b.mesAno + '-01').getTime() : 0);
-    return dB - dA; // Mais distante no futuro -> topo da lista
+  // Agrupar por mesAno (ex: '2026-08')
+  const porMes = {};
+  todosBoletos.forEach(b => {
+    const m = b.mesAno || 'Outros';
+    if (!porMes[m]) porMes[m] = [];
+    porMes[m].push(b);
   });
 
-  el.innerHTML = boletosOrdenados.map(b => {
-    const valorTotalBoleto = b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0);
-    const dataVencStr = b.dataVencimento ? fmtData(b.dataVencimento).split(',')[0] : '—';
-    const mesAnoStr = b.mesAno || '—';
-    const descBoleto = getNomeBoleto(b);
+  // Ordenar os meses em ordem decrescente
+  const mesesOrdenados = Object.keys(porMes).sort((a, b) => b.localeCompare(a));
+
+  el.innerHTML = mesesOrdenados.map((m, idx) => {
+    const boletosDoMes = porMes[m];
+    // Ordenar os boletos dentro do mês por data de vencimento
+    boletosDoMes.sort((a, b) => {
+      const dA = a.dataVencimento ? new Date(a.dataVencimento).getTime() : 0;
+      const dB = b.dataVencimento ? new Date(b.dataVencimento).getTime() : 0;
+      return dB - dA;
+    });
+
+    const totalMes = boletosDoMes.reduce((acc, b) => acc + (b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0)), 0);
+
+    let nomeMesFmt = m;
+    if (m !== 'Outros' && m.includes('-')) {
+      const [ano, mes] = m.split('-');
+      const dObj = new Date(parseInt(ano), parseInt(mes) - 1, 1);
+      const nomeMesStr = dObj.toLocaleString('pt-BR', { month: 'long' });
+      nomeMesFmt = `${nomeMesStr.charAt(0).toUpperCase() + nomeMesStr.slice(1)} de ${ano}`;
+    }
+
+    const isFirst = idx === 0;
 
     return `
-      <div class="purchase-card">
-        <div class="purchase-header" onclick="toggleDetail('bol-${b.id}')">
-          <div class="purchase-info">
-            <h3><span class="badge purple">📄 ${descBoleto}</span> — Vencimento: ${dataVencStr}</h3>
-            <p>📅 Mês Referência: <strong>${mesAnoStr}</strong> &nbsp;•&nbsp; 🛒 ${b.qtdItens || (b.itens?.length || 1)} itens / encargos</p>
+      <div class="card" style="margin-bottom:1.25rem;background:rgba(15,23,42,0.45);border:1px solid var(--border-color)">
+        <div class="card-header" style="cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center" onclick="toggleGroupMonth('bol-group-${m}')">
+          <span class="card-title" style="font-size:1.05rem">📄 Boletos de ${nomeMesFmt}</span>
+          <div style="display:flex;align-items:center;gap:.75rem">
+            <span class="badge purple" style="font-size:.85rem">Total: ${brl(totalMes)} (${boletosDoMes.length} boleto${boletosDoMes.length > 1 ? 's' : ''})</span>
+            <span class="chevron ${isFirst ? 'open' : ''}" id="chev-bol-group-${m}">▼</span>
           </div>
-          <div class="purchase-values" style="display:flex;align-items:center;gap:.5rem">
-            <div style="text-align:right">
-              <div class="pv-total" style="color:#c084fc">${brl(valorTotalBoleto)}</div>
-              <div class="pv-sub">Boleto do Mês</div>
-            </div>
-            <button type="button" class="btn-secondary" style="padding:.35rem .65rem;font-size:.78rem;margin-left:.25rem" onclick="event.stopPropagation(); editarValorBoletoDocumento('${b.id}')" title="Editar valor do boleto">
-              ✏️ Editar
-            </button>
-            <button type="button" class="btn-danger" style="padding:.35rem .65rem;font-size:.78rem" onclick="event.stopPropagation(); excluirBoletoDocumento('${b.id}')" title="Excluir este boleto de todos os lugares do sistema">
-              🗑️ Excluir
-            </button>
-          </div>
-          <svg class="chevron" id="chev-bol-${b.id}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <div class="purchase-details" id="detail-bol-${b.id}">
-          <div class="details-toolbar">
-            <span class="card-subtext">Detalhamento dos Itens / Encargos do Boleto</span>
-            <div style="display:flex;gap:.35rem">
-              <button class="btn-secondary" onclick="editarValorBoletoDocumento('${b.id}')">✏️ Editar Valor</button>
-              <button class="btn-danger" onclick="excluirBoletoDocumento('${b.id}')">🗑️ Excluir Boleto</button>
-            </div>
-          </div>
-          ${renderItensBoleto(b)}
+        <div id="bol-group-${m}" class="purchase-details ${isFirst ? 'open' : ''}" style="padding:.75rem 1rem;display:${isFirst ? 'block' : 'none'}">
+          ${boletosDoMes.map(b => {
+            const valorTotalBoleto = b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0);
+            const dataVencStr = b.dataVencimento ? fmtData(b.dataVencimento).split(',')[0] : '—';
+            const mesAnoStr = b.mesAno || '—';
+            const descBoleto = getNomeBoleto(b);
+
+            return `
+              <div class="purchase-card" style="margin-bottom:1rem">
+                <div class="purchase-header" onclick="toggleDetail('bol-${b.id}')">
+                  <div class="purchase-info">
+                    <h3><span class="badge purple">📄 ${descBoleto}</span> — Vencimento: ${dataVencStr}</h3>
+                    <p>📅 Mês Referência: <strong>${mesAnoStr}</strong> &nbsp;•&nbsp; 🛒 ${b.qtdItens || (b.itens?.length || 1)} itens / encargos</p>
+                  </div>
+                  <div class="purchase-values" style="display:flex;align-items:center;gap:.5rem">
+                    <div style="text-align:right">
+                      <div class="pv-total" style="color:#c084fc">${brl(valorTotalBoleto)}</div>
+                      <div class="pv-sub">Boleto do Mês</div>
+                    </div>
+                    <button type="button" class="btn-secondary" style="padding:.35rem .65rem;font-size:.78rem;margin-left:.25rem" onclick="event.stopPropagation(); editarValorBoletoDocumento('${b.id}')" title="Editar valor do boleto">
+                      ✏️ Editar
+                    </button>
+                    <button type="button" class="btn-danger" style="padding:.35rem .65rem;font-size:.78rem" onclick="event.stopPropagation(); excluirBoletoDocumento('${b.id}')" title="Excluir este boleto de todos os lugares do sistema">
+                      🗑️ Excluir
+                    </button>
+                  </div>
+                  <svg class="chevron" id="chev-bol-${b.id}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="6 9 12 15 18 9"/></svg>
+                </div>
+                <div class="purchase-details" id="detail-bol-${b.id}">
+                  <div class="details-toolbar">
+                    <span class="card-subtext">Detalhamento dos Itens / Encargos do Boleto</span>
+                    <div style="display:flex;gap:.35rem">
+                      <button class="btn-secondary" onclick="editarValorBoletoDocumento('${b.id}')">✏️ Editar Valor</button>
+                      <button class="btn-danger" onclick="excluirBoletoDocumento('${b.id}')">🗑️ Excluir Boleto</button>
+                    </div>
+                  </div>
+                  ${renderItensBoleto(b)}
+                </div>
+              </div>
+            `;
+          }).join('')}
         </div>
       </div>
     `;
@@ -4464,6 +4544,18 @@ window.toggleDetail = function(id) {
   let c = document.getElementById('chev-' + id) || document.getElementById('chev-' + id.replace('detail-', ''));
   if (d) d.classList.toggle('open');
   if (c) c.classList.toggle('open');
+};
+
+window.toggleGroupMonth = function(id) {
+  const el = document.getElementById(id);
+  const chev = document.getElementById('chev-' + id);
+  if (!el) return;
+  const isHidden = el.style.display === 'none' || !el.style.display;
+  el.style.display = isHidden ? 'block' : 'none';
+  if (chev) {
+    if (isHidden) chev.classList.add('open');
+    else chev.classList.remove('open');
+  }
 };
 
 window.confirmarExcluirMercado = async function(id) {
