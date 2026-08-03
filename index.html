@@ -1004,6 +1004,33 @@
   </div>
 </div>
 
+<!-- MODAL: EDITAR VALOR DO BOLETO / ITEM -->
+<div id="modal-editar-boleto" class="modal-overlay">
+  <div class="modal-box" style="max-width: 460px;">
+    <div class="modal-header">
+      <h2 id="titulo-modal-editar-boleto">✏️ Editar Valor do Boleto</h2>
+      <button type="button" class="btn-close" onclick="fecharModalEditarBoleto()">&times;</button>
+    </div>
+    <form id="form-editar-boleto">
+      <input type="hidden" id="inp-edit-boleto-id">
+      <input type="hidden" id="inp-edit-item-index">
+      
+      <div class="form-group">
+        <label for="inp-edit-boleto-desc">Boleto / Conta:</label>
+        <input type="text" id="inp-edit-boleto-desc" class="form-control" readonly style="opacity:0.8;background:rgba(0,0,0,0.25);cursor:not-allowed">
+      </div>
+      <div class="form-group">
+        <label for="inp-edit-boleto-valor">Novo Valor (R$):</label>
+        <input type="number" step="0.01" min="0.01" id="inp-edit-boleto-valor" class="form-control" placeholder="0.00" required>
+      </div>
+      <div style="display:flex;gap:.75rem;margin-top:1.25rem">
+        <button type="button" class="btn-secondary" style="flex:1;padding:.75rem" onclick="fecharModalEditarBoleto()">Cancelar</button>
+        <button type="submit" class="btn-primary" style="flex:1;padding:.75rem">💾 Salvar Alterações</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <!-- MODAL: ADICIONAR NOTA MERCADO -->
 <div id="modal-add-nota" class="modal-overlay">
   <div class="modal-box" style="max-width: 680px;">
@@ -1591,7 +1618,7 @@ function renderSubConteudoMensal(entradasMes, faturasMes, boletosMes, comprasMes
               <div class="purchase-card" style="margin-bottom:1rem">
                 <div class="purchase-header" onclick="toggleDetail('bol-m-${b.id}')">
                   <div class="purchase-info">
-                    <h3>📄 ${b.descricao || 'Boleto / Conta'}</h3>
+                    <h3>📄 ${getNomeBoleto(b)}</h3>
                     <p>Vencimento: <strong>${b.dataVencimento || '—'}</strong> • ${b.qtdItens || (b.itens ? b.itens.length : 0)} encargos</p>
                   </div>
                   <div class="purchase-values" style="display:flex;align-items:center;gap:.5rem">
@@ -3023,7 +3050,7 @@ function renderBoletos() {
     const valorTotalBoleto = b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0);
     const dataVencStr = b.dataVencimento ? fmtData(b.dataVencimento).split(',')[0] : '—';
     const mesAnoStr = b.mesAno || '—';
-    const descBoleto = b.descricao || 'Boleto / Conta';
+    const descBoleto = getNomeBoleto(b);
 
     return `
       <div class="purchase-card">
@@ -3059,6 +3086,22 @@ function renderBoletos() {
       </div>
     `;
   }).join('');
+}
+
+function getNomeBoleto(b) {
+  if (!b) return 'Boleto';
+  let nome = b.descricao;
+  if (!nome || nome === 'Boleto' || nome === 'Boleto / Conta') {
+    if (b.itens && b.itens.length > 0 && b.itens[0].descricao) {
+      nome = b.itens[0].descricao;
+    } else if (b.beneficiario) {
+      nome = b.beneficiario;
+    } else {
+      nome = 'Boleto';
+    }
+  }
+  nome = nome.trim().replace(/[-–—\s]+$/, '').trim();
+  return nome || 'Boleto';
 }
 
 function renderItensBoleto(b) {

@@ -215,7 +215,7 @@
     .btn-card-select.active[data-card="Nubank"]{border-color:#a855f7;background:rgba(168,85,247,.2);color:#c084fc;box-shadow:0 0 15px rgba(168,85,247,.3)}
     .btn-card-select.active[data-card="Santander"]{border-color:#f43f5e;background:rgba(244,63,94,.2);color:#fb7185;box-shadow:0 0 15px rgba(244,63,94,.3)}
   </style>
-  <script type="module" crossorigin src="./assets/index-BuaeRkD-.js"></script>
+  <script type="module" crossorigin src="./assets/index-DNKpgTIo.js"></script>
 </head>
 <body>
 
@@ -1001,6 +1001,33 @@
       <button type="submit" class="btn-primary" style="width:100%;padding:.85rem;font-size:1rem;margin-top:.5rem">
         💾 Salvar Gastos Previsto
       </button>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: EDITAR VALOR DO BOLETO / ITEM -->
+<div id="modal-editar-boleto" class="modal-overlay">
+  <div class="modal-box" style="max-width: 460px;">
+    <div class="modal-header">
+      <h2 id="titulo-modal-editar-boleto">✏️ Editar Valor do Boleto</h2>
+      <button type="button" class="btn-close" onclick="fecharModalEditarBoleto()">&times;</button>
+    </div>
+    <form id="form-editar-boleto">
+      <input type="hidden" id="inp-edit-boleto-id">
+      <input type="hidden" id="inp-edit-item-index">
+      
+      <div class="form-group">
+        <label for="inp-edit-boleto-desc">Boleto / Conta:</label>
+        <input type="text" id="inp-edit-boleto-desc" class="form-control" readonly style="opacity:0.8;background:rgba(0,0,0,0.25);cursor:not-allowed">
+      </div>
+      <div class="form-group">
+        <label for="inp-edit-boleto-valor">Novo Valor (R$):</label>
+        <input type="number" step="0.01" min="0.01" id="inp-edit-boleto-valor" class="form-control" placeholder="0.00" required>
+      </div>
+      <div style="display:flex;gap:.75rem;margin-top:1.25rem">
+        <button type="button" class="btn-secondary" style="flex:1;padding:.75rem" onclick="fecharModalEditarBoleto()">Cancelar</button>
+        <button type="submit" class="btn-primary" style="flex:1;padding:.75rem">💾 Salvar Alterações</button>
+      </div>
     </form>
   </div>
 </div>
