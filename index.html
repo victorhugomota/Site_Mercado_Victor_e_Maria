@@ -1555,14 +1555,14 @@ function renderSubConteudoMensal(entradasMes, faturasMes, boletosMes, comprasMes
                   <div class="purchase-values" style="display:flex;align-items:center;gap:.75rem">
                     <div style="text-align:right">
                       <div class="pv-total" style="color:#fb7185">${brl(f.valorTotal)}</div>
-                      <div class="pv-sub">Clique para ver itens <span class="chevron">▼</span></div>
+                      <div class="pv-sub">Clique para ver itens <span class="chevron" id="chev-fat-m-${f.id}">▼</span></div>
                     </div>
                     <button type="button" class="btn-danger" style="padding:.35rem .65rem;font-size:.78rem;margin-left:.25rem" onclick="event.stopPropagation(); excluirFaturaDocumento('${f.id}')" title="Excluir esta fatura de todos os lugares do sistema">
                       🗑️ Excluir
                     </button>
                   </div>
                 </div>
-                <div id="fat-m-${f.id}" class="purchase-details">
+                <div id="detail-fat-m-${f.id}" class="purchase-details">
                   <div class="details-toolbar">
                     <span style="font-weight:700;font-size:.9rem;color:var(--text-muted)">Lançamentos da Fatura</span>
                     <button class="btn-danger" onclick="excluirFaturaDocumento('${f.id}')">🗑️ Excluir Fatura</button>
@@ -1597,14 +1597,14 @@ function renderSubConteudoMensal(entradasMes, faturasMes, boletosMes, comprasMes
                   <div class="purchase-values" style="display:flex;align-items:center;gap:.75rem">
                     <div style="text-align:right">
                       <div class="pv-total" style="color:#c084fc">${brl(b.valorTotal)}</div>
-                      <div class="pv-sub">Clique para ver detalhes <span class="chevron">▼</span></div>
+                      <div class="pv-sub">Clique para ver detalhes <span class="chevron" id="chev-bol-m-${b.id}">▼</span></div>
                     </div>
                     <button type="button" class="btn-danger" style="padding:.35rem .65rem;font-size:.78rem;margin-left:.25rem" onclick="event.stopPropagation(); excluirBoletoDocumento('${b.id}')" title="Excluir este boleto de todos os lugares do sistema">
                       🗑️ Excluir
                     </button>
                   </div>
                 </div>
-                <div id="bol-m-${b.id}" class="purchase-details">
+                <div id="detail-bol-m-${b.id}" class="purchase-details">
                   <div class="details-toolbar">
                     <span style="font-weight:700;font-size:.9rem;color:var(--text-muted)">Detalhamento do Boleto</span>
                     <button class="btn-danger" onclick="excluirBoletoDocumento('${b.id}')">🗑️ Excluir Boleto</button>
@@ -1637,10 +1637,10 @@ function renderSubConteudoMensal(entradasMes, faturasMes, boletosMes, comprasMes
                   </div>
                   <div class="purchase-values">
                     <div class="pv-total" style="color:#fbbf24">${brl(c.valorAPagar)}</div>
-                    <div class="pv-sub">Clique para ver itens <span class="chevron">▼</span></div>
+                    <div class="pv-sub">Clique para ver itens <span class="chevron" id="chev-mer-m-${c.id}">▼</span></div>
                   </div>
                 </div>
-                <div id="mer-m-${c.id}" class="purchase-details">
+                <div id="detail-mer-m-${c.id}" class="purchase-details">
                   <div class="details-toolbar">
                     <span style="font-weight:700;font-size:.9rem;color:var(--text-muted)">Itens da Nota</span>
                     <button class="btn-danger" onclick="excluirCompraDocumento('${c.id}')">🗑️ Excluir Nota</button>
@@ -4207,8 +4207,11 @@ function renderItensCompra(c) {
 }
 
 window.toggleDetail = function(id) {
-  const d = document.getElementById('detail-' + id);
-  const c = document.getElementById('chev-' + id);
+  let d = document.getElementById('detail-' + id) || document.getElementById(id);
+  if (!d && id.startsWith('detail-')) {
+    d = document.getElementById(id.replace('detail-', ''));
+  }
+  let c = document.getElementById('chev-' + id) || document.getElementById('chev-' + id.replace('detail-', ''));
   if (d) d.classList.toggle('open');
   if (c) c.classList.toggle('open');
 };
