@@ -1626,24 +1626,56 @@ function renderSubConteudoMensal(entradasMes, faturasMes, boletosMes, comprasMes
   // 4. Mercado do Mês
   const secMer = document.getElementById('content-mercado-mes');
   if (secMer) {
+    let mesAlim = 0;
+    let mesCred = 0;
+    let mesDeb  = 0;
+
+    comprasMes.forEach(c => {
+      if (c.formasPagamento) {
+        mesAlim += c.formasPagamento.valeAlimentacao || 0;
+        mesCred += c.formasPagamento.cartaoCredito || 0;
+        mesDeb  += c.formasPagamento.cartaoDebito || 0;
+      } else {
+        mesDeb += c.valorAPagar || 0;
+      }
+    });
+
     secMer.innerHTML = `
       <div class="card" style="margin-bottom:1.5rem">
-        <div class="card-header">
+        <div class="card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
           <span class="card-title">🛒 Compras de Mercado em ${mesSelecionado}</span>
-          <span class="badge amber">${comprasMes.length} notas cadastradas</span>
+          <div style="display:flex;gap:.4rem;align-items:center;flex-wrap:wrap">
+            ${mesAlim > 0 ? `<span class="badge green">🥗 Alimentação: ${brl(mesAlim)}</span>` : ''}
+            ${mesCred > 0 ? `<span class="badge blue">💳 Crédito: ${brl(mesCred)}</span>` : ''}
+            ${mesDeb > 0  ? `<span class="badge amber">💵 Débito: ${brl(mesDeb)}</span>` : ''}
+            <span class="badge purple">${comprasMes.length} notas cadastradas</span>
+          </div>
         </div>
         ${!comprasMes.length
           ? `<div class="empty-state">Nenhuma nota de mercado cadastrada para ${mesSelecionado}.</div>`
-          : comprasMes.map(c => `
+          : comprasMes.map(c => {
+              const fp = c.formasPagamento || {};
+              const vAlim = fp.valeAlimentacao || 0;
+              const vCred = fp.cartaoCredito || 0;
+              const vDeb  = fp.cartaoDebito !== undefined ? fp.cartaoDebito : ((!vAlim && !vCred) ? (c.valorAPagar || 0) : 0);
+
+              return `
               <div class="purchase-card" style="margin-bottom:1rem">
                 <div class="purchase-header" onclick="toggleDetail('mer-m-${c.id}')">
                   <div class="purchase-info">
                     <h3>🛒 ${c.nomeMercado || 'Mercado'}</h3>
                     <p>Data: <strong>${fmtData(c.dataEmissao)}</strong> • ${c.qtdTotalItens || 0} itens</p>
                   </div>
-                  <div class="purchase-values">
-                    <div class="pv-total" style="color:#fbbf24">${brl(c.valorAPagar)}</div>
-                    <div class="pv-sub">Clique para ver itens <span class="chevron" id="chev-mer-m-${c.id}">▼</span></div>
+                  <div class="purchase-values" style="display:flex;align-items:center;gap:.75rem">
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.25rem;font-size:.78rem">
+                      ${vAlim > 0 ? `<span style="color:#34d399;background:rgba(16,185,129,0.12);padding:2px 8px;border-radius:4px;white-space:nowrap">🥗 Alimentação: <strong>${brl(vAlim)}</strong></span>` : ''}
+                      ${vCred > 0 ? `<span style="color:#60a5fa;background:rgba(59,130,246,0.12);padding:2px 8px;border-radius:4px;white-space:nowrap">💳 Crédito: <strong>${brl(vCred)}</strong></span>` : ''}
+                      ${vDeb > 0  ? `<span style="color:#fbbf24;background:rgba(245,158,11,0.12);padding:2px 8px;border-radius:4px;white-space:nowrap">💵 Débito: <strong>${brl(vDeb)}</strong></span>` : ''}
+                    </div>
+                    <div style="text-align:right">
+                      <div class="pv-total" style="color:#fbbf24">${brl(c.valorAPagar)}</div>
+                      <div class="pv-sub">Clique para ver itens <span class="chevron" id="chev-mer-m-${c.id}">▼</span></div>
+                    </div>
                   </div>
                 </div>
                 <div id="detail-mer-m-${c.id}" class="purchase-details">
@@ -1654,7 +1686,8 @@ function renderSubConteudoMensal(entradasMes, faturasMes, boletosMes, comprasMes
                   ${renderItensCompra(c)}
                 </div>
               </div>
-            `).join('')}
+            `;
+          }).join('')}
       </div>
     `;
   }
