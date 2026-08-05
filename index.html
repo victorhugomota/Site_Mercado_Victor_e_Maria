@@ -2642,6 +2642,290 @@ window.fecharModalEstabelecimento = function() {
   if (modalEl) modalEl.style.display = 'none';
 };
 
+function categorizarItemCartao(descricao) {
+  if (!descricao) return { nome: 'Outros & Diversos', icone: '📦', cor: 'blue' };
+  const desc = descricao.toUpperCase();
+
+  if (desc.includes('ZARA') || desc.includes('RENNER') || desc.includes('C&A') || desc.includes('RIACHUELO') || 
+      desc.includes('ROUPA') || desc.includes('VESTUARIO') || desc.includes('SAPATO') || desc.includes('CALCADO') ||
+      desc.includes('CENTAURO') || desc.includes('NIKE') || desc.includes('ADIDAS') || desc.includes('SHEIN') || desc.includes('DAFITI')) {
+    return { nome: 'Vestuário & Roupas', icone: '👗', cor: 'rose' };
+  }
+  if (desc.includes('VIAGEM') || desc.includes('AIRBNB') || desc.includes('BOOKING') || desc.includes('HOTEL') || 
+      desc.includes('POUSADA') || desc.includes('DECOLAR') || desc.includes('LATAM') || desc.includes('GOL') || 
+      desc.includes('AZUL') || desc.includes('FLIGHT') || desc.includes('PASSAGEM') || desc.includes('PASSAGENS')) {
+    return { nome: 'Viagens & Hospedagem', icone: '✈️', cor: 'purple' };
+  }
+  if (desc.includes('AUTOPOSTO') || desc.includes('POSTO') || desc.includes('UBER') || desc.includes('99') || 
+      desc.includes('SHELL') || desc.includes('IPIRANGA') || desc.includes('PETROBRAS') || desc.includes('COMBUSTIVEL') || desc.includes('PEDAGIO')) {
+    return { nome: 'Transporte & Combustível', icone: '⛽', cor: 'amber' };
+  }
+  if (desc.includes('SAVEGNAGO') || desc.includes('TONELLI') || desc.includes('SUPERMERCADO') || desc.includes('MERCADO') || 
+      desc.includes('ATACADAO') || desc.includes('CARREFOUR') || desc.includes('PAO DE ACUCAR') || desc.includes('MARTINS')) {
+    return { nome: 'Supermercado & Alimentação', icone: '🛒', cor: 'green' };
+  }
+  if (desc.includes('SORVETERIA') || desc.includes('PIZZA') || desc.includes('BURGER') || desc.includes('IFOOD') || 
+      desc.includes('RESTAURANTE') || desc.includes('BAR') || desc.includes('PUB') || desc.includes('DELICIAS') || 
+      desc.includes('CHOCOLATE') || desc.includes('CINEMA') || desc.includes('OUTBACK') || desc.includes('MC DONALDS') || desc.includes('KFC')) {
+    return { nome: 'Restaurantes & Lazer', icone: '🍕', cor: 'orange' };
+  }
+  if (desc.includes('COSMETICO') || desc.includes('COSMETICOS') || desc.includes('FARMACIA') || desc.includes('DROGARIA') || desc.includes('DROGASIL') || 
+      desc.includes('PAGUE MENOS') || desc.includes('PERFUMARIA') || desc.includes('NATURA') || desc.includes('BOTICARIO') || desc.includes('ESSENCIA')) {
+    return { nome: 'Saúde & Cosméticos', icone: '💄', cor: 'pink' };
+  }
+  if (desc.includes('AMAZON') || desc.includes('MERCADO LIVRE') || desc.includes('MAGALU') || desc.includes('MAGAZINE') || 
+      desc.includes('SHOPEE') || desc.includes('ALIEXPRESS') || desc.includes('FAST SHOP') || desc.includes('APPLE') || desc.includes('KABUM')) {
+    return { nome: 'Eletrônicos & Shopping', icone: '📱', cor: 'cyan' };
+  }
+
+  return { nome: 'Outros & Diversos', icone: '📦', cor: 'blue' };
+}
+
+function renderHtmlAnaliseGastosCartao(faturas) {
+  if (!faturas || !faturas.length) return '';
+
+  // 1. Extrair todos os lançamentos
+  const todosItens = [];
+  faturas.forEach(f => {
+    if (f.itens && Array.isArray(f.itens)) {
+      f.itens.forEach(i => {
+        if (i.descricao && i.valor) {
+          todosItens.push({
+            ...i,
+            cartao: f.cartao || 'Cartão',
+            mesAno: f.mesAno || 'Outros'
+          });
+        }
+      });
+    }
+  });
+
+  const totalGeralCartoes = faturas.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
+
+  // 2. Maiores Locais de Gasto (Top 5 por valor total R$)
+  const mapaLocais = {};
+  todosItens.forEach(i => {
+    const nomeFmt = normalizarNomeEstabelecimento(i.descricao);
+    if (!mapaLocais[nomeFmt]) {
+      mapaLocais[nomeFmt] = { nome: nomeFmt, valorTotal: 0, qtd: 0 };
+    }
+    mapaLocais[nomeFmt].valorTotal += i.valor;
+    mapaLocais[nomeFmt].qtd += 1;
+  });
+
+  const topLocaisGasto = Object.values(mapaLocais).sort((a, b) => b.valorTotal - a.valorTotal).slice(0, 5);
+
+  // 3. Gastos por Categoria
+  const mapaCategorias = {};
+  todosItens.forEach(i => {
+    const cat = categorizarItemCartao(i.descricao);
+    if (!mapaCategorias[cat.nome]) {
+      mapaCategorias[cat.nome] = { ...cat, valorTotal: 0, qtd: 0 };
+    }
+    mapaCategorias[cat.nome].valorTotal += i.valor;
+    mapaCategorias[cat.nome].qtd += 1;
+  });
+
+  const listaCategorias = Object.values(mapaCategorias).sort((a, b) => b.valorTotal - a.valorTotal);
+
+  // 4. Comparativo Mês a Mês (Mês Atual vs Mês Anterior)
+  const porMes = {};
+  faturas.forEach(f => {
+    const m = f.mesAno || 'Outros';
+    if (!porMes[m]) porMes[m] = [];
+    porMes[m].push(f);
+  });
+
+  const mesesOrdenados = Object.keys(porMes).sort((a, b) => b.localeCompare(a));
+  const mesAtual = mesesOrdenados[0];
+  const mesAnterior = mesesOrdenados[1];
+
+  let comparativoHtml = '';
+  let dicasEconomiaHtml = '';
+
+  if (mesAtual && mesAnterior) {
+    const faturasMesAtual = porMes[mesAtual] || [];
+    const faturasMesAnterior = porMes[mesAnterior] || [];
+
+    const totalMesAtual = faturasMesAtual.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
+    const totalMesAnterior = faturasMesAnterior.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
+
+    const difTotal = totalMesAtual - totalMesAnterior;
+    const pctTotal = totalMesAnterior > 0 ? ((difTotal / totalMesAnterior) * 100).toFixed(1) : 0;
+
+    function fmtNomeMes(m) {
+      if (!m || !m.includes('-')) return m;
+      const [ano, mes] = m.split('-');
+      const dObj = new Date(parseInt(ano), parseInt(mes) - 1, 1);
+      const nomeStr = dObj.toLocaleString('pt-BR', { month: 'long' });
+      return `${nomeStr.charAt(0).toUpperCase() + nomeStr.slice(1)}/${ano}`;
+    }
+
+    const nomeMesAtualFmt = fmtNomeMes(mesAtual);
+    const nomeMesAnteriorFmt = fmtNomeMes(mesAnterior);
+
+    // Comparação por Categoria entre mesAtual e mesAnterior
+    const catMesAtual = {};
+    const catMesAnterior = {};
+
+    faturasMesAtual.forEach(f => {
+      if (f.itens) f.itens.forEach(i => {
+        const cat = categorizarItemCartao(i.descricao).nome;
+        catMesAtual[cat] = (catMesAtual[cat] || 0) + (i.valor || 0);
+      });
+    });
+
+    faturasMesAnterior.forEach(f => {
+      if (f.itens) f.itens.forEach(i => {
+        const cat = categorizarItemCartao(i.descricao).nome;
+        catMesAnterior[cat] = (catMesAnterior[cat] || 0) + (i.valor || 0);
+      });
+    });
+
+    const todasCatNomes = Array.from(new Set([...Object.keys(catMesAtual), ...Object.keys(catMesAnterior)]));
+    const alertasAumento = [];
+
+    todasCatNomes.forEach(catNome => {
+      const vAtual = catMesAtual[catNome] || 0;
+      const vAnterior = catMesAnterior[catNome] || 0;
+      const difCat = vAtual - vAnterior;
+
+      if (difCat > 50) { // Aumento significativo de pelo menos R$ 50
+        const pctCat = vAnterior > 0 ? ((difCat / vAnterior) * 100).toFixed(0) : '100+';
+        alertasAumento.push({
+          categoria: catNome,
+          vAtual,
+          vAnterior,
+          difCat,
+          pctCat
+        });
+      }
+    });
+
+    alertasAumento.sort((a, b) => b.difCat - a.difCat);
+
+    let iconeComparativo = difTotal > 0 ? '📈' : '📉';
+    let sinalComparativo = difTotal > 0 ? '+' : '';
+
+    comparativoHtml = `
+      <div style="background:rgba(15,23,42,0.7); border:1px solid var(--border-color); border-radius:10px; padding:.85rem 1rem; margin-bottom:1rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.75rem">
+        <div>
+          <span style="font-size:.82rem; color:var(--text-muted); display:block">⚖️ Comparativo Mês Atual (${nomeMesAtualFmt}) vs Mês Anterior (${nomeMesAnteriorFmt})</span>
+          <div style="font-size:1.05rem; font-weight:700; color:#f8fafc; margin-top:.2rem">
+            ${brl(totalMesAtual)} <span style="font-size:.82rem; font-weight:400; color:var(--text-muted)">em ${nomeMesAtualFmt}</span> vs ${brl(totalMesAnterior)} <span style="font-size:.82rem; font-weight:400; color:var(--text-muted)">em ${nomeMesAnteriorFmt}</span>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <span class="badge ${difTotal > 0 ? 'rose' : 'green'}" style="font-size:.88rem; padding:.35rem .75rem">
+            ${iconeComparativo} Variação: ${sinalComparativo}${brl(difTotal)} (${sinalComparativo}${pctTotal}%)
+          </span>
+        </div>
+      </div>
+    `;
+
+    if (alertasAumento.length > 0) {
+      dicasEconomiaHtml = `
+        <div style="margin-top:1rem; background:rgba(251,113,133,0.08); border:1px dashed rgba(251,113,133,0.35); border-radius:10px; padding:.85rem 1rem">
+          <div style="font-weight:700; font-size:.9rem; color:#fb7185; margin-bottom:.5rem; display:flex; align-items:center; gap:.4rem">
+            💡 DICAS DE ECONOMIA & RECOMENDAÇÕES (Categorias com Aumento em ${nomeMesAtualFmt}):
+          </div>
+          <div style="display:flex; flex-direction:column; gap:.5rem">
+            ${alertasAumento.map(a => `
+              <div style="font-size:.83rem; color:#f1f5f9; background:rgba(15,23,42,0.8); border-left:3px solid #fb7185; padding:.5rem .75rem; border-radius:4px">
+                🚨 <strong>${a.categoria}</strong>: Gastos subiram <strong style="color:#fb7185">+${brl(a.difCat)} (+${a.pctCat}%)</strong> em relação a ${nomeMesAnteriorFmt} (${brl(a.vAtual)} vs ${brl(a.vAnterior)}).
+                <span style="color:var(--text-muted); display:block; margin-top:.2rem">👉 <em>Recomendação: Para o próximo mês, busque limitar os gastos nesta categoria para equilibrar o orçamento.</em></span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    } else {
+      dicasEconomiaHtml = `
+        <div style="margin-top:1rem; background:rgba(16,185,129,0.08); border:1px dashed rgba(16,185,129,0.35); border-radius:10px; padding:.85rem 1rem">
+          <div style="font-weight:700; font-size:.9rem; color:#34d399; display:flex; align-items:center; gap:.4rem">
+            👏 EXCELENTE DESEMPENHO!
+          </div>
+          <p style="font-size:.83rem; color:#f1f5f9; margin-top:.25rem">
+            Nenhuma categoria apresentou aumento expressivo de gastos em relação a ${nomeMesAnteriorFmt}. Você manteve seus gastos sob controle neste mês!
+          </p>
+        </div>
+      `;
+    }
+  }
+
+  return `
+    <div class="card" style="margin-bottom:1.5rem; background:linear-gradient(135deg,rgba(30,41,59,.98),rgba(15,23,42,.99)); border-color:#a855f7; box-shadow:0 4px 22px rgba(168,85,247,0.18)">
+      <div class="card-header" style="flex-wrap:wrap; gap:.5rem">
+        <div>
+          <span class="card-title" style="color:#c084fc; font-size:1.1rem">📊 ANÁLISE DE GASTOS DO CARTÃO DE CRÉDITO & ECONOMIA</span>
+          <p style="font-size:.78rem; color:var(--text-muted); margin-top:.2rem">Visão consolidada por Estabelecimentos Top, Categorias de Consumo e Comparativo com o Mês Anterior.</p>
+        </div>
+        <span class="badge purple" style="font-size:.85rem; padding:.35rem .75rem">Total em Cartões: ${brl(totalGeralCartoes)}</span>
+      </div>
+
+      ${comparativoHtml}
+
+      <!-- Grid 2 Colunas: Top Locais vs Categorias -->
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:1rem; margin-top:1rem">
+        
+        <!-- Coluna 1: Top 5 Locais em R$ -->
+        <div style="background:rgba(15,23,42,0.6); border:1px solid var(--border-color); border-radius:10px; padding:.85rem 1rem">
+          <div style="font-weight:700; font-size:.9rem; color:#c084fc; margin-bottom:.75rem; display:flex; justify-content:space-between; align-items:center">
+            <span>🏆 Locais Onde Mais Foi Gasto (Top R$)</span>
+            <span style="font-size:.75rem; color:var(--text-muted)">Maiores valores</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:.6rem">
+            ${topLocaisGasto.map((loc, idx) => {
+              const pct = totalGeralCartoes > 0 ? ((loc.valorTotal / totalGeralCartoes) * 100).toFixed(1) : 0;
+              const medalha = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : `#${idx+1}`));
+              return `
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(30,41,59,0.7); border-radius:6px; padding:.5rem .75rem">
+                  <div style="display:flex; align-items:center; gap:.5rem">
+                    <span style="font-size:1rem; font-weight:700">${medalha}</span>
+                    <div>
+                      <strong style="font-size:.85rem; color:#f8fafc">${loc.nome}</strong>
+                      <span style="font-size:.72rem; color:var(--text-muted); display:block">${loc.qtd} compra${loc.qtd > 1 ? 's' : ''} • ${pct}% do cartão</span>
+                    </div>
+                  </div>
+                  <strong style="color:#fb7185; font-size:.95rem">${brl(loc.valorTotal)}</strong>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+        <!-- Coluna 2: Gastos por Categoria -->
+        <div style="background:rgba(15,23,42,0.6); border:1px solid var(--border-color); border-radius:10px; padding:.85rem 1rem">
+          <div style="font-weight:700; font-size:.9rem; color:#c084fc; margin-bottom:.75rem; display:flex; justify-content:space-between; align-items:center">
+            <span>🏷️ Categorias Onde Mais Foi Gasto</span>
+            <span style="font-size:.75rem; color:var(--text-muted)">Distribuição de Despesas</span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:.6rem">
+            ${listaCategorias.map(cat => {
+              const pct = totalGeralCartoes > 0 ? ((cat.valorTotal / totalGeralCartoes) * 100).toFixed(1) : 0;
+              return `
+                <div>
+                  <div style="display:flex; justify-content:space-between; align-items:center; font-size:.83rem; margin-bottom:.2rem">
+                    <span>${cat.icone} <strong>${cat.nome}</strong> <span style="font-size:.72rem; color:var(--text-muted)">(${cat.qtd} itens)</span></span>
+                    <strong style="color:#f8fafc">${brl(cat.valorTotal)} <span style="font-size:.72rem; color:var(--text-muted)">(${pct}%)</span></strong>
+                  </div>
+                  <div class="progress-bar-bg" style="height:6px; border-radius:3px; background:rgba(255,255,255,0.08); overflow:hidden">
+                    <div class="progress-bar-fill" style="width:${pct}%; height:100%; background:var(--accent-purple); border-radius:3px"></div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+
+      </div>
+
+      ${dicasEconomiaHtml}
+
+    </div>
+  `;
+}
+
 function renderCartoesCredito() {
   const total = todasFaturas.reduce((acc, f) => acc + (f.valorTotal !== undefined ? f.valorTotal : (f.valor || 0)), 0);
   document.getElementById('badge-total-cartoes').textContent = `${brl(total)} total`;
@@ -2652,6 +2936,7 @@ function renderCartoesCredito() {
     return;
   }
 
+  const analiseGastosCartao = renderHtmlAnaliseGastosCartao(todasFaturas);
   const analiseGeral = renderHtmlAnaliseLocaisFrequentes(todasFaturas, 'geral');
 
   // Agrupar por mesAno (ex: '2026-08')
@@ -2732,7 +3017,7 @@ function renderCartoesCredito() {
     `;
   }).join('');
 
-  el.innerHTML = analiseGeral + gruposHtml;
+  el.innerHTML = analiseGastosCartao + analiseGeral + gruposHtml;
 }
 
 function renderItensFatura(f) {
