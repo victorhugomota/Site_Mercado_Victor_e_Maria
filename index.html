@@ -3426,8 +3426,11 @@ function renderReservasEEconomias() {
   // 4. Recomendação ANUAL do Sistema (Projeção / Sugestão Anual para Guardar)
   const numMesesCadastrados = Math.max(1, meses.length);
   const mediaMensalLivre = saldoLiquidoAcumulado / numMesesCadastrados;
-  const recomendacaoMensal = mediaMensalLivre > 0 ? (mediaMensalLivre * 0.5) : 0;
-  const recomendacaoAnual = recomendacaoMensal * 12;
+  const sugestaoPeloSaldoAnual = mediaMensalLivre > 0 ? (mediaMensalLivre * 0.5 * 12) : 0;
+
+  // A recomendação anual do sistema considera a Meta Anual cadastrada (ou o potencial de economia se for maior)
+  const recomendacaoAnual = Math.max(metaAnual, sugestaoPeloSaldoAnual);
+  const recomendacaoMensal = recomendacaoAnual / 12;
 
   document.getElementById('val-recomendacao-reserva').textContent = brl(recomendacaoAnual);
   const subRec = document.getElementById('subtext-recomendacao');
