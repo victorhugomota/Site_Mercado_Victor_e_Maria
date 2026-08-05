@@ -898,14 +898,14 @@
         <div class="card-subtext">Poupança e Investimentos acumulados</div>
       </div>
 
-      <!-- Card Recomendação Anual do Sistema -->
+      <!-- Card Projeção Anual do Sistema -->
       <div class="card" style="border-color:#a855f7; background:linear-gradient(135deg,rgba(30,41,59,.9),rgba(15,23,42,.95))">
         <div class="card-header">
-          <span class="card-title" style="color:#c084fc">Recomendação Anual do Sistema</span>
+          <span class="card-title" style="color:#c084fc">Projeção Anual do Sistema</span>
           <div class="card-icon purple">💡</div>
         </div>
         <div class="card-value" id="val-recomendacao-reserva" style="color:#c084fc">R$ 0,00</div>
-        <div class="card-subtext" id="subtext-recomendacao">Sugerido para poupar anualmente com base no saldo livre</div>
+        <div class="card-subtext" id="subtext-recomendacao">Previsão baseada no histórico de entradas e saídas</div>
       </div>
     </div>
 
@@ -3423,19 +3423,27 @@ function renderReservasEEconomias() {
   const totalSaidasAcumuladas = totalCartoes + totalBoletos + totalDebito;
   const saldoLiquidoAcumulado = totalEntradas - totalSaidasAcumuladas;
 
-  // 4. Recomendação ANUAL do Sistema (Projeção / Sugestão Anual para Guardar)
+  // 4. PROJEÇÃO DO SISTEMA ATÉ O FIM DO ANO (baseada nas entradas e saídas de todos os meses)
   const numMesesCadastrados = Math.max(1, meses.length);
-  const mediaMensalLivre = saldoLiquidoAcumulado / numMesesCadastrados;
-  const sugestaoPeloSaldoAnual = mediaMensalLivre > 0 ? (mediaMensalLivre * 0.5 * 12) : 0;
+  const mediaEntradasMensal = totalEntradas / numMesesCadastrados;
+  const mediaSaidasMensal = totalSaidasAcumuladas / numMesesCadastrados;
+  const mediaSaldoLivreMensal = saldoLiquidoAcumulado / numMesesCadastrados;
 
-  // A recomendação anual do sistema considera a Meta Anual cadastrada (ou o potencial de economia se for maior)
-  const recomendacaoAnual = Math.max(metaAnual, sugestaoPeloSaldoAnual);
-  const recomendacaoMensal = recomendacaoAnual / 12;
+  // Sobra mensal histórica prevista
+  const sobraMensalEstimada = mediaSaldoLivreMensal > 0 ? mediaSaldoLivreMensal : 0;
+  const projetadoAdicional = sobraMensalEstimada * mesesRestantes;
+  const totalProjetadoFimDoAno = real + projetadoAdicional;
 
-  document.getElementById('val-recomendacao-reserva').textContent = brl(recomendacaoAnual);
+  // Exibir no Card 3: Projeção Anual do Sistema (Contempla o valor já guardado + projeção de sobra)
+  document.getElementById('val-recomendacao-reserva').textContent = brl(totalProjetadoFimDoAno);
   const subRec = document.getElementById('subtext-recomendacao');
   if (subRec) {
-    subRec.textContent = `Sugerido poupar ${brl(recomendacaoMensal)}/mês (${brl(recomendacaoAnual)} no ano)`;
+    if (totalProjetadoFimDoAno >= metaAnual) {
+      subRec.innerHTML = `✅ Projeção de <strong style="color:#34d399">${brl(totalProjetadoFimDoAno)}</strong> até Dez/2026 supera sua Meta Anual de ${brl(metaAnual)}!`;
+    } else {
+      const difMeta = metaAnual - totalProjetadoFimDoAno;
+      subRec.innerHTML = `⚠️ Sobra média de ${brl(sobraMensalEstimada)}/mês. Projeção de ${brl(totalProjetadoFimDoAno)} fica <strong style="color:#fb7185">${brl(difMeta)}</strong> abaixo da Meta de ${brl(metaAnual)}.`;
+    }
   }
 
   // Card de Análise Inteligente de Economias
@@ -3445,16 +3453,52 @@ function renderReservasEEconomias() {
       boxAnalise.innerHTML = `<p class="empty-state">Cadastre seus salários e entradas na aba "Salários & Entradas" para gerar o diagnóstico inteligente de economias.</p>`;
     } else {
       const pctGuardadoAnual = metaAnual > 0 ? Math.min(100, ((real / metaAnual) * 100)).toFixed(1) : 0;
+      const isViavel = totalProjetadoFimDoAno >= metaAnual;
+
+      let mensagemDiagnostico = '';
+      if (isViavel) {
+        mensagemDiagnostico = `
+          <div style="background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.35);border-radius:8px;padding:.85rem 1rem;margin-top:.85rem">
+            <span style="color:#34d399;font-weight:700;font-size:.9rem">✅ DIAGNÓSTICO: META ANUAL TOTALMENTE ATINGÍVEL!</span>
+            <p style="font-size:.85rem;color:#f1f5f9;margin-top:.35rem;line-height:1.45">
+              Com base na sua média de sobra mensal livre de <strong style="color:#34d399">${brl(mediaSaldoLivreMensal)}/mês</strong> (Entradas: ${brl(mediaEntradasMensal)} vs Saídas: ${brl(mediaSaidasMensal)}), a projeção é acumular <strong style="color:#34d399">${brl(totalProjetadoFimDoAno)}</strong> até o fim do ano.
+              Isso <strong>SUPERA a sua Meta Anual de ${brl(metaAnual)}</strong> (contemplando o valor já guardado de ${brl(real)})!
+            </p>
+          </div>
+        `;
+      } else if (mediaSaldoLivreMensal > 0) {
+        const difProjetado = metaAnual - totalProjetadoFimDoAno;
+        const extraNecessarioMes = Math.max(0, metaMensalCalculada - mediaSaldoLivreMensal);
+        mensagemDiagnostico = `
+          <div style="background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.35);border-radius:8px;padding:.85rem 1rem;margin-top:.85rem">
+            <span style="color:#fbbf24;font-weight:700;font-size:.9rem">⚠️ DIAGNÓSTICO: META DESAFIADORA (AJUSTE DE ECONOMIA NECESSÁRIO)</span>
+            <p style="font-size:.85rem;color:#f1f5f9;margin-top:.35rem;line-height:1.45">
+              Com a sua sobra média mensal atual de <strong style="color:#fbbf24">${brl(mediaSaldoLivreMensal)}/mês</strong>, o sistema projeta acumular <strong style="color:#60a5fa">${brl(totalProjetadoFimDoAno)}</strong> até o fim do ano (somando os ${brl(real)} já guardados).
+              Para alcançar a sua Meta de <strong>${brl(metaAnual)}</strong> (faltam ${brl(valorFaltanteMeta)}), é necessário guardar <strong style="color:#fb7185">${brl(metaMensalCalculada)}/mês</strong> nos próximos ${mesesRestantes} meses (um incremento de <strong>${brl(extraNecessarioMes)}/mês</strong> em relação à sua média).
+            </p>
+          </div>
+        `;
+      } else {
+        mensagemDiagnostico = `
+          <div style="background:rgba(251,113,133,0.12);border:1px solid rgba(251,113,133,0.35);border-radius:8px;padding:.85rem 1rem;margin-top:.85rem">
+            <span style="color:#fb7185;font-weight:700;font-size:.9rem">🚨 DIAGNÓSTICO: ALERTA DE VIABILIDADE (SAÍDAS SUPERARAM ENTRADAS)</span>
+            <p style="font-size:.85rem;color:#f1f5f9;margin-top:.35rem;line-height:1.45">
+              No histórico dos ${numMesesCadastrados} meses registrados, suas saídas (${brl(totalSaidasAcumuladas)}) superaram as entradas (${brl(totalEntradas)}), com saldo médio negativo de ${brl(mediaSaldoLivreMensal)}/mês.
+              A projeção do sistema prevê apenas a manutenção dos <strong style="color:#34d399">${brl(real)}</strong> já guardados. Para atingir sua Meta Anual de <strong>${brl(metaAnual)}</strong> (faltam <strong>${brl(valorFaltanteMeta)}</strong>), você precisará guardar <strong style="color:#fb7185">${brl(metaMensalCalculada)}/mês</strong> nos próximos ${mesesRestantes} mês(es).
+            </p>
+          </div>
+        `;
+      }
 
       boxAnalise.innerHTML = `
         <p style="margin-bottom:.5rem;font-weight:600">
-          Com base na soma acumulada de todos os meses (<strong>${brl(totalEntradas)}</strong> Entradas vs <strong>${brl(totalSaidasAcumuladas)}</strong> Saídas Totais):
+          Com base no histórico dos ${numMesesCadastrados} mês(es) registrados (Média Entradas: <strong>${brl(mediaEntradasMensal)}</strong> vs Saídas: <strong>${brl(mediaSaidasMensal)}</strong>):
         </p>
         <div style="background:rgba(15,23,42,0.6);padding:1.1rem;border-radius:10px;margin:.75rem 0;border:1px solid var(--border-color)">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.6rem;flex-wrap:wrap;gap:.75rem">
             <div>
-              <span style="font-size:.82rem;color:var(--text-muted);display:block">💰 Saldo Líquido em Conta</span>
-              <strong style="font-size:1.15rem;color:#60a5fa">${brl(saldoLiquidoAcumulado)}</strong>
+              <span style="font-size:.82rem;color:var(--text-muted);display:block">💰 Saldo Líquido no Período</span>
+              <strong style="font-size:1.15rem;color:${saldoLiquidoAcumulado >= 0 ? '#60a5fa' : '#fb7185'}">${brl(saldoLiquidoAcumulado)}</strong>
             </div>
             <div>
               <span style="font-size:.82rem;color:var(--text-muted);display:block">🏦 Total Guardado na Reserva</span>
@@ -3471,14 +3515,12 @@ function renderReservasEEconomias() {
           </div>
 
           <div style="display:flex;justify-content:space-between;font-size:.82rem;color:var(--text-muted);margin-top:.4rem;flex-wrap:wrap;gap:.5rem">
-            <span>Progresso da Meta: <strong style="color:#34d399">${brl(real)}</strong> de ${brl(metaAnual)} (<strong>${pctGuardadoAnual}%</strong> concluído)</span>
-            <span>Faltam guardar: <strong style="color:#fb7185">${brl(valorFaltanteMeta)}</strong> nos próximos ${mesesRestantes} mês(es)</span>
+            <span>Progresso Atual: <strong style="color:#34d399">${brl(real)}</strong> de ${brl(metaAnual)} (<strong>${pctGuardadoAnual}%</strong> concluído)</span>
+            <span>Faltam guardar: <strong style="color:#fb7185">${brl(valorFaltanteMeta)}</strong> em ${mesesRestantes} mês(es)</span>
           </div>
         </div>
 
-        <p style="font-size:.85rem;color:var(--text-muted);line-height:1.45">
-          💡 <strong>Planejamento do Sistema:</strong> Guardando <strong style="color:#34d399">${brl(metaMensalCalculada)}/mês</strong> durante os próximos <strong>${mesesRestantes} mês(es)</strong>, você atingirá com 100% de precisão sua Meta Anual de <strong>${brl(metaAnual)}</strong> (considerando seu saldo atual guardado de <strong>${brl(real)}</strong>)!
-        </p>
+        ${mensagemDiagnostico}
       `;
     }
   }
