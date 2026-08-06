@@ -744,6 +744,9 @@
 
     </div>
 
+    <!-- Container de Análise de Boletos Recorrentes -->
+    <div id="container-analise-boletos-recorrentes"></div>
+
     <!-- Lista de Boletos Registrados -->
     <div class="card">
       <div class="card-header">
@@ -3341,9 +3344,173 @@ function parseLinhasBoleto(texto) {
   return { beneficiario, valorTotal, vencimento, itens };
 }
 
+function renderHtmlAnaliseBoletosRecorrentes(boletos) {
+  const container = document.getElementById('container-analise-boletos-recorrentes');
+  if (!container) return;
+
+  if (!boletos || !boletos.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  // 1. Agrupar boletos por Conta / Nome Recorrente
+  const mapaRecorrentes = {};
+  boletos.forEach(b => {
+    const nomeRec = getNomeBoleto(b);
+    if (!mapaRecorrentes[nomeRec]) {
+      mapaRecorrentes[nomeRec] = {
+        nome: nomeRec,
+        valorTotalAno: 0,
+        qtd: 0,
+        historicoMeses: {}
+      };
+    }
+    const val = b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0);
+    mapaRecorrentes[nomeRec].valorTotalAno += val;
+    mapaRecorrentes[nomeRec].qtd += 1;
+    const m = b.mesAno || 'Outros';
+    mapaRecorrentes[nomeRec].historicoMeses[m] = (mapaRecorrentes[nomeRec].historicoMeses[m] || 0) + val;
+  });
+
+  const listaRecorrentes = Object.values(mapaRecorrentes).sort((a, b) => b.valorTotalAno - a.valorTotalAno);
+
+  // 2. Identificar Mês Atual e Mês Anterior para Comparativo de Variação
+  const todosMeses = Array.from(new Set(boletos.map(b => b.mesAno || 'Outros'))).sort((a, b) => b.localeCompare(a));
+  const mesAtual = todosMeses[0];
+  const mesAnterior = todosMeses[1];
+
+  function fmtNomeMes(m) {
+    if (!m || !m.includes('-')) return m;
+    const [ano, mes] = m.split('-');
+    const dObj = new Date(parseInt(ano), parseInt(mes) - 1, 1);
+    const nomeStr = dObj.toLocaleString('pt-BR', { month: 'long' });
+    return `${nomeStr.charAt(0).toUpperCase() + nomeStr.slice(1)}/${ano}`;
+  }
+
+  const nomeMesAtualFmt = fmtNomeMes(mesAtual);
+  const nomeMesAnteriorFmt = fmtNomeMes(mesAnterior);
+
+  // 3. Montar alertas de aumento de um mês para o outro
+  const alertasAumentoBoleto = [];
+
+  if (mesAtual && mesAnterior) {
+    listaRecorrentes.forEach(rec => {
+      const valAtual = rec.historicoMeses[mesAtual];
+      const valAnterior = rec.historicoMeses[mesAnterior];
+
+      if (valAtual !== undefined && valAnterior !== undefined) {
+        const dif = valAtual - valAnterior;
+        if (dif > 5) { // Aumento de pelo menos R$ 5,00
+          const pct = ((dif / valAnterior) * 100).toFixed(1);
+          alertasAumentoBoleto.push({
+            nome: rec.nome,
+            valAtual,
+            valAnterior,
+            dif,
+            pct
+          });
+        }
+      }
+    });
+  }
+
+  alertasAumentoBoleto.sort((a, b) => b.dif - a.dif);
+  const totalBoletosGeral = boletos.reduce((acc, b) => acc + (b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0)), 0);
+
+  let blocoAlertasHtml = '';
+  if (mesAtual && mesAnterior) {
+    if (alertasAumentoBoleto.length > 0) {
+      blocoAlertasHtml = `
+        <div style="margin-top:1rem; background:rgba(251,113,133,0.08); border:1px dashed rgba(251,113,133,0.35); border-radius:10px; padding:.85rem 1rem">
+          <div style="font-weight:700; font-size:.9rem; color:#fb7185; margin-bottom:.5rem; display:flex; align-items:center; gap:.4rem">
+            ⚠️ ALERTAS DE AUMENTO DE PREÇO (${nomeMesAtualFmt} vs ${nomeMesAnteriorFmt}):
+          </div>
+          <div style="display:flex; flex-direction:column; gap:.5rem">
+            ${alertasAumentoBoleto.map(a => `
+              <div style="font-size:.83rem; color:#f1f5f9; background:rgba(15,23,42,0.8); border-left:3px solid #fb7185; padding:.5rem .75rem; border-radius:4px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:.5rem">
+                <div>
+                  🚨 <strong>${a.nome}</strong>: Aumentou <strong style="color:#fb7185">+${brl(a.dif)} (+${a.pct}%)</strong> em relação a ${nomeMesAnteriorFmt}.
+                  <span style="color:var(--text-muted); display:block; margin-top:.15rem">Mês anterior: ${brl(a.valAnterior)} ➔ Mês atual: ${brl(a.valAtual)}</span>
+                </div>
+                <span class="badge rose" style="font-size:.78rem">+${a.pct}%</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    } else {
+      blocoAlertasHtml = `
+        <div style="margin-top:1rem; background:rgba(16,185,129,0.08); border:1px dashed rgba(16,185,129,0.35); border-radius:10px; padding:.85rem 1rem">
+          <div style="font-weight:700; font-size:.88rem; color:#34d399">
+            🟢 Nenhum boleto recorrente teve aumento de preço entre ${nomeMesAnteriorFmt} e ${nomeMesAtualFmt}. Todos os valores mantiveram-se estáveis!
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  container.innerHTML = `
+    <div class="card" style="margin-bottom:1.5rem; background:linear-gradient(135deg,rgba(30,41,59,.98),rgba(15,23,42,.99)); border-color:#c084fc; box-shadow:0 4px 22px rgba(192,132,252,0.18)">
+      <div class="card-header" style="flex-wrap:wrap; gap:.5rem">
+        <div>
+          <span class="card-title" style="color:#c084fc; font-size:1.1rem">📊 ANÁLISE DE BOLETOS RECORRENTES & COMPARATIVO DE CONTAS</span>
+          <p style="font-size:.78rem; color:var(--text-muted); margin-top:.2rem">Acompanhamento dos totais acumulados no ano e variação de preço de um mês para o outro.</p>
+        </div>
+        <span class="badge purple" style="font-size:.85rem; padding:.35rem .75rem">Total em Boletos: ${brl(totalBoletosGeral)}</span>
+      </div>
+
+      <!-- Grid de Boletos Recorrentes -->
+      <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:.85rem; margin-top:.75rem">
+        ${listaRecorrentes.map(rec => {
+          const mediaMensal = rec.qtd > 0 ? (rec.valorTotalAno / rec.qtd) : 0;
+          
+          let variacaoBadgeHtml = '<span class="badge gray" style="font-size:.72rem">Único registro</span>';
+          if (mesAtual && mesAnterior) {
+            const vAtu = rec.historicoMeses[mesAtual];
+            const vAnt = rec.historicoMeses[mesAnterior];
+            if (vAtu !== undefined && vAnt !== undefined) {
+              const dif = vAtu - vAnt;
+              if (dif > 0) {
+                const pct = ((dif / vAnt) * 100).toFixed(1);
+                variacaoBadgeHtml = `<span class="badge rose" style="font-size:.75rem" title="Subiu ${brl(dif)} em relação a ${nomeMesAnteriorFmt}">📈 +${brl(dif)} (+${pct}%)</span>`;
+              } else if (dif < 0) {
+                const pct = ((Math.abs(dif) / vAnt) * 100).toFixed(1);
+                variacaoBadgeHtml = `<span class="badge green" style="font-size:.75rem" title="Caiu ${brl(Math.abs(dif))} em relação a ${nomeMesAnteriorFmt}">📉 ${brl(dif)} (-${pct}%)</span>`;
+              } else {
+                variacaoBadgeHtml = `<span class="badge purple" style="font-size:.75rem">🟢 R$ 0,00 (Estável)</span>`;
+              }
+            }
+          }
+
+          return `
+            <div style="background:rgba(15,23,42,0.75); border:1px solid var(--border-color); border-radius:10px; padding:.85rem 1rem; display:flex; justify-content:space-between; align-items:center">
+              <div>
+                <div style="font-weight:700; font-size:.9rem; color:#f8fafc; margin-bottom:.25rem">📄 ${rec.nome}</div>
+                <div style="font-size:.75rem; color:var(--text-muted)">
+                  Média: <strong>${brl(mediaMensal)}/mês</strong> &nbsp;•&nbsp; ${rec.qtd} boleto${rec.qtd > 1 ? 's' : ''}
+                </div>
+                <div style="margin-top:.4rem">${variacaoBadgeHtml}</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-weight:800; font-size:1.1rem; color:#c084fc">${brl(rec.valorTotalAno)}</div>
+                <div style="font-size:.72rem; color:var(--text-muted)">total acumulado</div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      ${blocoAlertasHtml}
+
+    </div>
+  `;
+}
+
 function renderBoletos() {
   const total = todosBoletos.reduce((acc, b) => acc + (b.valorTotal !== undefined ? b.valorTotal : (b.valor || 0)), 0);
   document.getElementById('badge-total-boletos').textContent = `${brl(total)} total`;
+
+  renderHtmlAnaliseBoletosRecorrentes(todosBoletos);
 
   const el = document.getElementById('lista-boletos-registrados');
   if (!todosBoletos.length) {
