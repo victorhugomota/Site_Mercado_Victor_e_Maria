@@ -3618,7 +3618,39 @@ function getNomeBoleto(b) {
       nome = 'Boleto';
     }
   }
-  nome = nome.trim().replace(/[-–—\s]+$/, '').trim();
+
+  if (!nome) return 'Boleto';
+
+  // Limpeza de CNPJ (ex: - 51.235.278/0001-89 ou 51235278000189)
+  nome = nome.replace(/[-–—\s]*\b\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}\b/gi, '');
+  nome = nome.replace(/[-–—\s]*\b\d{14}\b/gi, '');
+
+  // Limpeza de códigos numéricos iniciais (ex: "0008 CONDOMINIO..." -> "CONDOMINIO...")
+  nome = nome.replace(/^\d{1,6}\s+/, '');
+
+  // Limpeza de traços e espaços nas bordas
+  nome = nome.trim().replace(/^[-–—\s]+|[-–—\s]+$/g, '').trim().toUpperCase();
+
+  // Regras de Normalização para unificar nomes de contas recorrentes similares
+  if (nome.includes('CONDOMINIO') && (nome.includes('GRECIA') || nome.includes('LAR'))) {
+    return 'CONDOMINIO LAR GRECIA';
+  }
+  if (nome.includes('FINANCIAMENTO') && (nome.includes('APTO') || nome.includes('APARTAMENTO'))) {
+    return 'FINANCIAMENTO APTO';
+  }
+  if (nome.includes('CONSORCIO') && (nome.includes('CARRO') || nome.includes('AUTO'))) {
+    return 'CONSORCIO CARRO';
+  }
+  if (nome.includes('LUZ') || nome.includes('CPFL') || nome.includes('ENERGIA') || nome.includes('ELETRICIDADE')) {
+    return 'CONTA DE LUZ';
+  }
+  if (nome.includes('INTERNET') || nome.includes('BANDA LARGA') || nome.includes('WI-FI')) {
+    return 'INTERNET';
+  }
+  if (nome.includes('IPTU')) {
+    return 'IPTU';
+  }
+
   return nome || 'Boleto';
 }
 
