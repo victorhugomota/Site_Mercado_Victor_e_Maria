@@ -161,9 +161,10 @@
     .purchase-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);margin-bottom:1rem;overflow:hidden}
     .purchase-header{padding:1.1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none;gap:.75rem}
     .purchase-header:hover{background:var(--bg-card-hover)}
+    .purchase-info{flex:1;min-width:0}
     .purchase-info h3{font-size:1rem;font-weight:700;margin-bottom:.2rem}
     .purchase-info p{font-size:.78rem;color:var(--text-muted)}
-    .purchase-values{text-align:right;flex-shrink:0}
+    .purchase-values{text-align:right;flex-shrink:0;margin-left:auto}
     .purchase-values .pv-total{font-size:1.2rem;font-weight:800;color:var(--primary)}
     .purchase-values .pv-sub{font-size:.72rem;color:var(--text-muted)}
     .purchase-details{display:none;padding:1.1rem 1.25rem;background:rgba(15,23,42,.45);border-top:1px solid var(--border-color)}
@@ -5088,11 +5089,11 @@ function parseNFCe(html) {
   const body = doc.body?.textContent || html;
 
   let nomeMercado = doc.querySelector('.txtTopo, .nomeEmit, h1, #lblNomeFantasia, #lblRazaoSocial')?.textContent?.trim() || '';
-  if (!nomeMercado) {
+  if (!nomeMercado || /DOCUMENTO\s*AUXILIAR|NOTA\s*FISCAL\s*DE\s*CONSUMIDOR|DANFE/i.test(nomeMercado)) {
     const mRazao = body.match(/(?:Raz[ãa]o\s*Social|Nome\s*Fantasia|Emitente)\s*[:\-]?\s*([^\n\r]+)/i);
     if (mRazao) nomeMercado = mRazao[1].trim();
   }
-  if (!nomeMercado) nomeMercado = 'Mercado';
+  if (!nomeMercado || /DOCUMENTO\s*AUXILIAR|NOTA\s*FISCAL\s*DE\s*CONSUMIDOR|DANFE/i.test(nomeMercado)) nomeMercado = 'Mercado';
 
   let dataEmissao = new Date().toISOString();
   const mData = body.match(/Emiss[ãa]o\s*[:\-]?\s*(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}:\d{2})?/i)
@@ -5214,15 +5215,17 @@ function renderHistorico() {
   el.innerHTML = todasCompras.map(c => `
     <div class="purchase-card">
       <div class="purchase-header" onclick="toggleDetail('${c.id}')">
-        <div class="purchase-info">
+        <div class="purchase-info" style="flex:1;min-width:0;">
           <h3>${c.nomeMercado || 'Mercado'}</h3>
           <p>📅 ${fmtData(c.dataEmissao)} &nbsp;•&nbsp; 🛒 ${c.qtdTotalItens || 0} itens</p>
         </div>
-        <div class="purchase-values">
-          <div class="pv-total">${brl(c.valorAPagar)}</div>
-          <div class="pv-sub">Desc: ${brl(c.descontoTotal)}</div>
+        <div style="display:flex;align-items:center;gap:1.25rem;flex-shrink:0;margin-left:auto;">
+          <div class="purchase-values">
+            <div class="pv-total">${brl(c.valorAPagar)}</div>
+            <div class="pv-sub">Desc: ${brl(c.descontoTotal)}</div>
+          </div>
+          <svg class="chevron" id="chev-${c.id}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="6 9 12 15 18 9"/></svg>
         </div>
-        <svg class="chevron" id="chev-${c.id}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><polyline points="6 9 12 15 18 9"/></svg>
       </div>
       <div class="purchase-details" id="detail-${c.id}">
         <div class="details-toolbar">
