@@ -1058,21 +1058,20 @@
       </div>
     </div>
 
-    <!-- Input URL ou HTML -->
+    <!-- Input Número da NFC-e ou QR Code -->
     <div class="card">
       <div class="card-header">
-        <span class="card-title">Adicionar por Link ou Texto da NFC-e</span>
+        <span class="card-title">Adicionar por Número da NFC-e ou QR Code</span>
         <button type="button" class="btn-secondary" id="btn-preencher-manual" style="font-size:0.78rem;padding:0.35rem 0.75rem;">✍️ Preencher Manualmente</button>
       </div>
 
       <div id="box-entrada-nfce">
         <div class="form-group">
-          <label for="inp-url">URL do QR Code da Nota Fiscal</label>
-          <input type="url" id="inp-url" class="form-control" placeholder="https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/...">
-        </div>
-        <div class="form-group">
-          <label for="inp-html">Ou cole o conteúdo/HTML da página da nota (fallback)</label>
-          <textarea id="inp-html" class="form-control" rows="3" placeholder="Copie o conteúdo da página da SEFAZ e cole aqui..."></textarea>
+          <label for="inp-nfce-chave">Número da NFC-e (Chave de 44 dígitos) ou Link do QR Code</label>
+          <input type="text" id="inp-nfce-chave" class="form-control" placeholder="Ex: 3526 0706 0572 2305 3534 6501 7000 0334 8911 7189 8154" autocomplete="off">
+          <small style="color:var(--text-muted);font-size:0.78rem;margin-top:0.35rem;display:block">
+            🌐 URL que o sistema acessa: <code>https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaPublica.aspx?chNFe=[NÚMERO_DA_NFCE]</code>
+          </small>
         </div>
         <button type="button" id="btn-carregar-dados" class="btn-primary" style="width:100%;">
           🔍 Carregar e Ler Dados da Nota
@@ -1148,23 +1147,41 @@
 
 <!-- Modal CORS fallback -->
 <div id="modal-cors" class="modal-overlay">
-  <div class="modal-box">
+  <div class="modal-box" style="max-width:560px;">
     <div class="modal-header">
-      <h2>⚠️ Acesso Externo Necessário</h2>
+      <h2>🌐 Consulta Pública SEFAZ — Acesso Direto</h2>
       <button class="btn-close" id="btn-modal-close">&times;</button>
     </div>
-    <p style="font-size:.9rem;color:var(--text-muted);margin-bottom:1rem">
-      O servidor da SEFAZ bloqueia consultas diretas por segurança. <br><br>
-      <strong>O que fazer:</strong><br>
-      1. Clique no botão abaixo para abrir a nota fiscal<br>
-      2. Copie todo o conteúdo da página (<code>Ctrl+A</code> → <code>Ctrl+C</code>)<br>
-      3. Cole no campo "Cole o conteúdo da página" no formulário
+    <p style="font-size:.88rem;color:var(--text-muted);margin-bottom:.85rem">
+      O servidor da SEFAZ bloqueia consultas automáticas por segurança. Acesse a consulta oficial com o número da sua NFC-e:
     </p>
-    <a id="modal-link" href="#" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:inline-flex;text-decoration:none;margin-bottom:1rem">
-      🌐 Abrir Nota Fiscal no Navegador
-    </a>
+
+    <div style="background:rgba(15,23,42,0.7);border:1px solid var(--border-color);border-radius:8px;padding:0.75rem;margin-bottom:1rem;word-break:break-all;font-size:0.8rem;">
+      <span style="display:block;font-size:0.72rem;color:var(--text-muted);margin-bottom:0.25rem">URL DA CONSULTA SEFAZ:</span>
+      <code id="modal-cors-url-display" style="font-family:monospace;color:#38bdf8"></code>
+    </div>
+
+    <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:1rem">
+      <a id="modal-link" href="#" target="_blank" rel="noopener noreferrer" class="btn-primary" style="flex:1;display:inline-flex;text-decoration:none;justify-content:center;align-items:center;padding:0.7rem">
+        🌐 Abrir Consulta Pública na SEFAZ
+      </a>
+      <button type="button" class="btn-secondary" id="btn-modal-copiar-chave" style="padding:0.7rem">
+        📋 Copiar Número da NFC-e
+      </button>
+    </div>
+
+    <div style="background:rgba(15,23,42,0.5);border:1px dashed var(--border-color);border-radius:8px;padding:0.85rem;margin-bottom:1rem">
+      <label style="font-size:0.82rem;font-weight:600;color:var(--text-muted);display:block;margin-bottom:0.4rem">
+        Cole aqui o conteúdo copiado da SEFAZ (<code>Ctrl+A</code> ➔ <code>Ctrl+C</code> na página):
+      </label>
+      <textarea id="modal-cors-textarea" class="form-control" rows="3" placeholder="Cole o texto ou HTML da página da SEFAZ aqui..."></textarea>
+      <button type="button" id="btn-modal-processar-colado" class="btn-primary" style="width:100%;margin-top:0.6rem;background:linear-gradient(135deg,#10b981,#34d399)">
+        ✨ Ler e Processar Itens Copiados
+      </button>
+    </div>
+
     <button class="btn-secondary" style="width:100%;justify-content:center" onclick="document.getElementById('modal-cors').classList.remove('active')">
-      Entendi, vou colar o conteúdo
+      Fechar Janela
     </button>
   </div>
 </div>
@@ -4779,31 +4796,111 @@ async function stopCam() {
   document.getElementById('btn-stop-cam').style.display = 'none';
 }
 
+// FORMATADOR E EXTRATOR UNIVERSAL DE CHAVE DE NFC-E
+function extrairChaveNFCe(texto) {
+  if (!texto) return '';
+  const str = String(texto).trim();
+
+  // 1. Verificar parâmetro chNFe=... (ex: consulta pública direta)
+  const mChNFe = str.match(/chNFe=([0-9\s%20]{44,65})/i);
+  if (mChNFe) {
+    const raw = decodeURIComponent(mChNFe[1]).replace(/\D/g, '');
+    if (raw.length === 44) return raw;
+  }
+
+  // 2. Verificar parâmetro p=... (padrão nacional de QR Code de NFC-e)
+  // Ex: .../qrcode?p=35260706057223053534650170000334891171898154|2|1|1|...
+  const mP = str.match(/[?&]p=([0-9]{44})/i) || str.match(/[?&]p=([0-9]{44})\|/i);
+  if (mP) {
+    return mP[1];
+  }
+
+  // 3. Qualquer bloco de 44 dígitos contínuos no texto
+  const m44 = str.match(/\b\d{44}\b/);
+  if (m44) {
+    return m44[0];
+  }
+
+  // 4. Se tiver dígitos espalhados ou formatados com espaços (ex: "3526 0706 0572 2305 3534 6501 7000 0334 8911 7189 8154")
+  const apenasDigitos = str.replace(/\D/g, '');
+  if (apenasDigitos.length === 44) {
+    return apenasDigitos;
+  }
+
+  if (apenasDigitos.length > 44) {
+    return apenasDigitos.slice(0, 44);
+  }
+
+  return '';
+}
+
+function formatarChave44(digitos) {
+  if (!digitos) return '';
+  const limpos = digitos.replace(/\D/g, '').slice(0, 44);
+  return limpos.replace(/(\d{4})(?=\d)/g, '$1 ').trim();
+}
+
 async function onQR(text) {
   stopCam();
-  document.getElementById('inp-url').value = text;
-  setStatus('✅ QR Code lido! Processando...');
-  await processarURL(text);
+
+  const chaveDigitos = extrairChaveNFCe(text);
+  const chaveFmt = chaveDigitos ? formatarChave44(chaveDigitos) : text;
+
+  const inpChave = document.getElementById('inp-nfce-chave');
+  if (inpChave) inpChave.value = chaveFmt;
+
+  if (chaveDigitos) {
+    setStatus(`✅ QR Code lido com sucesso! NFC-e: ${chaveFmt}`);
+    const urlSefaz = `https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaPublica.aspx?chNFe=${chaveFmt}`;
+    await processarURL(urlSefaz, chaveDigitos);
+  } else {
+    setStatus('✅ QR Code lido! Consultando...');
+    await processarURL(text);
+  }
 }
 
 // BOTÕES DE LER E PREENCHER MANUAL
 document.getElementById('btn-carregar-dados').addEventListener('click', async () => {
-  const url  = document.getElementById('inp-url').value.trim();
-  const html = document.getElementById('inp-html').value.trim();
+  const inputValor = (document.getElementById('inp-nfce-chave')?.value || '').trim();
 
-  if (!url && !html) {
-    setStatus('⚠️ Cole a URL do QR Code ou o conteúdo da página para ler a nota fiscal.');
+  if (!inputValor) {
+    setStatus('⚠️ Digite o número da NFC-e (44 dígitos) ou escaneie o QR Code.');
     return;
   }
-  if (url && !html) {
-    setStatus('⏳ Consultando nota fiscal...');
-    await processarURL(url);
+
+  // Se o usuário colou HTML ou conteúdo copiado da página diretamente no campo
+  if ((inputValor.includes('<') && inputValor.includes('>')) || (inputValor.length > 200 && /Vl\.\s*Unit|Qtde|Emiss/i.test(inputValor))) {
+    setStatus('⏳ Processando conteúdo copiado...');
+    await processarHTML(inputValor);
     return;
   }
-  if (html) {
-    setStatus('⏳ Processando conteúdo...');
-    await processarHTML(html);
+
+  const chaveDigitos = extrairChaveNFCe(inputValor);
+  if (chaveDigitos && chaveDigitos.length === 44) {
+    const chaveFmt = formatarChave44(chaveDigitos);
+    document.getElementById('inp-nfce-chave').value = chaveFmt;
+    const urlSefaz = `https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaPublica.aspx?chNFe=${chaveFmt}`;
+    setStatus(`⏳ Consultando NFC-e na SEFAZ: ${chaveFmt}...`);
+    await processarURL(urlSefaz, chaveDigitos);
     return;
+  }
+
+  if (inputValor.startsWith('http://') || inputValor.startsWith('https://')) {
+    setStatus('⏳ Consultando link da nota...');
+    await processarURL(inputValor);
+    return;
+  }
+
+  setStatus('⚠️ Número da NFC-e inválido. A chave deve conter 44 dígitos numéricos.', '#fb7185');
+});
+
+// Auto-formatação em blocos de 4 dígitos ao digitar no campo da NFC-e
+document.getElementById('inp-nfce-chave')?.addEventListener('input', (e) => {
+  const val = e.target.value;
+  if (val.startsWith('http') || val.includes('<') || val.includes('=')) return;
+  const digits = val.replace(/\D/g, '').slice(0, 44);
+  if (digits.length > 0 && digits.length <= 44) {
+    e.target.value = formatarChave44(digits);
   }
 });
 
@@ -4896,8 +4993,8 @@ document.getElementById('form-nfce').addEventListener('submit', async e => {
     setStatus('✅ Nota salva com sucesso!', '#34d399');
     document.getElementById('form-nfce').style.display = 'none';
     document.getElementById('form-nfce').reset();
-    document.getElementById('inp-url').value = '';
-    document.getElementById('inp-html').value = '';
+    const inpChaveReset = document.getElementById('inp-nfce-chave');
+    if (inpChaveReset) inpChaveReset.value = '';
     itensNotaCarregada = [];
 
     fecharModalAddNota();
@@ -4908,31 +5005,76 @@ document.getElementById('form-nfce').addEventListener('submit', async e => {
   }
 });
 
-// PARSER NFC-e
-async function processarURL(url) {
+// PARSER NFC-e & CONSULTA
+async function processarURL(url, chaveDigitos) {
+  setStatus('⏳ Consultando dados da nota na SEFAZ...');
+  const digitos = chaveDigitos || extrairChaveNFCe(url);
+  const chaveFmt = digitos ? formatarChave44(digitos) : '';
+  const urlSefazSpaced = digitos ? `https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaPublica.aspx?chNFe=${chaveFmt}` : url;
+  const urlSefazLimpa = digitos ? `https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaPublica.aspx?chNFe=${digitos}` : url;
+
+  const urlsParaTestar = [urlSefazSpaced, urlSefazLimpa];
+  if (!urlsParaTestar.includes(url)) urlsParaTestar.push(url);
+
   const proxies = [
     u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
     u => `https://corsproxy.io/?${encodeURIComponent(u)}`,
+    u => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(u)}`
   ];
-  for (const p of proxies) {
-    try {
-      const r = await fetch(p(url), { signal: AbortSignal.timeout(8000) });
-      if (r.ok) {
-        const txt = await r.text();
-        if (txt && txt.length > 200) {
-          await processarHTML(txt);
-          return;
+
+  for (const targetUrl of urlsParaTestar) {
+    for (const p of proxies) {
+      try {
+        const r = await fetch(p(targetUrl), { signal: AbortSignal.timeout(6000) });
+        if (r.ok) {
+          const txt = await r.text();
+          if (txt && txt.length > 200 && (/Vl\.\s*Unit|valorUnitario|Qtde|txtTit|itemNota/i.test(txt) || /Valor\s*total/i.test(txt))) {
+            await processarHTML(txt);
+            return;
+          }
         }
-      }
-    } catch {}
+      } catch {}
+    }
   }
-  abrirModalFallback(url);
+
+  abrirModalFallback(urlSefazSpaced, chaveFmt || digitos);
 }
 
-function abrirModalFallback(url) {
-  document.getElementById('modal-link').href = url;
+function abrirModalFallback(url, chave) {
+  const urlDisplay = document.getElementById('modal-cors-url-display');
+  if (urlDisplay) urlDisplay.textContent = url;
+
+  const link = document.getElementById('modal-link');
+  if (link) link.href = url;
+
+  const btnCopiar = document.getElementById('btn-modal-copiar-chave');
+  if (btnCopiar) {
+    btnCopiar.onclick = () => {
+      if (chave) {
+        navigator.clipboard.writeText(chave);
+        toastMsg('📋 Número da NFC-e copiado para a área de transferência!');
+      }
+    };
+  }
+
+  const txtModal = document.getElementById('modal-cors-textarea');
+  if (txtModal) txtModal.value = '';
+
+  const btnProcessar = document.getElementById('btn-modal-processar-colado');
+  if (btnProcessar) {
+    btnProcessar.onclick = async () => {
+      const conteudo = document.getElementById('modal-cors-textarea')?.value?.trim();
+      if (!conteudo) {
+        toastMsg('⚠️ Cole o texto da página da SEFAZ no campo antes de processar.');
+        return;
+      }
+      document.getElementById('modal-cors').classList.remove('active');
+      await processarHTML(conteudo);
+    };
+  }
+
   document.getElementById('modal-cors').classList.add('active');
-  setStatus('⚠️ Abra o link, copie o conteúdo da página e cole no campo de texto abaixo.');
+  setStatus('⚠️ A SEFAZ exige consulta externa. Clique no botão para abrir, copie o conteúdo e cole na caixa de texto.', 'var(--accent-amber)');
 }
 
 async function processarHTML(html) {
@@ -4946,7 +5088,12 @@ function parseNFCe(html) {
   const doc = parser.parseFromString(html, 'text/html');
   const body = doc.body?.textContent || html;
 
-  let nomeMercado = doc.querySelector('.txtTopo, .nomeEmit, h1')?.textContent?.trim() || 'Mercado';
+  let nomeMercado = doc.querySelector('.txtTopo, .nomeEmit, h1, #lblNomeFantasia, #lblRazaoSocial')?.textContent?.trim() || '';
+  if (!nomeMercado) {
+    const mRazao = body.match(/(?:Raz[ãa]o\s*Social|Nome\s*Fantasia|Emitente)\s*[:\-]?\s*([^\n\r]+)/i);
+    if (mRazao) nomeMercado = mRazao[1].trim();
+  }
+  if (!nomeMercado) nomeMercado = 'Mercado';
 
   let dataEmissao = new Date().toISOString();
   const mData = body.match(/Emiss[ãa]o\s*[:\-]?\s*(\d{2}\/\d{2}\/\d{4})\s+(\d{2}:\d{2}:\d{2})?/i)
@@ -5005,6 +5152,43 @@ function parseNFCe(html) {
       });
     }
   });
+
+  // Fallback linha a linha se querySelector de tabela não capturou itens (ex: texto copiado)
+  if (itens.length === 0) {
+    const lines = body.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    for (let i = 0; i < lines.length; i++) {
+      const l = lines[i];
+      if (/Qtde?\.?|Vl\.\s*Unit/i.test(l)) {
+        let nome = '';
+        if (i > 0 && lines[i - 1].length > 2 && !/Qtde?|Vl\.|Total|Emiss|CNPJ/i.test(lines[i - 1])) {
+          nome = lines[i - 1];
+        } else {
+          nome = l.split(/Qtde?|Vl\./i)[0].trim();
+        }
+        const mQtdItem = l.match(/Qtde?\.\s*[:\s]*([\d,\.]+)/i);
+        const mUnit    = l.match(/Vl\.\s*Unit\.\s*[:\s]*([\d,\.]+)/i);
+        const mTotItem = l.match(/Vl\.\s*Total\s*([\d,\.]+)/i);
+        const mCod     = l.match(/C[oó]digo\s*[:\s]*(\d+)/i) || (i > 0 ? lines[i-1].match(/C[oó]digo\s*[:\s]*(\d+)/i) : null);
+        const mUn      = l.match(/UN\s*[:\s]*([A-Za-z]+)/i);
+
+        const quantidade   = mQtdItem ? parseBRL(mQtdItem[1]) : 1;
+        const valorUnitario= mUnit ? parseBRL(mUnit[1]) : 0;
+        const valorTotalIt = mTotItem ? parseBRL(mTotItem[1]) : valorUnitario * quantidade;
+
+        if (nome && (valorUnitario > 0 || valorTotalIt > 0)) {
+          itens.push({
+            codigo: mCod?.[1] || '',
+            nome: nome.replace(/^\d+[\s\-\.]*/, '').trim(),
+            marca: extrairMarca(nome),
+            quantidade,
+            unidade: mUn?.[1] || 'Un',
+            valorUnitario: valorUnitario || (valorTotalIt / quantidade),
+            valorTotal: valorTotalIt
+          });
+        }
+      }
+    }
+  }
 
   const d = new Date(dataEmissao);
   const mesAno = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
