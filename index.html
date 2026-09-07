@@ -1070,7 +1070,7 @@
           <label for="inp-nfce-chave">Número da NFC-e (Chave de 44 dígitos) ou Link do QR Code</label>
           <input type="text" id="inp-nfce-chave" class="form-control" placeholder="Ex: 3526 0706 0572 2305 3534 6501 7000 0334 8911 7189 8154" autocomplete="off">
           <small style="color:var(--text-muted);font-size:0.78rem;margin-top:0.35rem;display:block">
-            🌐 URL que o sistema acessa: <code>https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaPublica.aspx?chNFe=[NÚMERO_DA_NFCE]</code>
+            🌐 URL que o sistema acessa: <code>https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaPublica.aspx?chNFe=[44_DÍGITOS_SEM_ESPAÇO]</code>
           </small>
         </div>
         <button type="button" id="btn-carregar-dados" class="btn-primary" style="width:100%;">
@@ -4851,7 +4851,7 @@ async function onQR(text) {
 
   if (chaveDigitos) {
     setStatus(`✅ QR Code lido com sucesso! NFC-e: ${chaveFmt}`);
-    const urlSefaz = `https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaPublica.aspx?chNFe=${chaveFmt}`;
+    const urlSefaz = `https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaPublica.aspx?chNFe=${chaveDigitos}`;
     await processarURL(urlSefaz, chaveDigitos);
   } else {
     setStatus('✅ QR Code lido! Consultando...');
@@ -4879,8 +4879,8 @@ document.getElementById('btn-carregar-dados').addEventListener('click', async ()
   if (chaveDigitos && chaveDigitos.length === 44) {
     const chaveFmt = formatarChave44(chaveDigitos);
     document.getElementById('inp-nfce-chave').value = chaveFmt;
-    const urlSefaz = `https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaPublica.aspx?chNFe=${chaveFmt}`;
-    setStatus(`⏳ Consultando NFC-e na SEFAZ: ${chaveFmt}...`);
+    const urlSefaz = `https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaPublica.aspx?chNFe=${chaveDigitos}`;
+    setStatus(`⏳ Consultando NFC-e na SEFAZ: ${chaveDigitos}...`);
     await processarURL(urlSefaz, chaveDigitos);
     return;
   }
@@ -5009,11 +5009,9 @@ document.getElementById('form-nfce').addEventListener('submit', async e => {
 async function processarURL(url, chaveDigitos) {
   setStatus('⏳ Consultando dados da nota na SEFAZ...');
   const digitos = chaveDigitos || extrairChaveNFCe(url);
-  const chaveFmt = digitos ? formatarChave44(digitos) : '';
-  const urlSefazSpaced = digitos ? `https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaPublica.aspx?chNFe=${chaveFmt}` : url;
   const urlSefazLimpa = digitos ? `https://www.nfce.fazenda.sp.gov.br/NFCeConsultaPublica/Paginas/ConsultaPublica.aspx?chNFe=${digitos}` : url;
 
-  const urlsParaTestar = [urlSefazSpaced, urlSefazLimpa];
+  const urlsParaTestar = [urlSefazLimpa];
   if (!urlsParaTestar.includes(url)) urlsParaTestar.push(url);
 
   const proxies = [
@@ -5037,7 +5035,7 @@ async function processarURL(url, chaveDigitos) {
     }
   }
 
-  abrirModalFallback(urlSefazSpaced, chaveFmt || digitos);
+  abrirModalFallback(urlSefazLimpa, digitos);
 }
 
 function abrirModalFallback(url, chave) {
@@ -5050,8 +5048,9 @@ function abrirModalFallback(url, chave) {
   const btnCopiar = document.getElementById('btn-modal-copiar-chave');
   if (btnCopiar) {
     btnCopiar.onclick = () => {
-      if (chave) {
-        navigator.clipboard.writeText(chave);
+      const chaveLimpa = chave ? chave.replace(/\s+/g, '') : '';
+      if (chaveLimpa) {
+        navigator.clipboard.writeText(chaveLimpa);
         toastMsg('📋 Número da NFC-e copiado para a área de transferência!');
       }
     };
