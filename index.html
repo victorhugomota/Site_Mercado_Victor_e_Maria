@@ -1674,6 +1674,9 @@ function renderSubConteudoMensal(entradasMes, faturasMes, boletosMes, comprasMes
                       <div class="pv-total" style="color:#c084fc">${brl(b.valorTotal)}</div>
                       <div class="pv-sub">Clique para ver detalhes <span class="chevron" id="chev-bol-m-${b.id}">▼</span></div>
                     </div>
+                    <button type="button" class="btn-secondary" style="padding:.35rem .65rem;font-size:.78rem;background:rgba(56,189,248,.12);color:#38bdf8;border:1px solid rgba(56,189,248,.3);white-space:nowrap" onclick="event.stopPropagation(); replicarBoletoProximoMes('${b.id}')" title="Replicar este boleto para o próximo mês">
+                      🔁 Replicar
+                    </button>
                     <button type="button" class="btn-secondary" style="padding:.35rem .65rem;font-size:.78rem;margin-left:.25rem" onclick="event.stopPropagation(); editarValorBoletoDocumento('${b.id}')" title="Editar valor do boleto">
                       ✏️ Editar
                     </button>
@@ -1685,7 +1688,8 @@ function renderSubConteudoMensal(entradasMes, faturasMes, boletosMes, comprasMes
                 <div id="detail-bol-m-${b.id}" class="purchase-details">
                   <div class="details-toolbar">
                     <span style="font-weight:700;font-size:.9rem;color:var(--text-muted)">Detalhamento do Boleto</span>
-                    <div style="display:flex;gap:.35rem">
+                    <div style="display:flex;gap:.35rem;flex-wrap:wrap">
+                      <button class="btn-secondary" style="color:#38bdf8;border-color:rgba(56,189,248,.3)" onclick="replicarBoletoProximoMes('${b.id}')">🔁 Replicar p/ Próximo Mês</button>
                       <button class="btn-secondary" onclick="editarValorBoletoDocumento('${b.id}')">✏️ Editar Valor</button>
                       <button class="btn-danger" onclick="excluirBoletoDocumento('${b.id}')">🗑️ Excluir Boleto</button>
                     </div>
@@ -3623,6 +3627,9 @@ function renderBoletos() {
                       <div class="pv-total" style="color:#c084fc">${brl(valorTotalBoleto)}</div>
                       <div class="pv-sub">Boleto do Mês</div>
                     </div>
+                    <button type="button" class="btn-secondary" style="padding:.35rem .65rem;font-size:.78rem;background:rgba(56,189,248,.12);color:#38bdf8;border:1px solid rgba(56,189,248,.3);white-space:nowrap" onclick="event.stopPropagation(); replicarBoletoProximoMes('${b.id}')" title="Replicar este boleto para o próximo mês">
+                      🔁 Replicar
+                    </button>
                     <button type="button" class="btn-secondary" style="padding:.35rem .65rem;font-size:.78rem;margin-left:.25rem" onclick="event.stopPropagation(); editarValorBoletoDocumento('${b.id}')" title="Editar valor do boleto">
                       ✏️ Editar
                     </button>
@@ -3635,7 +3642,8 @@ function renderBoletos() {
                 <div class="purchase-details" id="detail-bol-${b.id}">
                   <div class="details-toolbar">
                     <span class="card-subtext">Detalhamento dos Itens / Encargos do Boleto</span>
-                    <div style="display:flex;gap:.35rem">
+                    <div style="display:flex;gap:.35rem;flex-wrap:wrap">
+                      <button class="btn-secondary" style="color:#38bdf8;border-color:rgba(56,189,248,.3)" onclick="replicarBoletoProximoMes('${b.id}')">🔁 Replicar p/ Próximo Mês</button>
                       <button class="btn-secondary" onclick="editarValorBoletoDocumento('${b.id}')">✏️ Editar Valor</button>
                       <button class="btn-danger" onclick="excluirBoletoDocumento('${b.id}')">🗑️ Excluir Boleto</button>
                     </div>
@@ -3863,6 +3871,105 @@ window.removerItemBoletoCadastrado = async function(boletoId, itemIndex) {
       qtdItens: novosItens.length
     });
     toastMsg('🗑️ Item removido do boleto.');
+  }
+};
+
+function calcularProximoMes(dataVenc, mesAno) {
+  let ano, mes, dia = 10;
+
+  if (dataVenc && typeof dataVenc === 'string') {
+    if (dataVenc.includes('-')) {
+      const parts = dataVenc.split('-');
+      if (parts.length >= 3) {
+        ano = parseInt(parts[0], 10);
+        mes = parseInt(parts[1], 10);
+        dia = parseInt(parts[2], 10) || 10;
+      } else if (parts.length === 2) {
+        ano = parseInt(parts[0], 10);
+        mes = parseInt(parts[1], 10);
+      }
+    } else if (dataVenc.includes('/')) {
+      const parts = dataVenc.split('/');
+      if (parts.length >= 3) {
+        dia = parseInt(parts[0], 10) || 10;
+        mes = parseInt(parts[1], 10);
+        ano = parseInt(parts[2], 10);
+      }
+    }
+  }
+
+  if (!ano || !mes) {
+    if (mesAno && typeof mesAno === 'string' && mesAno.includes('-')) {
+      const parts = mesAno.split('-');
+      ano = parseInt(parts[0], 10);
+      mes = parseInt(parts[1], 10);
+    } else {
+      const hoje = new Date();
+      ano = hoje.getFullYear();
+      mes = hoje.getMonth() + 1;
+    }
+  }
+
+  mes += 1;
+  if (mes > 12) {
+    mes = 1;
+    ano += 1;
+  }
+
+  const maxDias = new Date(ano, mes, 0).getDate();
+  const novoDia = Math.min(Math.max(1, dia), maxDias);
+
+  const mesStr = String(mes).padStart(2, '0');
+  const diaStr = String(novoDia).padStart(2, '0');
+  const novoMesAno = `${ano}-${mesStr}`;
+  const novaDataVencimento = `${ano}-${mesStr}-${diaStr}`;
+  const novaDataFormatadaBR = `${diaStr}/${mesStr}/${ano}`;
+
+  return { novoMesAno, novaDataVencimento, novaDataFormatadaBR, ano, mes: mesStr };
+}
+
+window.replicarBoletoProximoMes = async function(id) {
+  const boleto = todosBoletos.find(b => b.id === id);
+  if (!boleto) {
+    alert('Boleto não encontrado para replicação.');
+    return;
+  }
+
+  const { novoMesAno, novaDataVencimento, novaDataFormatadaBR } = calcularProximoMes(boleto.dataVencimento, boleto.mesAno);
+
+  const desc = getNomeBoleto(boleto);
+  const valorTotal = boleto.valorTotal !== undefined ? boleto.valorTotal : (boleto.valor || 0);
+
+  if (!confirm(`🔁 Deseja replicar o boleto "${desc}" (${brl(valorTotal)}) para o próximo mês (${novoMesAno}) com vencimento em ${novaDataFormatadaBR}?`)) {
+    return;
+  }
+
+  try {
+    const novosItens = Array.isArray(boleto.itens) ? boleto.itens.map(item => ({
+      ...item,
+      dataBoleto: novaDataFormatadaBR
+    })) : [];
+
+    const novoBoleto = {
+      descricao: boleto.descricao || desc,
+      beneficiario: boleto.beneficiario || '',
+      valorTotal: valorTotal,
+      valor: valorTotal,
+      dataVencimento: novaDataVencimento,
+      mesAno: novoMesAno,
+      qtdItens: novosItens.length || boleto.qtdItens || 1,
+      itens: novosItens,
+      codigoBarras: boleto.codigoBarras || '',
+      linhaDigitavel: boleto.linhaDigitavel || '',
+      replicadoDe: boleto.id,
+      createdAt: serverTimestamp()
+    };
+
+    await addDoc(collection(db, COLL_BOLETOS), novoBoleto);
+    toastMsg(`🔁 Boleto "${desc}" replicado para ${novoMesAno} com sucesso!`);
+  } catch (err) {
+    console.error('Erro ao replicar boleto:', err);
+    alert('Erro ao replicar boleto: ' + err.message);
   }
 };
 
