@@ -197,6 +197,10 @@
     .chevron{transition:transform .25s}
     .chevron.open{transform:rotate(180deg)}
 
+    .btn-filter-comp{background:rgba(255,255,255,.05);border:1px solid var(--border-color);color:var(--text-muted);padding:.45rem .85rem;border-radius:8px;cursor:pointer;font-size:.82rem;font-weight:600;display:inline-flex;align-items:center;gap:.4rem;transition:all .2s ease}
+    .btn-filter-comp:hover{background:rgba(255,255,255,.1);color:var(--text-main)}
+    .btn-filter-comp.active{background:rgba(56,189,248,.18);border-color:var(--primary);color:var(--primary)}
+
     /* Brand comparison card */
     .brand-card{background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-lg);padding:1.1rem 1.25rem;margin-bottom:.9rem}
     .brand-card-header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;margin-bottom:.9rem}
@@ -790,6 +794,29 @@
         <p class="card-subtext" style="margin-bottom:1rem">
           Compara o <strong>valor unitário</strong> de cada produto entre os meses.
         </p>
+
+        <!-- Barra de Filtros de Comparação -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.75rem; margin-bottom:1.25rem; background:rgba(15,23,42,0.6); padding:0.75rem 1rem; border-radius:12px; border:1px solid var(--border-color);">
+          <div style="display:flex; gap:0.4rem; flex-wrap:wrap;">
+            <button type="button" class="btn-filter-comp active" data-filter="todos" onclick="setFiltroComparacao('todos')">
+              🌐 Todos <span class="badge gray" id="count-comp-todos">0</span>
+            </button>
+            <button type="button" class="btn-filter-comp" data-filter="mais_baratos" onclick="setFiltroComparacao('mais_baratos')">
+              📉 Mais Baratos <span class="badge green" id="count-comp-baratos">0</span>
+            </button>
+            <button type="button" class="btn-filter-comp" data-filter="mais_caros" onclick="setFiltroComparacao('mais_caros')">
+              📈 Mais Caros <span class="badge rose" id="count-comp-caros">0</span>
+            </button>
+            <button type="button" class="btn-filter-comp" data-filter="estaveis" onclick="setFiltroComparacao('estaveis')">
+              🟢 Estáveis <span class="badge cyan" id="count-comp-estaveis">0</span>
+            </button>
+          </div>
+
+          <div style="min-width:200px; flex:1; max-width:320px;">
+            <input type="text" id="inp-busca-comparacao" class="form-control" placeholder="🔍 Buscar produto ou marca..." oninput="onBuscaComparacao(this.value)" style="padding:0.45rem 0.75rem; font-size:0.83rem;">
+          </div>
+        </div>
+
         <div id="lista-comparacao"></div>
       </div>
     </div>
@@ -5281,9 +5308,24 @@ window.confirmarExcluirMercado = async function(id) {
   } catch(e) { alert('Erro: ' + e.message); }
 };
 
+// ESTADO DO FILTRO DE COMPARAÇÃO DE PREÇOS
+let filtroStatusComparacao = 'todos'; // 'todos' | 'mais_baratos' | 'mais_caros' | 'estaveis'
+let buscaTextoComparacao = '';
+
+window.setFiltroComparacao = function(status) {
+  filtroStatusComparacao = status;
+  renderComparacao();
+};
+
+window.onBuscaComparacao = function(val) {
+  buscaTextoComparacao = (val || '').toLowerCase().trim();
+  renderComparacao();
+};
+
 // COMPARAÇÃO MÊS A MÊS
 function renderComparacao() {
   const el = document.getElementById('lista-comparacao');
+  if (!el) return;
   const mapa = {};
 
   todasCompras.forEach(c => {
@@ -5300,22 +5342,97 @@ function renderComparacao() {
     return;
   }
 
+  // Processa e calcula variação de cada produto
+  const prodsProcessados = prods.map(p => {
+    const meses = Object.keys(p.hist).sort();
+    let histStr = meses.map(m => `${m}: <strong>${brl(p.hist[m])}</strong>`).join(' → ');
+    let badge = `<span class="badge cyan">Estável</span>`;
+    let status = 'estaveis';
+    let diff = 0;
+    let pct = '0.0';
+
+    if (meses.length >= 2) {
+      const ant = p.hist[meses[meses.length - 2]];
+      const atu = p.hist[meses[meses.length - 1]];
+      diff = atu - ant;
+      pct = ((diff / ant) * 100).toFixed(1);
+      if (diff > 0.01) {
+        status = 'mais_caros';
+        badge = `<span class="badge rose" style="background:rgba(244,63,94,.18);color:#fb7185;border:1px solid rgba(244,63,94,.3)">+${pct}% ↑</span>`;
+      } else if (diff < -0.01) {
+        status = 'mais_baratos';
+        badge = `<span class="badge green" style="background:rgba(16,185,129,.18);color:#34d399;border:1px solid rgba(16,185,129,.3)">${pct}% ↓</span>`;
+      } else {
+        status = 'estaveis';
+        badge = `<span class="badge cyan">Estável</span>`;
+      }
+    } else {
+      status = 'estaveis';
+      badge = `<span class="badge cyan">Estável</span>`;
+    }
+
+    return { ...p, meses, histStr, badge, status, diff, pct };
+  });
+
+  // Atualiza contadores nos botões de filtro
+  const countTodos = prodsProcessados.length;
+  const countBaratos = prodsProcessados.filter(p => p.status === 'mais_baratos').length;
+  const countCaros = prodsProcessados.filter(p => p.status === 'mais_caros').length;
+  const countEstaveis = prodsProcessados.filter(p => p.status === 'estaveis').length;
+
+  const elCountTodos = document.getElementById('count-comp-todos');
+  if (elCountTodos) elCountTodos.textContent = countTodos;
+  const elCountBaratos = document.getElementById('count-comp-baratos');
+  if (elCountBaratos) elCountBaratos.textContent = countBaratos;
+  const elCountCaros = document.getElementById('count-comp-caros');
+  if (elCountCaros) elCountCaros.textContent = countCaros;
+  const elCountEstaveis = document.getElementById('count-comp-estaveis');
+  if (elCountEstaveis) elCountEstaveis.textContent = countEstaveis;
+
+  // Atualiza classe ativa dos botões
+  document.querySelectorAll('.btn-filter-comp').forEach(btn => {
+    if (btn.getAttribute('data-filter') === filtroStatusComparacao) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  // Aplica os filtros de status e busca de texto
+  let prodsFiltrados = prodsProcessados;
+
+  if (filtroStatusComparacao !== 'todos') {
+    prodsFiltrados = prodsFiltrados.filter(p => p.status === filtroStatusComparacao);
+  }
+
+  if (buscaTextoComparacao) {
+    prodsFiltrados = prodsFiltrados.filter(p => 
+      (p.nome || '').toLowerCase().includes(buscaTextoComparacao) || 
+      (p.marca || '').toLowerCase().includes(buscaTextoComparacao)
+    );
+  }
+
+  if (!prodsFiltrados.length) {
+    const nomesFiltros = {
+      'mais_baratos': 'mais baratos (queda de preço)',
+      'mais_caros': 'mais caros (aumento de preço)',
+      'estaveis': 'estáveis',
+      'todos': 'cadastrados'
+    };
+    el.innerHTML = `<div class="empty-state">Nenhum produto encontrado para o filtro "${nomesFiltros[filtroStatusComparacao] || 'selecionado'}".</div>`;
+    return;
+  }
+
   el.innerHTML = `<div class="table-responsive"><table class="custom-table">
     <thead><tr><th>Produto</th><th>Marca</th><th>Histórico (Unitário)</th><th>Variação</th></tr></thead>
-    <tbody>${prods.map(p => {
-      const meses = Object.keys(p.hist).sort();
-      let histStr = meses.map(m => `${m}: <strong>${brl(p.hist[m])}</strong>`).join(' → ');
-      let badge = `<span class="badge cyan">Estável</span>`;
-      if (meses.length >= 2) {
-        const ant = p.hist[meses[meses.length-2]];
-        const atu = p.hist[meses[meses.length-1]];
-        const diff = atu - ant;
-        const pct = ((diff/ant)*100).toFixed(1);
-        if (diff > 0.01) badge = `<span class="badge red">+${pct}% ↑</span>`;
-        else if (diff < -0.01) badge = `<span class="badge green">${pct}% ↓</span>`;
-      }
-      return `<tr><td><strong>${p.nome}</strong></td><td><span class="badge amber">${p.marca||'—'}</span></td><td>${histStr}</td><td>${badge}</td></tr>`;
-    }).join('')}</tbody>
+    <tbody>${prodsFiltrados.map(p => `
+      <tr>
+        <td><strong>${p.nome}</strong></td>
+        <td><span class="badge amber">${p.marca || '—'}</span></td>
+        <td>${p.histStr}</td>
+        <td>${p.badge}</td>
+      </tr>
+    `).join('')}</tbody>
   </table></div>`;
 }
 
